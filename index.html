@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QUANTUM CODERS — Create. Connect. Lead.</title>
+  <meta name="description" content="Quantum Coders is an elite community of student creators, developers, designers, and innovators. Built on brutalist editorial aesthetics inspired by our club ID card.">
+  <meta name="keywords" content="Quantum Coders, Tech Club, Coding, AI, Design, Hackathons, Student Community, College Club, Andhra Pradesh">
+  <meta name="author" content="Quantum Coders">
+
+  <!-- Open Graph / Social Cards -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="QUANTUM CODERS — Create. Connect. Lead.">
+  <meta property="og:description" content="A digital extension of our club identity card. Brutalist editorial tech community.">
+  <meta property="og:image" content="assets/logo.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/logo.png">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Subtle Film Grain Overlay -->
+  <div class="film-grain" aria-hidden="true"></div>
+
+  <!-- Custom Cursor Elements (Desktop only) -->
+  <div class="cursor-dot" id="cursor-dot" aria-hidden="true"></div>
+  <div class="cursor-ring" id="cursor-ring" aria-hidden="true">
+    <span class="cursor-text" id="cursor-text">EXPLORE</span>
+  </div>
+
+  <!-- =========================================================================
+       00. NAVIGATION BAR
+       ========================================================================= -->
+  <header class="site-header" id="site-header">
+    <div class="container nav-container">
+      <!-- Left: Logo & Brand Lockup -->
+      <a href="#home" class="brand-link" aria-label="Quantum Coders Home" data-cursor="HOME">
+        <img src="assets/logo.png" alt="Quantum Coders Logo" class="brand-logo-img">
+        <div class="brand-text-block">
+          <span class="brand-title">QUANTUM CODERS</span>
+          <span class="brand-subtitle">// PYDAH COLLEGE OF ENGINEERING • 2026</span>
+        </div>
+      </a>
+
+      <!-- Center/Right: Desktop Nav Links -->
+      <nav class="desktop-nav" aria-label="Primary Navigation">
+        <a href="#home" class="nav-link active" data-cursor="GO">Home</a>
+        <a href="#about" class="nav-link" data-cursor="GO">About</a>
+        <a href="#team" class="nav-link" data-cursor="GO">Core Team</a>
+        <a href="#gallery" class="nav-link" data-cursor="GO">Gallery</a>
+        <a href="#register" class="nav-link" data-cursor="JOIN">Join</a>
+        <a href="#contact" class="nav-link" data-cursor="TALK">Contact</a>
+        <a href="#register" class="btn-brutalist nav-btn-join" data-cursor="JOIN">
+          Register <span class="btn-arrow">→</span>
+        </a>
+      </nav>
+
+      <!-- Right: Hamburger Menu Trigger for Mobile / Responsive -->
+      <button class="menu-trigger" id="menu-trigger" aria-label="Toggle Navigation Menu" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Fullscreen Mobile Navigation Overlay -->
+  <div class="mobile-nav-overlay" id="mobile-nav-overlay" aria-hidden="true">
+    <ul class="mobile-nav-list">
+      <li>
+        <a href="#home" class="mobile-nav-link" data-nav-close>
+          <span class="nav-num">01</span> Home
+        </a>
+      </li>
+      <li>
+        <a href="#about" class="mobile-nav-link" data-nav-close>
+          <span class="nav-num">02</span> About Us
+        </a>
+      </li>
+      <li>
+        <a href="#team" class="mobile-nav-link" data-nav-close>
+          <span class="nav-num">03</span> Core Team
+        </a>
+      </li>
+      <li>
+        <a href="#gallery" class="mobile-nav-link" data-nav-close>
+          <span class="nav-num">04</span> Gallery
+        </a>
+      </li>
+      <li>
+        <a href="#register" class="mobile-nav-link" data-nav-close>
+          <span class="nav-num">05</span> Join The Club
+        </a>
+      </li>
+      <li>
+        <a href="#contact" class="mobile-nav-link" data-nav-close>
+          <span class="nav-num">06</span> Contact
+        </a>
+      </li>
+    </ul>
+
+    <div class="mobile-nav-footer">
+      <span>QUANTUM CODERS // 2026</span>
+      <span>CREATE • CONNECT • LEAD</span>
+    </div>
+  </div>
+
+  <main>
+    <!-- =======================================================================
+         01. HERO SECTION (EDITORIAL POSTER COMPOSITION)
+         ======================================================================= -->
+    <section class="section hero-section halftone-bg" id="home">
+      <!-- Decorative Background Parallax Shapes -->
+      <div class="hero-abstract-shape shape-circle-dots" data-speed="0.04" aria-hidden="true"></div>
+      <div class="hero-abstract-shape shape-blue-glow" data-speed="-0.03" aria-hidden="true"></div>
+      <div class="hero-abstract-shape shape-purple-glow" data-speed="0.02" aria-hidden="true"></div>
+
+      <!-- Vertical Typography Accent (ID Card Style) -->
+      <div class="vertical-text" style="top: 25%; left: 1.5rem;">C L U B // I D E N T I T Y</div>
+      <div class="vertical-text" style="bottom: 20%; right: 1.5rem;">A R C H I V E // 2 0 2 6</div>
+
+      <div class="container hero-grid">
+        <!-- Left: Poster Typography & Call To Actions -->
+        <div class="hero-content">
+          <div class="hero-badge">
+            <span class="accent-dot"></span>
+            <span>OFFICIAL STUDENT TECH GUILD</span>
+          </div>
+
+          <h1 class="hero-title">
+            <span class="title-row">QUANTUM</span>
+            <span class="title-row title-accent">CODERS</span>
+          </h1>
+
+          <div class="hero-tagline">
+            <span>CREATE</span>
+            <span class="separator-slash">/</span>
+            <span>CONNECT</span>
+            <span class="separator-slash">/</span>
+            <span>LEAD</span>
+          </div>
+
+          <p class="hero-description">
+            A high-velocity collective of builders, creators, developers, designers, and innovators pushing the bleeding edge of software, design, and collaborative engineering.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#register" class="btn-brutalist" data-cursor="JOIN">
+              Become A Member <span class="btn-arrow">→</span>
+            </a>
+            <a href="#about" class="btn-brutalist btn-brutalist-secondary" data-cursor="DISCOVER">
+              Explore Club
+            </a>
+          </div>
+
+          <!-- Editorial Technical Metadata Strip -->
+          <div class="hero-meta-strip">
+            <div class="meta-strip-item">
+              <span class="meta-strip-label">CHAPTER</span>
+              <span class="meta-strip-val">01 // PYDAH</span>
+            </div>
+            <div class="meta-strip-item">
+              <span class="meta-strip-label">STANDARD</span>
+              <span class="meta-strip-val">OPEN CORE TECHNICAL GUILD</span>
+            </div>
+            <div class="meta-strip-item">
+              <span class="meta-strip-label">LEADERSHIP CADRE</span>
+              <span class="meta-strip-val"><a href="#team" style="color: inherit; text-decoration: underline; text-underline-offset: 3px;">6 CORE ARCHITECTS →</a></span>
+            </div>
+            <div class="meta-strip-item">
+              <span class="meta-strip-label">COMMUNITY</span>
+              <span class="meta-strip-val">500+ ACTIVE CADETS</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         STATISTICS STRIP (INTERSECTION OBSERVER ANIMATION)
+         ======================================================================= -->
+    <section class="stats-strip" id="stats-strip">
+      <div class="container stats-grid">
+        <div class="stat-box">
+          <div class="stat-number-wrap">
+            <span class="stat-number" data-target="500">0</span>
+            <span class="stat-plus">+</span>
+          </div>
+          <div class="stat-label">Active Members</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-number-wrap">
+            <span class="stat-number" data-target="25">0</span>
+            <span class="stat-plus">+</span>
+          </div>
+          <div class="stat-label">Flagship Events</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-number-wrap">
+            <span class="stat-number" data-target="15">0</span>
+            <span class="stat-plus">+</span>
+          </div>
+          <div class="stat-label">Production Projects</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-number-wrap">
+            <span class="stat-number" data-target="10">0</span>
+            <span class="stat-plus">+</span>
+          </div>
+          <div class="stat-label">Intensive Workshops</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         02. ABOUT SECTION (WHO WE ARE & KINETIC MANIFESTO)
+         ======================================================================= -->
+    <section class="section about-section" id="about">
+      <div class="vertical-text" style="top: 20%; right: 1.5rem;">W H O // W E // A R E</div>
+
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag">02 // Manifesto</div>
+          <h2 class="section-title-huge">
+            WHO WE <span class="outline-text">ARE</span>
+          </h2>
+          <p class="section-subtitle">
+            Not your typical campus committee. We are an aggressive breeding ground for relentless builders, open-source hackers, and digital architects.
+          </p>
+        </div>
+
+        <!-- Split Black/White Kinetic Composition -->
+        <div class="about-split">
+          <!-- Left Column: Kinetic Word Stream with Scroll Animations -->
+          <div class="about-typography-col">
+            <div class="kinetic-word-stream">
+              <div class="kinetic-word" data-cursor="HOVER">
+                <span>CREATE</span>
+                <span class="word-accent-tag">// 01</span>
+              </div>
+              <div class="kinetic-word active" data-cursor="HOVER">
+                <span>LEARN</span>
+                <span class="word-accent-tag">// 02</span>
+              </div>
+              <div class="kinetic-word" data-cursor="HOVER">
+                <span>BUILD</span>
+                <span class="word-accent-tag">// 03</span>
+              </div>
+              <div class="kinetic-word" data-cursor="HOVER">
+                <span>COLLABORATE</span>
+                <span class="word-accent-tag">// 04</span>
+              </div>
+              <div class="kinetic-word" data-cursor="HOVER">
+                <span>LEAD</span>
+                <span class="word-accent-tag">// 05</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Manifesto Box & Structural Mission Statement -->
+          <div class="about-content-col">
+            <div class="manifesto-box halftone-bg">
+              <span class="manifesto-badge">FOUNDING DIRECTIVE</span>
+              <blockquote class="manifesto-quote">
+                "We are a community of students, creators, developers and innovators who <span class="highlight-blue">learn by doing</span>, ship real products, and grow together."
+              </blockquote>
+              <p class="manifesto-text">
+                Quantum Coders was founded on a simple realization: textbooks and lecture slides alone don't forge world-class engineers. What truly builds technical mastery is immersion — staying up through hackathon sprints, dissecting production codebases, and collaborating with peers who challenge you to build bigger.
+              </p>
+              <p class="manifesto-text">
+                From autonomous robotics and distributed systems to modern web applications and AI engineering, our members ship projects that solve actual campus and enterprise problems.
+              </p>
+
+              <div style="margin-top: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                <span class="id-meta-pill"><span class="status-dot"></span> OPEN SOURCE FIRST</span>
+                <span class="id-meta-pill">ZERO PREREQUISITES</span>
+                <span class="id-meta-pill">100% MERIT</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Three Large Editorial Mission Cards -->
+        <div class="mission-grid">
+          <div class="mission-card" data-cursor="READ">
+            <div class="mission-num">01 // PILLAR</div>
+            <h3 class="mission-title">LEARN</h3>
+            <p class="mission-desc">
+              Master cutting-edge languages, distributed architectures, neural networks, and modern UI stacks through peer-led code labs and deep-dive bootcamps.
+            </p>
+            <div class="mission-watermark">01</div>
+          </div>
+
+          <div class="mission-card" data-cursor="READ">
+            <div class="mission-num">02 // PILLAR</div>
+            <h3 class="mission-title">CREATE</h3>
+            <p class="mission-desc">
+              Turn abstract theoretical logic into working software. We organize internal hack sprints, design jams, and open-source contributions with tangible impact.
+            </p>
+            <div class="mission-watermark">02</div>
+          </div>
+
+          <div class="mission-card" data-cursor="READ">
+            <div class="mission-num">03 // PILLAR</div>
+            <h3 class="mission-title">LEAD</h3>
+            <p class="mission-desc">
+              Step into technical leadership, project management, and public speaking. Direct workshops, mentor newcomers, and represent the club on national stages.
+            </p>
+            <div class="mission-watermark">03</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         03. CORE TEAM SECTION (ID CARD PROFILE BADGES & STICKER OUTLINES)
+         ======================================================================= -->
+    <!-- =======================================================================
+         03. CORE TEAM SECTION (3D TIERED FAN DECK ARCHITECTURE)
+         ======================================================================= -->
+    <section class="section team-section" id="team">
+      <div class="vertical-text" style="top: 15%; left: 1.5rem;">C O R E // C A D R E</div>
+      <div class="vertical-text" style="bottom: 15%; right: 1.5rem;">P Y D A H // 2 0 2 6</div>
+
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag">03 // Leadership Cadre</div>
+          <h2 class="section-title-huge">
+            CORE <span class="outline-text">CADRE</span>
+          </h2>
+          <p class="section-subtitle">
+            Executive council fanned in hierarchical 3D tier formation. Hover or click any dossier card to inspect their technical record.
+          </p>
+        </div>
+
+        <!-- View Mode Switcher -->
+        <div class="cadre-view-toggle-bar">
+          <button class="cadre-toggle-btn active" id="btn-view-deck" data-cursor="VIEW">⊞ 3D Cadre Deck</button>
+          <button class="cadre-toggle-btn" id="btn-view-grid" data-cursor="GRID">☷ Expanded Grid</button>
+        </div>
+
+        <!-- 3D Overlapping Fan Deck Stage (Layered Backdrop Slabs Underneath + Pop-Out Cutout Cards On Top) -->
+        <div class="cadre-deck-stage" id="cadre-deck-stage">
+
+          <!-- Layer 1: Underneath Backdrop Deck (7 White Rounded ID Card Slabs Fanning Out) -->
+          <div class="cadre-backdrop-deck" aria-hidden="true">
+            <!-- Position 1: Far Left (QC-006) -->
+            <div class="cadre-bg-slab pos-1" data-index="0">
+              <div class="slab-inner">
+                <div class="slab-header">
+                  <span class="slab-serial">QC-006</span>
+                  <span class="slab-status"><span class="status-dot"></span> ACTIVE</span>
+                </div>
+                <div class="slab-body">
+                  <div class="slab-watermark">MEDIA // PR</div>
+                  <div class="slab-barcode">||| | |||| || | |||</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Position 2: Mid Left (QC-004) -->
+            <div class="cadre-bg-slab pos-2" data-index="1">
+              <div class="slab-inner">
+                <div class="slab-header">
+                  <span class="slab-serial">QC-004</span>
+                  <span class="slab-status"><span class="status-dot"></span> ACTIVE</span>
+                </div>
+                <div class="slab-body">
+                  <div class="slab-watermark">FINANCE // DESIGN</div>
+                  <div class="slab-barcode">|||| || | |||| | ||</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Position 3: Inner Left (QC-002) -->
+            <div class="cadre-bg-slab pos-3" data-index="2">
+              <div class="slab-inner">
+                <div class="slab-header">
+                  <span class="slab-serial">QC-002</span>
+                  <span class="slab-status"><span class="status-dot"></span> ACTIVE</span>
+                </div>
+                <div class="slab-body">
+                  <div class="slab-watermark">VICE PRESIDENT</div>
+                  <div class="slab-barcode">|| | |||| | ||| |||</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Position 4: CENTER APEX (QC-001 - Lead) -->
+            <div class="cadre-bg-slab pos-4 is-center" data-index="3">
+              <div class="slab-inner">
+                <div class="slab-header">
+                  <span class="slab-serial slab-lead-serial">QC-001 // LEAD</span>
+                  <span class="slab-status slab-lead-status"><span class="status-dot"></span> ACTIVE • APEX</span>
+                </div>
+                <div class="slab-body">
+                  <div class="slab-watermark">PRESIDENT // LEAD</div>
+                  <div class="slab-barcode">|||||| |||| | |||||</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Position 5: Inner Right (QC-003) -->
+            <div class="cadre-bg-slab pos-5" data-index="4">
+              <div class="slab-inner">
+                <div class="slab-header">
+                  <span class="slab-serial">QC-003</span>
+                  <span class="slab-status"><span class="status-dot"></span> ACTIVE</span>
+                </div>
+                <div class="slab-body">
+                  <div class="slab-watermark">SECRETARY // TECH</div>
+                  <div class="slab-barcode">||| || | |||| || ||</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Position 6: Mid Right (QC-005) -->
+            <div class="cadre-bg-slab pos-6" data-index="5">
+              <div class="slab-inner">
+                <div class="slab-header">
+                  <span class="slab-serial">QC-005</span>
+                  <span class="slab-status"><span class="status-dot"></span> ACTIVE</span>
+                </div>
+                <div class="slab-body">
+                  <div class="slab-watermark">OPERATIONS // VP</div>
+                  <div class="slab-barcode">|||| | ||| | || |||</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Position 7: Far Right (QC-007) -->
+            <div class="cadre-bg-slab pos-7" data-index="6">
+              <div class="slab-inner">
+                <div class="slab-header">
+                  <span class="slab-serial">QC-007</span>
+                  <span class="slab-status"><span class="status-dot"></span> ACTIVE</span>
+                </div>
+                <div class="slab-body">
+                  <div class="slab-watermark">PR // BRANDING</div>
+                  <div class="slab-barcode">|| | ||| |||| | |||</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Layer 2: On Top Cards Deck (7 Pop-out Cutout Cards with Info Plates) -->
+          <div class="cadre-cards-deck" id="cadre-cards-deck">
+            <!-- Position 1: Far Left (QC-006 - Sri Ram) -->
+            <div class="cadre-fan-card pos-1" data-index="0" data-id="QC-006" data-cursor="QC-006">
+              <div class="cadre-card-shell">
+                <div class="cadre-card-header">
+                  <span class="cadre-card-serial">QC-006</span>
+                  <span class="cadre-card-status"><span class="status-dot"></span> ACTIVE • CORE</span>
+                </div>
+                <div class="cadre-card-cutout-frame">
+                  <img src="images/QC-006.png" alt="Sri Ram" class="cadre-cutout-img sticker-cutout">
+                </div>
+                <div class="cadre-card-info">
+                  <div class="cadre-role-stamp" style="color: var(--color-purple);">MEDIA &amp; PR</div>
+                  <h3 class="cadre-member-name">SRI RAM</h3>
+                  <p class="cadre-member-domain">Broadcast &amp; Content Strategy</p>
+                  <a href="team/QC-006/index.html" class="btn-brutalist cadre-card-btn" data-cursor="DOSSIER">
+                    View Dossier →
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Position 2: Mid Left (QC-004 - Teja) -->
+            <div class="cadre-fan-card pos-2" data-index="1" data-id="QC-004" data-cursor="QC-004">
+              <div class="cadre-card-shell">
+                <div class="cadre-card-header">
+                  <span class="cadre-card-serial">QC-004</span>
+                  <span class="cadre-card-status"><span class="status-dot"></span> ACTIVE • CORE</span>
+                </div>
+                <div class="cadre-card-cutout-frame">
+                  <img src="images/QC-004.png" alt="Teja" class="cadre-cutout-img sticker-cutout">
+                </div>
+                <div class="cadre-card-info">
+                  <div class="cadre-role-stamp" style="color: var(--color-purple);">TREASURER & DESIGNER</div>
+                  <h3 class="cadre-member-name">TEJA</h3>
+                  <p class="cadre-member-domain">Finance &amp; Brutalist Editor </p>
+                  <a href="team/QC-004/index.html" class="btn-brutalist cadre-card-btn" data-cursor="DOSSIER">
+                    View Dossier →
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Position 3: Inner Left (QC-002 - Renuka) -->
+            <div class="cadre-fan-card pos-3" data-index="2" data-id="QC-002" data-cursor="QC-002">
+              <div class="cadre-card-shell">
+                <div class="cadre-card-header">
+                  <span class="cadre-card-serial">QC-002</span>
+                  <span class="cadre-card-status"><span class="status-dot"></span> ACTIVE • CORE</span>
+                </div>
+                <div class="cadre-card-cutout-frame">
+                  <img src="images/QC-002.png" alt="Renuka" class="cadre-cutout-img sticker-cutout">
+                </div>
+                <div class="cadre-card-info">
+                  <div class="cadre-role-stamp" style="color: var(--color-purple);">VICE PRESIDENT</div>
+                  <h3 class="cadre-member-name">RENUKA</h3>
+                  <p class="cadre-member-domain">Management</p>
+                  <a href="team/QC-002/index.html" class="btn-brutalist cadre-card-btn" data-cursor="DOSSIER">
+                    View Dossier →
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Position 4: CENTER APEX (QC-001 - Praveen, President) -->
+            <div class="cadre-fan-card pos-4 is-center" data-index="3" data-id="QC-001" data-cursor="QC-001">
+              <div class="cadre-card-shell">
+                <div class="cadre-card-header">
+                  <span class="cadre-card-serial" style="color: var(--color-blue); font-weight: 900;">QC-001 // LEAD</span>
+                  <span class="cadre-card-status"><span class="status-dot"></span> ACTIVE • CORE</span>
+                </div>
+                <div class="cadre-card-cutout-frame">
+                  <img src="images/QC-001.png" alt="Praveen" class="cadre-cutout-img sticker-cutout">
+                </div>
+                <div class="cadre-card-info" style="border-top-color: var(--color-blue);">
+                  <div class="cadre-role-stamp" style="color: var(--color-blue);">PRESIDENT</div>
+                  <h3 class="cadre-member-name">PRAVEEN</h3>
+                  <p class="cadre-member-domain">Management</p>
+                  <a href="team/QC-001/index.html" class="btn-brutalist cadre-card-btn" style="background: var(--color-blue); color: #FFFFFF;" data-cursor="DOSSIER">
+                    View ID Dossier →
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Position 5: Inner Right (QC-003 - Sandeep) -->
+            <div class="cadre-fan-card pos-5" data-index="4" data-id="QC-003" data-cursor="QC-003">
+              <div class="cadre-card-shell">
+                <div class="cadre-card-header">
+                  <span class="cadre-card-serial">QC-003</span>
+                  <span class="cadre-card-status"><span class="status-dot"></span> ACTIVE • CORE</span>
+                </div>
+                <div class="cadre-card-cutout-frame">
+                  <img src="images/QC-003.png" alt="Sandeep" class="cadre-cutout-img sticker-cutout">
+                </div>
+                <div class="cadre-card-info">
+                  <div class="cadre-role-stamp">SECRETARY</div>
+                  <h3 class="cadre-member-name">SANDEEP</h3>
+                  <p class="cadre-member-domain">Events and Technical Support</p>
+                  <a href="team/QC-003/index.html" class="btn-brutalist cadre-card-btn" data-cursor="DOSSIER">
+                    View Dossier →
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Position 6: Mid Right (QC-005 - Venky) -->
+            <div class="cadre-fan-card pos-6" data-index="5" data-id="QC-005" data-cursor="QC-005">
+              <div class="cadre-card-shell">
+                <div class="cadre-card-header">
+                  <span class="cadre-card-serial">QC-005</span>
+                  <span class="cadre-card-status"><span class="status-dot"></span> ACTIVE • CORE</span>
+                </div>
+                <div class="cadre-card-cutout-frame">
+                  <img src="images/QC-005.png" alt="Venky" class="cadre-cutout-img sticker-cutout">
+                </div>
+                <div class="cadre-card-info">
+                  <div class="cadre-role-stamp">VICE SECRETARY</div>
+                  <h3 class="cadre-member-name">VENKY</h3>
+                  <p class="cadre-member-domain">Operations</p>
+                  <a href="team/QC-005/index.html" class="btn-brutalist cadre-card-btn" data-cursor="DOSSIER">
+                    View Dossier →
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Position 7: Far Right (QC-007 - Karthik) -->
+            <div class="cadre-fan-card pos-7" data-index="6" data-id="QC-007" data-cursor="QC-007">
+              <div class="cadre-card-shell">
+                <div class="cadre-card-header">
+                  <span class="cadre-card-serial">QC-007</span>
+                  <span class="cadre-card-status"><span class="status-dot"></span> ACTIVE • CORE</span>
+                </div>
+                <div class="cadre-card-cutout-frame">
+                  <img src="images/QC-007.png" alt="Karthik" class="cadre-cutout-img sticker-cutout">
+                </div>
+                <div class="cadre-card-info">
+                  <div class="cadre-role-stamp">MEDIA &amp; PR</div>
+                  <h3 class="cadre-member-name">KARTHIK</h3>
+                  <p class="cadre-member-domain">Public Relations and Branding</p>
+                  <a href="team/QC-007/index.html" class="btn-brutalist cadre-card-btn" data-cursor="DOSSIER">
+                    View Dossier →
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         04. GALLERY SECTION (ASYMMETRIC EDITORIAL COLLAGE & LIGHTBOX)
+         ======================================================================= -->
+    <section class="section gallery-section" id="gallery">
+      <div class="vertical-text" style="top: 20%; right: 1.5rem;">O U R // M O M E N T S</div>
+
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag">04 // Visual Archive</div>
+          <h2 class="section-title-huge">
+            OUR <span class="outline-text">MOMENTS</span>
+          </h2>
+          <p class="section-subtitle">
+            An editorial magazine collage documenting hackathons, hardware laboratories, design jams, and late-night shipping sessions.
+          </p>
+        </div>
+
+        <!-- Filter Pills Bar -->
+        <div class="gallery-filters" role="tablist">
+          <button class="filter-pill active" data-filter="all" role="tab" aria-selected="true" data-cursor="FILTER">All</button>
+          <button class="filter-pill" data-filter="events" role="tab" aria-selected="false" data-cursor="FILTER">Events</button>
+          <button class="filter-pill" data-filter="workshops" role="tab" aria-selected="false" data-cursor="FILTER">Workshops</button>
+          <button class="filter-pill" data-filter="team" role="tab" aria-selected="false" data-cursor="FILTER">Team</button>
+          <button class="filter-pill" data-filter="activities" role="tab" aria-selected="false" data-cursor="FILTER">Activities</button>
+        </div>
+
+        <!-- Asymmetric CSS Grid Magazine Collage -->
+        <div class="gallery-collage-grid" id="gallery-grid">
+          <!-- Item 1: 2x2 Large Featured Event -->
+          <div class="gallery-item span-2x2" data-category="events" data-index="0" data-cursor="VIEW">
+            <!-- REPLACE WITH CLUB EVENT PHOTO -->
+            <img src="assets/gallery/moment_1.svg" alt="Quantum Hack 2026: 36h Sprint" class="gallery-img" loading="lazy">
+            <div class="gallery-overlay">
+              <div class="gallery-overlay-cat">EVENTS // FLAGSHIP</div>
+              <h3 class="gallery-overlay-title">Quantum Hack 2026: 36h Sprint</h3>
+            </div>
+          </div>
+
+          <!-- Item 2: 2x1 Workshop -->
+          <div class="gallery-item span-2x1" data-category="workshops" data-index="1" data-cursor="VIEW">
+            <!-- REPLACE WITH CLUB WORKSHOP PHOTO -->
+            <img src="assets/gallery/moment_2.svg" alt="Generative AI & LLM Systems Lab" class="gallery-img" loading="lazy">
+            <div class="gallery-overlay">
+              <div class="gallery-overlay-cat">WORKSHOPS // APPLIED AI</div>
+              <h3 class="gallery-overlay-title">Generative AI & LLM Systems Lab</h3>
+            </div>
+          </div>
+
+          <!-- Item 3: 1x2 Vertical Team Summit -->
+          <div class="gallery-item span-1x2" data-category="team" data-index="2" data-cursor="VIEW">
+            <!-- REPLACE WITH CLUB TEAM PHOTO -->
+            <img src="assets/gallery/moment_3.svg" alt="Core Council Strategy Summit" class="gallery-img" loading="lazy">
+            <div class="gallery-overlay">
+              <div class="gallery-overlay-cat">TEAM // COUNCIL</div>
+              <h3 class="gallery-overlay-title">Core Council Strategy Summit</h3>
+            </div>
+          </div>
+
+          <!-- Item 4: 1x1 Open Source Activity -->
+          <div class="gallery-item span-1x1" data-category="activities" data-index="3" data-cursor="VIEW">
+            <!-- REPLACE WITH CLUB ACTIVITY PHOTO -->
+            <img src="assets/gallery/moment_5.svg" alt="Open Source Community Sprint" class="gallery-img" loading="lazy">
+            <div class="gallery-overlay">
+              <div class="gallery-overlay-cat">ACTIVITIES // FOSS</div>
+              <h3 class="gallery-overlay-title">Open Source Community Sprint</h3>
+            </div>
+          </div>
+
+          <!-- Item 5: 2x1 Architecture Jam -->
+          <div class="gallery-item span-2x1" data-category="workshops" data-index="4" data-cursor="VIEW">
+            <!-- REPLACE WITH CLUB WORKSHOP PHOTO -->
+            <img src="assets/gallery/moment_4.svg" alt="Advanced Web Architecture Jam" class="gallery-img" loading="lazy">
+            <div class="gallery-overlay">
+              <div class="gallery-overlay-cat">WORKSHOPS // WEB TECH</div>
+              <h3 class="gallery-overlay-title">Advanced Web Architecture Jam</h3>
+            </div>
+          </div>
+
+          <!-- Item 6: 1x1 Design Slam -->
+          <div class="gallery-item span-1x1" data-category="activities" data-index="5" data-cursor="VIEW">
+            <!-- REPLACE WITH CLUB ACTIVITY PHOTO -->
+            <img src="assets/gallery/moment_7.svg" alt="Brutalist UI/UX Design Slam" class="gallery-img" loading="lazy">
+            <div class="gallery-overlay">
+              <div class="gallery-overlay-cat">ACTIVITIES // CREATIVE</div>
+              <h3 class="gallery-overlay-title">Brutalist UI/UX Design Slam</h3>
+            </div>
+          </div>
+
+          <!-- Item 7: 2x1 Annual Tech Nexus -->
+          <div class="gallery-item span-2x1" data-category="events" data-index="6" data-cursor="VIEW">
+            <!-- REPLACE WITH CLUB EVENT PHOTO -->
+            <img src="assets/gallery/moment_6.svg" alt="Annual Tech Nexus Keynote" class="gallery-img" loading="lazy">
+            <div class="gallery-overlay">
+              <div class="gallery-overlay-cat">EVENTS // ANNUAL SUMMIT</div>
+              <h3 class="gallery-overlay-title">Annual Tech Nexus Keynote</h3>
+            </div>
+          </div>
+
+          <!-- Item 8: 1x1 Prototype Expo -->
+          <div class="gallery-item span-1x1" data-category="events" data-index="7" data-cursor="VIEW">
+            <!-- REPLACE WITH CLUB EVENT PHOTO -->
+            <img src="assets/gallery/moment_8.svg" alt="Autumn Prototype Expo" class="gallery-img" loading="lazy">
+            <div class="gallery-overlay">
+              <div class="gallery-overlay-cat">EVENTS // DEMO DAY</div>
+              <h3 class="gallery-overlay-title">Autumn Prototype Expo</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Fullscreen Lightbox Modal -->
+    <div class="lightbox-modal" id="lightbox-modal" aria-hidden="true" role="dialog" aria-label="Image Preview">
+      <div class="lightbox-wrapper">
+        <button class="lightbox-close-btn" id="lightbox-close-btn" aria-label="Close Lightbox">&times;</button>
+        
+        <button class="lightbox-nav-btn lightbox-prev" id="lightbox-prev-btn" aria-label="Previous image">‹</button>
+        <button class="lightbox-nav-btn lightbox-next" id="lightbox-next-btn" aria-label="Next image">›</button>
+
+        <div class="lightbox-img-container">
+          <img src="" alt="" class="lightbox-img" id="lightbox-img">
+        </div>
+
+        <div class="lightbox-caption-bar">
+          <h4 class="lightbox-title" id="lightbox-title"></h4>
+          <span class="lightbox-cat" id="lightbox-cat"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- =======================================================================
+         05. REGISTER AS A CLUB MEMBER (TORN PAPER & DIGITAL MEMBERSHIP CARD)
+         ======================================================================= -->
+    <section class="section register-section" id="register">
+      <div class="vertical-text" style="top: 25%; left: 1.5rem;">J O I N // C A D R E</div>
+
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag">05 // Enlistment Protocol</div>
+          <h2 class="section-title-huge">
+            BECOME PART OF <span class="outline-text">THE CLUB</span>
+          </h2>
+          <p class="section-subtitle">
+            Take your place in the Quantum Coders roster. Receive your personalized Digital Membership Pass with cryptographic verification on submission.
+          </p>
+        </div>
+
+        <div class="register-layout">
+          <!-- Left Info & Benefits Column -->
+          <div class="register-info-panel">
+            <div class="id-meta-pill" style="margin-bottom: 1.5rem;">
+              <span class="status-dot"></span> ADMISSIONS OPEN • BATCH 2026
+            </div>
+            
+            <h3 style="font-family: var(--font-heading); font-size: 2rem; letter-spacing: 0.05em; margin-bottom: 1rem;">
+              WHY JOIN QUANTUM CODERS?
+            </h3>
+            <p style="color: var(--color-gray); font-size: 1.05rem; line-height: 1.7;">
+              Whether you are an experienced systems hacker or have just written your first "Hello World", our community gives you the launchpad, resources, and peers to accelerate your trajectory.
+            </p>
+
+            <ul class="register-benefits-list">
+              <li class="benefit-item">
+                <span class="benefit-icon">✓</span>
+                <div>
+                  <strong>Exclusive Internal Repositories:</strong> Access production-grade project codebases, boilerplate starters, and engineering guides.
+                </div>
+              </li>
+              <li class="benefit-item">
+                <span class="benefit-icon">✓</span>
+                <div>
+                  <strong>Priority Hackathon Teams:</strong> Form high-caliber squads with senior mentors for regional and global technical competitions.
+                </div>
+              </li>
+              <li class="benefit-item">
+                <span class="benefit-icon">✓</span>
+                <div>
+                  <strong>Direct Industry Access:</strong> Connect with alumni working at top tech firms, receive resume reviews, and join technical mock interviews.
+                </div>
+              </li>
+              <li class="benefit-item">
+                <span class="benefit-icon">✓</span>
+                <div>
+                  <strong>Personalized ID Card:</strong> Official credential for access to club rooms, labs, servers, and priority workshop seating.
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Right Column: Registration Form / Digital ID Card Target -->
+          <div class="form-card-container">
+            <!-- Active Registration Form -->
+            <div class="editorial-form-box halftone-paper" id="register-form-box">
+              <form id="club-registration-form" novalidate>
+                <div class="form-grid">
+                  <!-- Full Name -->
+                  <div class="form-group" id="group-fullname">
+                    <label for="reg-fullname" class="editorial-label">
+                      Full Name <span class="req-star">*</span>
+                    </label>
+                    <input type="text" id="reg-fullname" name="fullname" class="editorial-input" placeholder="e.g. John Doe" required autocomplete="name">
+                    <span class="form-error-msg" id="err-fullname">Please enter your legal or preferred full name.</span>
+                  </div>
+
+                  <!-- Email -->
+                  <div class="form-group" id="group-email">
+                    <label for="reg-email" class="editorial-label">
+                      Email Address <span class="req-star">*</span>
+                    </label>
+                    <input type="email" id="reg-email" name="email" class="editorial-input" placeholder="e.g. name@domain.com" required autocomplete="email">
+                    <span class="form-error-msg" id="err-email">Please enter a valid email address.</span>
+                  </div>
+
+                  <!-- Phone -->
+                  <div class="form-group" id="group-phone">
+                    <label for="reg-phone" class="editorial-label">
+                      Phone Number <span class="req-star">*</span>
+                    </label>
+                    <input type="tel" id="reg-phone" name="phone" class="editorial-input" placeholder="e.g. +91 98765 43210" required autocomplete="tel">
+                    <span class="form-error-msg" id="err-phone">Please enter a valid 10-digit phone number.</span>
+                  </div>
+
+                  <!-- College / Organization -->
+                  <div class="form-group" id="group-college">
+                    <label for="reg-college" class="editorial-label">
+                      College / Organization <span class="req-star">*</span>
+                    </label>
+                    <input type="text" id="reg-college" name="college" class="editorial-input" placeholder="e.g. Pydah College of Engineering" required>
+                    <span class="form-error-msg" id="err-college">Please enter your institution name.</span>
+                  </div>
+
+                  <!-- Year of Study -->
+                  <div class="form-group" id="group-year">
+                    <label for="reg-year" class="editorial-label">
+                      Year of Study <span class="req-star">*</span>
+                    </label>
+                    <select id="reg-year" name="year" class="editorial-select" required>
+                      <option value="" disabled selected>Select Academic Year</option>
+                      <option value="1st Year">1st Year (Freshman)</option>
+                      <option value="2nd Year">2nd Year (Sophomore)</option>
+                      <option value="3rd Year">3rd Year (Junior)</option>
+                      <option value="4th Year">4th Year (Senior)</option>
+                      <option value="Postgraduate">Postgraduate / Alumni</option>
+                    </select>
+                    <span class="form-error-msg" id="err-year">Please select your year.</span>
+                  </div>
+
+                  <!-- Branch / Specialization -->
+                  <div class="form-group" id="group-branch">
+                    <label for="reg-branch" class="editorial-label">
+                      Branch / Department <span class="req-star">*</span>
+                    </label>
+                    <input type="text" id="reg-branch" name="branch" class="editorial-input" placeholder="e.g. CSE / IT / ECE / AI" required>
+                    <span class="form-error-msg" id="err-branch">Please enter your branch.</span>
+                  </div>
+
+                  <!-- Area of Interest -->
+                  <div class="form-group full-width" id="group-interest">
+                    <label for="reg-interest" class="editorial-label">
+                      Primary Area of Interest <span class="req-star">*</span>
+                    </label>
+                    <select id="reg-interest" name="interest" class="editorial-select" required>
+                      <option value="" disabled selected>Choose your engineering/creative domain</option>
+                      <option value="WEB DEVELOPMENT">WEB DEVELOPMENT (Frontend / Backend / Fullstack)</option>
+                      <option value="AI / ML">AI / MACHINE LEARNING / DATA SCIENCE</option>
+                      <option value="DESIGN">DESIGN (UI/UX / Brutalist Editorial / 3D)</option>
+                      <option value="MEDIA">MEDIA (Video / PR / Podcasting / Content)</option>
+                      <option value="MANAGEMENT">MANAGEMENT & COMMUNITY OPERATIONS</option>
+                      <option value="EVENTS">EVENTS & HACKATHON LOGISTICS</option>
+                      <option value="OTHER">OTHER TECHNICAL DOMAIN</option>
+                    </select>
+                    <span class="form-error-msg" id="err-interest">Please choose your primary interest domain.</span>
+                  </div>
+
+                  <!-- Why do you want to join? -->
+                  <div class="form-group full-width" id="group-statement">
+                    <label for="reg-statement" class="editorial-label">
+                      Why do you want to join Quantum Coders?
+                    </label>
+                    <textarea id="reg-statement" name="statement" class="editorial-textarea" placeholder="Tell us about what you want to build or learn with us..."></textarea>
+                  </div>
+                </div>
+
+                <div class="form-submit-row">
+                  <div class="form-legal-note">
+                    By submitting, you agree to uphold the club honor code and participate in collective technical initiatives.
+                  </div>
+                  <button type="submit" class="btn-brutalist" id="reg-submit-btn" data-cursor="JOIN">
+                    Join The Club <span class="btn-arrow">→</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Successful Registration State: Digital Membership Card Display -->
+            <div class="membership-result-container" id="membership-result-container">
+              <div class="card-success-banner">
+                <span style="font-size: 1.5rem; line-height: 1;">✓</span>
+                <div>
+                  <strong>APPLICATION ACCEPTED</strong> — Welcome to the collective. Your credentials have been minted.
+                </div>
+              </div>
+
+              <!-- Interactive 3D Digital Membership Card -->
+              <div class="digital-card-perspective">
+                <div class="digital-card-object" id="interactive-digital-card">
+                  <!-- Torn White Paper Header -->
+                  <div class="digital-card-paper-header halftone-paper">
+                    <div class="dcard-top-row">
+                      <img src="assets/logo.png" alt="Quantum Coders Emblem" class="dcard-logo">
+                      <span class="dcard-pass-type">MEMBER PASS</span>
+                    </div>
+                  </div>
+
+                  <!-- Black Card Body -->
+                  <div class="dcard-body halftone-dense">
+                    <div class="dcard-member-title">VERIFIED ACTIVE FELLOW</div>
+                    <div class="dcard-member-name" id="card-display-name">YOUR NAME</div>
+
+                    <div class="dcard-info-grid">
+                      <div class="dcard-info-item">
+                        <div class="info-lbl">MEMBER ID</div>
+                        <div class="info-val" id="card-display-id">QC-2026-0042</div>
+                      </div>
+                      <div class="dcard-info-item">
+                        <div class="info-lbl">DOMAIN</div>
+                        <div class="info-val" id="card-display-domain">ENGINEERING</div>
+                      </div>
+                      <div class="dcard-info-item">
+                        <div class="info-lbl">COLLEGE</div>
+                        <div class="info-val" id="card-display-college">PYDAH GROUP</div>
+                      </div>
+                      <div class="dcard-info-item">
+                        <div class="info-lbl">VALID THROUGH</div>
+                        <div class="info-val">2026 — 2027</div>
+                      </div>
+                    </div>
+
+                    <div class="dcard-bottom-row">
+                      <!-- Stylized Barcode Graphic -->
+                      <div class="dcard-barcode-mock" aria-hidden="true">
+                        <span style="width: 3px;"></span>
+                        <span style="width: 1px;"></span>
+                        <span style="width: 5px;"></span>
+                        <span style="width: 2px;"></span>
+                        <span style="width: 6px;"></span>
+                        <span style="width: 2px;"></span>
+                        <span style="width: 4px;"></span>
+                        <span style="width: 1px;"></span>
+                        <span style="width: 5px;"></span>
+                        <span style="width: 3px;"></span>
+                        <span style="width: 2px;"></span>
+                        <span style="width: 6px;"></span>
+                        <span style="width: 4px;"></span>
+                        <span style="width: 2px;"></span>
+                        <span style="width: 7px;"></span>
+                        <span style="width: 3px;"></span>
+                      </div>
+
+                      <!-- Handwritten Signature -->
+                      <div class="dcard-signature-wrap">
+                        <div class="dcard-signature">Praveen</div>
+                        <div class="dcard-signature-label">PRESIDENT AUTOGRAPH</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action buttons for Card -->
+              <div class="dcard-actions">
+                <button type="button" class="btn-brutalist" id="btn-print-card" data-cursor="SAVE">
+                  Save / Print Card ⎙
+                </button>
+                <button type="button" class="btn-brutalist btn-brutalist-secondary" id="btn-reset-form" data-cursor="RESET">
+                  Register Another Member
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         06. CONTACT SECTION (LET'S CONNECT & DIRECT COMMUNICATION)
+         ======================================================================= -->
+    <section class="section contact-section" id="contact">
+      <div class="vertical-text" style="top: 20%; right: 1.5rem;">C O N N E C T // Q C</div>
+
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag">06 // Inquiries & Collaborations</div>
+          <h2 class="section-title-huge">
+            LET'S <span class="outline-text">CONNECT</span>
+          </h2>
+          <p class="section-subtitle">
+            Have a project idea? Want to co-host a hackathon? Interested in sponsoring our initiatives or speaking at a workshop? Reach out directly.
+          </p>
+        </div>
+
+        <div class="contact-layout">
+          <!-- Left: Direct Coordinates & Socials -->
+          <div class="contact-info-col">
+            <h3 style="font-family: var(--font-heading); font-size: 2.2rem; letter-spacing: 0.05em; line-height: 1.2;">
+              WE ARE ALWAYS READY FOR THE NEXT BIG SPRINT.
+            </h3>
+            <p style="color: var(--color-gray); font-size: 1.05rem; margin-top: 1rem; line-height: 1.7;">
+              Drop by our campus lab, shoot an email to our core team, or join our community discussions on social channels.
+            </p>
+
+            <div class="contact-direct-blocks">
+              <div class="contact-block">
+                <div class="contact-block-label">OFFICIAL EMAIL</div>
+                <a href="mailto:contact@quantumcoders.club" class="contact-block-val" data-cursor="EMAIL">
+                  contact@quantumcoders.club
+                </a>
+              </div>
+
+              <div class="contact-block">
+                <div class="contact-block-label">LOCATION & CAMPUS</div>
+                <div class="contact-block-val">
+                  Pydah College of Engineering<br>
+                  Andhra Pradesh, India
+                </div>
+              </div>
+            </div>
+
+            <div class="contact-social-pills">
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="social-pill" data-cursor="SOCIAL">
+                Instagram ↗
+              </a>
+              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" class="social-pill" data-cursor="SOCIAL">
+                LinkedIn ↗
+              </a>
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="social-pill" data-cursor="SOCIAL">
+                GitHub ↗
+              </a>
+              <a href="https://discord.com" target="_blank" rel="noopener noreferrer" class="social-pill" data-cursor="SOCIAL">
+                Discord ↗
+              </a>
+            </div>
+          </div>
+
+          <!-- Right: Message Form -->
+          <div class="contact-form-col">
+            <div class="contact-form-box halftone-dense">
+              <form id="contact-quick-form" novalidate>
+                <div class="form-group" style="margin-bottom: 2rem;">
+                  <label for="contact-name" class="editorial-label">Your Name <span class="req-star">*</span></label>
+                  <input type="text" id="contact-name" class="editorial-input" placeholder="e.g. Sarah Connor" required>
+                  <span class="form-error-msg" id="contact-err-name">Please provide your name.</span>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 2rem;">
+                  <label for="contact-email" class="editorial-label">Email Address <span class="req-star">*</span></label>
+                  <input type="email" id="contact-email" class="editorial-input" placeholder="e.g. sarah@cyberdyne.io" required>
+                  <span class="form-error-msg" id="contact-err-email">Please provide a valid email.</span>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 2.5rem;">
+                  <label for="contact-message" class="editorial-label">Message / Proposal <span class="req-star">*</span></label>
+                  <textarea id="contact-message" class="editorial-textarea" placeholder="Describe your proposal or question..." required></textarea>
+                  <span class="form-error-msg" id="contact-err-message">Please enter your message.</span>
+                </div>
+
+                <button type="submit" class="btn-brutalist" style="width: 100%;" data-cursor="SEND">
+                  Send Message <span class="btn-arrow">→</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- =========================================================================
+       07. BRUTALIST FOOTER
+       ========================================================================= -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top-row">
+        <!-- Brand & Slogan -->
+        <div class="footer-brand-wrap">
+          <img src="assets/logo.png" alt="Quantum Coders Logo" class="footer-logo">
+          <div class="footer-slogan">CREATE. CONNECT. LEAD.</div>
+          <p class="footer-sub">
+            The digital manifestation of the Quantum Coders identity card. Pydah Group of Educational Institutions, Andhra Pradesh.
+          </p>
+        </div>
+
+        <!-- Navigation Links -->
+        <div class="footer-links-group">
+          <div>
+            <div class="footer-col-title">NAVIGATION</div>
+            <ul class="footer-nav-list">
+              <li><a href="#home" class="footer-nav-link">01 // Home</a></li>
+              <li><a href="#about" class="footer-nav-link">02 // About Us</a></li>
+              <li><a href="#team" class="footer-nav-link">03 // Core Team</a></li>
+              <li><a href="#gallery" class="footer-nav-link">04 // Gallery</a></li>
+              <li><a href="#register" class="footer-nav-link">05 // Register</a></li>
+              <li><a href="#contact" class="footer-nav-link">06 // Contact</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <div class="footer-col-title">DISCIPLINES</div>
+            <ul class="footer-nav-list">
+              <li><a href="#about" class="footer-nav-link">Artificial Intelligence</a></li>
+              <li><a href="#about" class="footer-nav-link">Web & Cloud Systems</a></li>
+              <li><a href="#about" class="footer-nav-link">Brutalist UI/UX Design</a></li>
+              <li><a href="#about" class="footer-nav-link">Open Source Software</a></li>
+              <li><a href="#about" class="footer-nav-link">Hackathon Guilds</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom-row">
+        <div>
+          © 2026 QUANTUM CODERS. ALL RIGHTS RESERVED.
+        </div>
+        <div>
+          DESIGN LANGUAGE: CLUB ID CARD EDITORIAL BRUTALISM
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast Notification Bar -->
+  <div class="toast-notice" id="toast-notice" role="status" aria-live="polite"></div>
+
+  <!-- Vanilla JavaScript -->
+  <script src="script.js"></script>
+</body>
+</html>

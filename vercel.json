@@ -1,0 +1,23 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/team", "destination": "/team/index.html" },
+    { "source": "/team/", "destination": "/team/index.html" },
+    { "source": "/team/QC-001", "destination": "/team/QC-001/index.html" },
+    { "source": "/team/QC-002", "destination": "/team/QC-002/index.html" },
+    { "source": "/team/QC-003", "destination": "/team/QC-003/index.html" },
+    { "source": "/team/QC-004", "destination": "/team/QC-004/index.html" },
+    { "source": "/team/QC-005", "destination": "/team/QC-005/index.html" },
+    { "source": "/team/QC-006", "destination": "/team/QC-006/index.html" },
+    { "source": "/team/QC-007", "destination": "/team/QC-007/index.html" },
+    { "source": "/team/qc-001", "destination": "/team/QC-001/index.html" },
+    { "source": "/team/qc-002", "destination": "/team/QC-002/index.html" },
+    { "source": "/team/qc-003", "destination": "/team/QC-003/index.html" },
+    { "source": "/team/qc-004", "destination": "/team/QC-004/index.html" },
+    { "source": "/team/qc-005", "destination": "/team/QC-005/index.html" },
+    { "source": "/team/qc-006", "destination": "/team/QC-006/index.html" },
+    { "source": "/team/qc-007", "destination": "/team/QC-007/index.html" },
+    { "source": "/team/:id", "destination": "/team/:id/index.html" }
+  ]
+}
