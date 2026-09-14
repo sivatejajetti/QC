@@ -98,6 +98,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (menuTrigger && mobileOverlay) {
     menuTrigger.addEventListener('click', () => toggleMobileMenu());
 
+    const mobileCloseBtn = document.getElementById('mobile-nav-close');
+    if (mobileCloseBtn) {
+      mobileCloseBtn.addEventListener('click', () => toggleMobileMenu(false));
+    }
+
     mobileLinks.forEach((link) => {
       link.addEventListener('click', () => toggleMobileMenu(false));
     });
@@ -232,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
       },
-      { threshold: 0.35 }
+      { threshold: 0.15 }
     );
 
     statsObserver.observe(statsStrip);

@@ -62,17 +62,28 @@
         </a>
       </nav>
 
-      <!-- Right: Hamburger Menu Trigger for Mobile / Responsive -->
-      <button class="menu-trigger" id="menu-trigger" aria-label="Toggle Navigation Menu" aria-expanded="false">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
+      <!-- Right: Mobile Actions (Pydah College Logo + Hamburger Menu Trigger) -->
+      <div class="nav-mobile-actions">
+        <a href="#about" class="nav-mobile-pydah-pill" title="Pydah College of Engineering" data-cursor="PYDAH">
+          <img src="images/Pydah%20Logo.png" alt="Pydah College of Engineering" class="nav-mobile-pydah-logo">
+        </a>
+        <button class="menu-trigger" id="menu-trigger" aria-label="Toggle Navigation Menu" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
     </div>
   </header>
 
   <!-- Fullscreen Mobile Navigation Overlay -->
   <div class="mobile-nav-overlay" id="mobile-nav-overlay" aria-hidden="true">
+    <div class="mobile-nav-top-row">
+      <div class="mobile-overlay-pydah-pill" title="Pydah College of Engineering">
+        <img src="images/Pydah%20Logo.png" alt="Pydah College of Engineering" class="mobile-overlay-pydah-logo">
+      </div>
+      <button class="mobile-nav-close-btn" id="mobile-nav-close" aria-label="Close Navigation Menu">✕</button>
+    </div>
     <ul class="mobile-nav-list">
       <li>
         <a href="#home" class="mobile-nav-link" data-nav-close>
@@ -130,18 +141,9 @@
         <!-- Left: Poster Typography & Call To Actions -->
         <div class="hero-content">
           <div class="hero-affiliation-row">
-            <div class="hero-college-badge-lockup" data-cursor="PYDAH">
-              <div class="college-badge-icon">
-                <img src="images/Pydah%20Logo.png" alt="Pydah College of Engineering" class="hero-pydah-img">
-              </div>
-              <div class="college-badge-meta">
-                <span class="college-badge-name">PYDAH COLLEGE OF ENGINEERING</span>
-                <span class="college-badge-tag">// OFFICIAL STUDENT TECHNICAL GUILD</span>
-              </div>
-            </div>
             <div class="hero-badge">
               <span class="accent-dot"></span>
-              <span>ESTD. 2026 • CHAPTER 01</span>
+              <span>ESTD. 2025  CHAPTER 01</span>
             </div>
           </div>
 
@@ -183,7 +185,7 @@
             </div>
             <div class="meta-strip-item">
               <span class="meta-strip-label">LEADERSHIP CADRE</span>
-              <span class="meta-strip-val"><a href="#team" style="color: inherit; text-decoration: underline; text-underline-offset: 3px;">6 CORE ARCHITECTS →</a></span>
+              <span class="meta-strip-val"><a href="#team" style="color: inherit; text-decoration: underline; text-underline-offset: 3px;">7 CORE ARCHITECTS →</a></span>
             </div>
             <div class="meta-strip-item">
               <span class="meta-strip-label">COMMUNITY</span>
@@ -831,7 +833,7 @@
                       Primary Area of Interest <span class="req-star">*</span>
                     </label>
                     <select id="reg-interest" name="interest" class="editorial-select" required>
-                      <option value="" disabled selected>Choose your engineering/creative domain</option>
+                      <option value="" disabled selected>Select Domain / Track</option>
                       <option value="WEB DEVELOPMENT">WEB DEVELOPMENT (Frontend / Backend / Fullstack)</option>
                       <option value="AI / ML">AI / MACHINE LEARNING / DATA SCIENCE</option>
                       <option value="DESIGN">DESIGN (UI/UX / Brutalist Editorial / 3D)</option>

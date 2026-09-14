@@ -432,7 +432,7 @@ button {
   left: 0;
   width: 100%;
   height: var(--nav-height);
-  z-index: 1000;
+  z-index: 1005;
   background: rgba(5, 5, 5, 0.7);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -459,6 +459,7 @@ button {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-shrink: 0;
 }
 
 .brand-logo-img {
@@ -475,6 +476,7 @@ button {
 .brand-text-block {
   display: flex;
   flex-direction: column;
+  white-space: nowrap;
 }
 
 .brand-title {
@@ -510,6 +512,7 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  flex-shrink: 0;
 }
 
 .brand-link:hover .brand-college-pill {
@@ -528,7 +531,8 @@ button {
 .desktop-nav {
   display: flex;
   align-items: center;
-  gap: 2.2rem;
+  gap: 1.75rem;
+  flex-shrink: 0;
 }
 
 .nav-link {
@@ -609,6 +613,54 @@ button {
   transform: translateY(-8px) rotate(-45deg);
 }
 
+/* Mobile Actions Bar (Pydah Logo + Hamburger Trigger) */
+.nav-mobile-actions {
+  display: none;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+  z-index: 1002;
+}
+
+.nav-mobile-pydah-pill {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  text-decoration: none;
+  flex-shrink: 0;
+  cursor: pointer;
+  height: 38px;
+}
+
+.nav-mobile-pydah-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+}
+
+.nav-mobile-pydah-logo {
+  height: 22px;
+  width: auto;
+  max-width: 68px;
+  object-fit: contain;
+  display: block;
+}
+
+@media (max-width: 992px) {
+  .nav-mobile-actions {
+    display: flex !important;
+  }
+
+  .nav-mobile-pydah-pill {
+    display: inline-flex !important;
+  }
+}
+
 /* Fullscreen Mobile Menu Overlay */
 .mobile-nav-overlay {
   position: fixed;
@@ -630,6 +682,54 @@ button {
 .mobile-nav-overlay.active {
   opacity: 1;
   visibility: visible;
+}
+
+.mobile-nav-top-row {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1010;
+}
+
+.mobile-overlay-pydah-pill {
+  background: #FFFFFF;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.mobile-overlay-pydah-logo {
+  height: 24px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.mobile-nav-close-btn {
+  position: static;
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-medium);
+  color: var(--color-white);
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.mobile-nav-close-btn:hover {
+  background: var(--color-white);
+  color: var(--color-black);
+  border-color: var(--color-white);
 }
 
 .mobile-nav-list {
@@ -2449,9 +2549,18 @@ button {
   display: flex;
   gap: 0.65rem;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   padding: 0.85rem 1.5rem;
   background: var(--color-dark-black);
   border-top: 1px solid var(--border-light);
+}
+
+.lightbox-filmstrip-bar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .filmstrip-item {
@@ -3242,12 +3351,124 @@ button {
 }
 
 @media (max-width: 992px) {
+  /* Hide side vertical watermarks to prevent overlapping text on narrow viewports */
+  .vertical-text {
+    display: none !important;
+  }
+
+  /* Compact header height on mobile */
+  .site-header {
+    height: 72px;
+  }
+
+  .nav-container {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    padding: 0 1.25rem !important;
+  }
+
+  /* Brand Lockup: Prevent overflow and allow flexible sizing */
+  .brand-link {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.6rem !important;
+    min-width: 0 !important;
+    flex-shrink: 1 !important;
+    overflow: hidden !important;
+  }
+
+  .brand-logo-img {
+    height: 40px !important;
+    width: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  .brand-text-block {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .brand-title {
+    font-size: 1.25rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.1 !important;
+  }
+
+  /* CRITICAL: Hide long college subtitle on mobile to prevent pushing mobile actions off-screen */
+  .brand-subtitle {
+    display: none !important;
+  }
+
+  /* Move college pill to right actions beside hamburger on mobile */
+  .brand-link .brand-divider,
+  .brand-link .brand-college-pill {
+    display: none !important;
+  }
+
   .desktop-nav {
-    display: none;
+    display: none !important;
+  }
+
+  /* Right-side mobile actions (Pydah Logo + Hamburger Menu) MUST be visible, uncrushed, and right-aligned */
+  .nav-mobile-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.6rem !important;
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+    z-index: 1002 !important;
+  }
+
+  .nav-mobile-pydah-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #FFFFFF !important;
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+    border: 1px solid rgba(255, 255, 255, 0.6) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+    flex-shrink: 0 !important;
+    height: 38px !important;
+    cursor: pointer;
+  }
+
+  .nav-mobile-pydah-logo {
+    height: 22px !important;
+    width: auto !important;
+    max-width: 68px !important;
+    object-fit: contain !important;
+    display: block !important;
   }
 
   .menu-trigger {
-    display: flex;
+    display: flex !important;
+    flex-shrink: 0 !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    width: 40px !important;
+    height: 40px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid var(--border-medium) !important;
+    border-radius: 4px !important;
+    padding: 8px !important;
+    z-index: 1002 !important;
+    cursor: pointer;
+  }
+
+  .menu-trigger span {
+    display: block !important;
+    width: 100% !important;
+    height: 2px !important;
+    background: var(--color-white) !important;
   }
 
   .hero-grid {
@@ -3306,6 +3527,17 @@ button {
     padding: 0 1.25rem;
   }
 
+  .mobile-nav-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .editorial-select {
+    font-size: 0.92rem;
+    padding: 0.75rem 0.2rem;
+  }
+
   .team-grid {
     grid-template-columns: 1fr;
   }
@@ -3345,17 +3577,69 @@ button {
     gap: 2rem;
   }
 
+  /* Lightbox mobile adjustments */
+  .lightbox-modal {
+    padding: 1rem 0.5rem;
+  }
+
+  .lightbox-wrapper {
+    max-height: 94vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
   .lightbox-prev {
-    left: 10px;
+    left: 8px;
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
   }
 
   .lightbox-next {
-    right: 10px;
+    right: 8px;
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
   }
 
   .lightbox-close-btn {
-    top: 10px;
-    right: 10px;
+    top: 10px !important;
+    right: 10px !important;
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 1.1rem !important;
+  }
+
+  .lightbox-top-bar {
+    padding: 1rem 1rem !important;
+    padding-right: 3.5rem !important;
+  }
+
+  .lightbox-title {
+    font-size: 1.35rem !important;
+  }
+
+  .lightbox-media-stage {
+    min-height: 240px !important;
+  }
+
+  .lightbox-caption-bar {
+    padding: 0.75rem 1rem !important;
+  }
+
+  .lightbox-filmstrip-bar {
+    padding: 0.65rem 1rem !important;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-blue) transparent;
+  }
+
+  .lightbox-filmstrip-bar::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .lightbox-filmstrip-bar::-webkit-scrollbar-thumb {
+    background: var(--color-blue);
+    border-radius: 2px;
   }
 
   .brand-college-pill {
@@ -3378,17 +3662,69 @@ button {
 }
 
 @media (max-width: 480px) {
+  .site-header {
+    height: 66px !important;
+  }
+
+  .nav-container {
+    padding: 0 0.85rem !important;
+    gap: 0.35rem !important;
+  }
+
+  .brand-link {
+    gap: 0.45rem !important;
+  }
+
+  .brand-logo-img {
+    height: 34px !important;
+  }
+
+  .brand-title {
+    font-size: 1.08rem !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  .nav-mobile-actions {
+    gap: 0.45rem !important;
+  }
+
+  .nav-mobile-pydah-pill {
+    padding: 3px 6px !important;
+    height: 34px !important;
+  }
+
+  .nav-mobile-pydah-logo {
+    height: 18px !important;
+    max-width: 58px !important;
+  }
+
+  .menu-trigger {
+    width: 36px !important;
+    height: 36px !important;
+    padding: 7px !important;
+  }
+
+  .container {
+    padding: 0 1rem;
+  }
+
+  .editorial-form-box,
+  .contact-form-box {
+    padding: 2rem 1.15rem;
+  }
+
   .brand-divider {
-    display: none;
+    display: none !important;
   }
 
   .brand-college-pill {
-    display: none;
+    display: none !important;
   }
 
   .hero-actions {
     flex-direction: column;
     align-items: stretch;
+    gap: 1rem;
   }
 
   .btn-brutalist {
@@ -3402,6 +3738,37 @@ button {
   .stat-box {
     border-left: none;
     border-top: 1px solid var(--border-light);
+  }
+
+  .stat-number {
+    font-size: 3.2rem;
+  }
+
+  /* Digital Card Scaling on small screens */
+  .digital-card-object {
+    max-width: 100%;
+  }
+
+  .digital-card-paper-header {
+    padding: 1.25rem 1.25rem 1.75rem 1.25rem;
+  }
+
+  .dcard-body {
+    padding: 1.25rem;
+  }
+
+  .dcard-member-name {
+    font-size: 2rem;
+  }
+
+  .dcard-info-grid {
+    gap: 0.75rem;
+  }
+
+  .footer-bottom-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
   }
 
   .stat-box:first-child {
