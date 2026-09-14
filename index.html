@@ -636,7 +636,7 @@
 
       <div class="container">
         <div class="section-header">
-          <div class="section-tag">04 // Visual Archive</div>
+          <div class="section-tag">04 // Visual Archive • Pydah College of Engineering</div>
           <h2 class="section-title-huge">
             OUR <span class="outline-text">MOMENTS</span>
           </h2>
@@ -654,106 +654,47 @@
           <button class="filter-pill" data-filter="activities" role="tab" aria-selected="false" data-cursor="FILTER">Activities</button>
         </div>
 
-        <!-- Asymmetric CSS Grid Magazine Collage -->
+        <!-- Asymmetric CSS Grid Magazine Collage (Populated dynamically via script.js from localStorage or default seed) -->
         <div class="gallery-collage-grid" id="gallery-grid">
-          <!-- Item 1: 2x2 Large Featured Event -->
-          <div class="gallery-item span-2x2" data-category="events" data-index="0" data-cursor="VIEW">
-            <!-- REPLACE WITH CLUB EVENT PHOTO -->
-            <img src="assets/gallery/moment_1.svg" alt="Quantum Hack 2026: 36h Sprint" class="gallery-img" loading="lazy">
-            <div class="gallery-overlay">
-              <div class="gallery-overlay-cat">EVENTS // FLAGSHIP</div>
-              <h3 class="gallery-overlay-title">Quantum Hack 2026: 36h Sprint</h3>
-            </div>
-          </div>
-
-          <!-- Item 2: 2x1 Workshop -->
-          <div class="gallery-item span-2x1" data-category="workshops" data-index="1" data-cursor="VIEW">
-            <!-- REPLACE WITH CLUB WORKSHOP PHOTO -->
-            <img src="assets/gallery/moment_2.svg" alt="Generative AI & LLM Systems Lab" class="gallery-img" loading="lazy">
-            <div class="gallery-overlay">
-              <div class="gallery-overlay-cat">WORKSHOPS // APPLIED AI</div>
-              <h3 class="gallery-overlay-title">Generative AI & LLM Systems Lab</h3>
-            </div>
-          </div>
-
-          <!-- Item 3: 1x2 Vertical Team Summit -->
-          <div class="gallery-item span-1x2" data-category="team" data-index="2" data-cursor="VIEW">
-            <!-- REPLACE WITH CLUB TEAM PHOTO -->
-            <img src="assets/gallery/moment_3.svg" alt="Core Council Strategy Summit" class="gallery-img" loading="lazy">
-            <div class="gallery-overlay">
-              <div class="gallery-overlay-cat">TEAM // COUNCIL</div>
-              <h3 class="gallery-overlay-title">Core Council Strategy Summit</h3>
-            </div>
-          </div>
-
-          <!-- Item 4: 1x1 Open Source Activity -->
-          <div class="gallery-item span-1x1" data-category="activities" data-index="3" data-cursor="VIEW">
-            <!-- REPLACE WITH CLUB ACTIVITY PHOTO -->
-            <img src="assets/gallery/moment_5.svg" alt="Open Source Community Sprint" class="gallery-img" loading="lazy">
-            <div class="gallery-overlay">
-              <div class="gallery-overlay-cat">ACTIVITIES // FOSS</div>
-              <h3 class="gallery-overlay-title">Open Source Community Sprint</h3>
-            </div>
-          </div>
-
-          <!-- Item 5: 2x1 Architecture Jam -->
-          <div class="gallery-item span-2x1" data-category="workshops" data-index="4" data-cursor="VIEW">
-            <!-- REPLACE WITH CLUB WORKSHOP PHOTO -->
-            <img src="assets/gallery/moment_4.svg" alt="Advanced Web Architecture Jam" class="gallery-img" loading="lazy">
-            <div class="gallery-overlay">
-              <div class="gallery-overlay-cat">WORKSHOPS // WEB TECH</div>
-              <h3 class="gallery-overlay-title">Advanced Web Architecture Jam</h3>
-            </div>
-          </div>
-
-          <!-- Item 6: 1x1 Design Slam -->
-          <div class="gallery-item span-1x1" data-category="activities" data-index="5" data-cursor="VIEW">
-            <!-- REPLACE WITH CLUB ACTIVITY PHOTO -->
-            <img src="assets/gallery/moment_7.svg" alt="Brutalist UI/UX Design Slam" class="gallery-img" loading="lazy">
-            <div class="gallery-overlay">
-              <div class="gallery-overlay-cat">ACTIVITIES // CREATIVE</div>
-              <h3 class="gallery-overlay-title">Brutalist UI/UX Design Slam</h3>
-            </div>
-          </div>
-
-          <!-- Item 7: 2x1 Annual Tech Nexus -->
-          <div class="gallery-item span-2x1" data-category="events" data-index="6" data-cursor="VIEW">
-            <!-- REPLACE WITH CLUB EVENT PHOTO -->
-            <img src="assets/gallery/moment_6.svg" alt="Annual Tech Nexus Keynote" class="gallery-img" loading="lazy">
-            <div class="gallery-overlay">
-              <div class="gallery-overlay-cat">EVENTS // ANNUAL SUMMIT</div>
-              <h3 class="gallery-overlay-title">Annual Tech Nexus Keynote</h3>
-            </div>
-          </div>
-
-          <!-- Item 8: 1x1 Prototype Expo -->
-          <div class="gallery-item span-1x1" data-category="events" data-index="7" data-cursor="VIEW">
-            <!-- REPLACE WITH CLUB EVENT PHOTO -->
-            <img src="assets/gallery/moment_8.svg" alt="Autumn Prototype Expo" class="gallery-img" loading="lazy">
-            <div class="gallery-overlay">
-              <div class="gallery-overlay-cat">EVENTS // DEMO DAY</div>
-              <h3 class="gallery-overlay-title">Autumn Prototype Expo</h3>
-            </div>
-          </div>
+          <!-- Fallback or initial static moments injected dynamically -->
         </div>
       </div>
     </section>
 
-    <!-- Fullscreen Lightbox Modal -->
-    <div class="lightbox-modal" id="lightbox-modal" aria-hidden="true" role="dialog" aria-label="Image Preview">
+    <!-- Fullscreen Multi-Media Lightbox Modal (Multiple Photos & Videos per Event) -->
+    <div class="lightbox-modal" id="lightbox-modal" aria-hidden="true" role="dialog" aria-label="Event Media Showcase">
       <div class="lightbox-wrapper">
         <button class="lightbox-close-btn" id="lightbox-close-btn" aria-label="Close Lightbox">&times;</button>
         
-        <button class="lightbox-nav-btn lightbox-prev" id="lightbox-prev-btn" aria-label="Previous image">‹</button>
-        <button class="lightbox-nav-btn lightbox-next" id="lightbox-next-btn" aria-label="Next image">›</button>
+        <button class="lightbox-nav-btn lightbox-prev" id="lightbox-prev-btn" aria-label="Previous media item">‹</button>
+        <button class="lightbox-nav-btn lightbox-next" id="lightbox-next-btn" aria-label="Next media item">›</button>
 
-        <div class="lightbox-img-container">
-          <img src="" alt="" class="lightbox-img" id="lightbox-img">
+        <!-- Top Header Bar: Title, Category, Media Counter -->
+        <div class="lightbox-top-bar">
+          <div class="lightbox-meta-block">
+            <span class="lightbox-cat" id="lightbox-cat"></span>
+            <h4 class="lightbox-title" id="lightbox-title"></h4>
+          </div>
+          <span class="lightbox-counter-badge" id="lightbox-counter-badge">1 / 1</span>
         </div>
 
+        <!-- Multi-Media Showcase Stage (Photo or Video Player) -->
+        <div class="lightbox-media-stage" id="lightbox-media-stage">
+          <img src="" alt="" class="lightbox-img" id="lightbox-img">
+          <div class="lightbox-video-frame" id="lightbox-video-frame" style="display: none;">
+            <iframe id="lightbox-iframe" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            <video id="lightbox-video" controls style="display: none;"></video>
+          </div>
+        </div>
+
+        <!-- Active Media Caption -->
         <div class="lightbox-caption-bar">
-          <h4 class="lightbox-title" id="lightbox-title"></h4>
-          <span class="lightbox-cat" id="lightbox-cat"></span>
+          <p class="lightbox-caption-text" id="lightbox-caption-text"></p>
+        </div>
+
+        <!-- Multi-Media Filmstrip Thumbnail Carousel -->
+        <div class="lightbox-filmstrip-bar" id="lightbox-filmstrip-bar">
+          <!-- Populated dynamically via script.js -->
         </div>
       </div>
     </div>
@@ -1158,7 +1099,7 @@
       </div>
 
       <div class="footer-bottom-row">
-        <div>
+        <div id="footer-secret-trigger" style="user-select: none; cursor: default;">
           © 2026 QUANTUM CODERS. ALL RIGHTS RESERVED.
         </div>
         <div>

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GALLERY CONTROLLER // Quantum Coders Admin</title>
+  <meta name="description" content="Official Event Gallery Management Dashboard for Quantum Coders, Pydah College of Engineering. Manage multi-image and video archives.">
+  <link rel="icon" type="image/png" href="../assets/logo.png">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="halftone-bg">
+  <div class="film-grain" aria-hidden="true"></div>
+
+  <!-- =========================================================================
+       SECURITY CLEARANCE AUTHENTICATION GATE
+       ========================================================================= -->
+  <div class="security-gate-backdrop" id="security-gate">
+    <div class="security-gate-box">
+      <div class="security-status-badge">RESTRICTED ACCESS // LEVEL 4 CLEARANCE</div>
+      <h2 class="security-title">CADRE COMMAND GATE</h2>
+      <p class="security-desc">
+        This administration console is restricted to authorized Quantum Coders leads &amp; faculty advisors. Enter system passcode to decrypt the controller interface.
+      </p>
+
+      <form id="security-form" class="security-form-block">
+        <div class="form-group-full">
+          <label for="admin-passcode" class="admin-form-label">SECURITY KEY / PASSCODE</label>
+          <input 
+            type="password" 
+            id="admin-passcode" 
+            class="admin-input" 
+            placeholder="Enter authorization key..." 
+            autocomplete="current-password"
+            required
+            autofocus
+          >
+          <div class="security-error-msg" id="security-error">INVALID CLEARANCE KEY. ACCESS DENIED.</div>
+        </div>
+
+        <button type="submit" class="btn-brutalist btn-primary" style="width: 100%; justify-content: center; margin-top: 0.5rem;">
+          AUTHENTICATE &amp; UNLOCK CONSOLE →
+        </button>
+      </form>
+
+      <div class="security-hint-note">
+        Default Club Access Key: <code>quantum2026</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       00. ADMIN HEADER
+       ========================================================================= -->
+  <header class="admin-header">
+    <div class="container admin-nav">
+      <a href="../index.html" class="admin-brand" title="Back to Quantum Coders Public Site">
+        <img src="../assets/logo.png" alt="Quantum Coders Logo" class="brand-logo-img">
+        <div>
+          <div class="brand-title">QUANTUM CODERS</div>
+          <div class="brand-subtitle">// CADRE OPERATIONS • 2026</div>
+        </div>
+        <div class="brand-divider" aria-hidden="true"></div>
+        <div class="brand-college-pill" title="Pydah College of Engineering">
+          <img src="../images/Pydah%20Logo.png" alt="Pydah College of Engineering" class="brand-college-logo">
+        </div>
+      </a>
+
+      <div class="admin-header-actions">
+        <span class="admin-badge-tag">ADMIN // GALLERY CONTROLLER</span>
+        <button type="button" class="btn-brutalist btn-outline btn-sm" id="btn-lock-console" title="Lock console and require passcode again">
+          🔒 Lock Console
+        </button>
+        <a href="../index.html#gallery" class="btn-brutalist btn-secondary btn-sm" target="_blank" rel="noopener">
+          View Live Site ↗
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- =======================================================================
+         01. DASHBOARD HERO & METRICS
+         ======================================================================= -->
+    <section class="dashboard-hero">
+      <div class="container">
+        <div class="hero-head-row">
+          <div>
+            <h1 class="dashboard-title">EVENT GALLERY <span style="color: var(--color-blue);">CONSOLE</span></h1>
+            <p class="dashboard-desc">
+              Manage the public editorial moments grid for <strong>Quantum Coders (Pydah College of Engineering)</strong>. Attach multiple photographs and streaming videos (Google Drive, YouTube, Vimeo) to each individual event.
+            </p>
+          </div>
+
+          <div>
+            <button class="btn-brutalist btn-primary" id="btn-new-event">
+              + Create New Event
+            </button>
+          </div>
+        </div>
+
+        <!-- Live Metrics Counter Strip -->
+        <div class="stats-counter-row">
+          <div class="counter-box">
+            <div class="counter-num" id="count-total-events">0</div>
+            <div class="counter-label">Total Events</div>
+          </div>
+          <div class="counter-box" style="border-left-color: var(--color-orange);">
+            <div class="counter-num" id="count-total-photos">0</div>
+            <div class="counter-label">Archived Photos</div>
+          </div>
+          <div class="counter-box" style="border-left-color: var(--color-purple);">
+            <div class="counter-num" id="count-total-videos">0</div>
+            <div class="counter-label">Embedded Videos</div>
+          </div>
+          <div class="counter-box" style="border-left-color: var(--color-green);">
+            <div class="counter-num" id="count-workshops">0</div>
+            <div class="counter-label">Workshops &amp; Labs</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         02. CONTROLLER TOOLBAR
+         ======================================================================= -->
+    <section class="container">
+      <div class="toolbar-section">
+        <div class="search-filter-wrap">
+          <div class="search-input-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" class="admin-search-input" placeholder="Search events by title, badge, venue, description...">
+          </div>
+
+          <select id="category-filter" class="filter-category-select" aria-label="Filter by category">
+            <option value="all">ALL CATEGORIES</option>
+            <option value="events">EVENTS (Flagship &amp; Hackathons)</option>
+            <option value="workshops">WORKSHOPS &amp; LABS</option>
+            <option value="team">TEAM &amp; COUNCIL</option>
+            <option value="activities">ACTIVITIES &amp; FOSS</option>
+          </select>
+        </div>
+
+        <div class="toolbar-action-btns">
+          <button class="btn-brutalist btn-secondary btn-sm" id="btn-export-json" title="Export current events to JSON">
+            Export JSON
+          </button>
+          <button class="btn-brutalist btn-secondary btn-sm" id="btn-import-json" title="Import events from JSON">
+            Import JSON
+          </button>
+          <button class="btn-brutalist btn-secondary btn-sm" id="btn-reset-defaults" title="Reset to initial curated demo events">
+            ↺ Defaults
+          </button>
+        </div>
+      </div>
+
+      <!-- Events Management Grid -->
+      <div class="events-management-grid" id="events-grid">
+        <!-- Injected via admin.js -->
+      </div>
+    </section>
+  </main>
+
+  <!-- =========================================================================
+       03. CREATE / EDIT EVENT MODAL
+       ========================================================================= -->
+  <div class="admin-modal-backdrop" id="event-modal" aria-hidden="true" role="dialog" aria-labelledby="modal-title">
+    <div class="admin-modal-box">
+      <div class="modal-header-bar">
+        <div>
+          <h2 class="modal-title" id="modal-title">EDIT EVENT DOSSIER</h2>
+          <span class="modal-subtitle" id="modal-subtitle">GALLERY DATA ENTRY</span>
+        </div>
+        <button class="modal-close-btn" id="event-modal-close" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body-scroll">
+        <form id="event-form" novalidate>
+          <input type="hidden" id="event-id" value="">
+
+          <!-- Event Title -->
+          <div class="form-group-full">
+            <label for="event-title" class="admin-form-label">Event Title *</label>
+            <input type="text" id="event-title" class="admin-input" placeholder="e.g. Quantum Hack 2026: 36h Sprint" required>
+          </div>
+
+          <!-- Category & Badge -->
+          <div class="form-grid-2">
+            <div>
+              <label for="event-category" class="admin-form-label">Category *</label>
+              <select id="event-category" class="admin-select" required>
+                <option value="events">EVENTS (Flagship &amp; Hackathons)</option>
+                <option value="workshops">WORKSHOPS &amp; BOOTCAMPS</option>
+                <option value="team">TEAM &amp; COUNCIL</option>
+                <option value="activities">ACTIVITIES &amp; FOSS</option>
+              </select>
+            </div>
+            <div>
+              <label for="event-badge" class="admin-form-label">Badge Tag (e.g. EVENTS // FLAGSHIP)</label>
+              <input type="text" id="event-badge" class="admin-input" placeholder="e.g. EVENTS // 36H SPRINT">
+            </div>
+          </div>
+
+          <!-- Date & Location -->
+          <div class="form-grid-2">
+            <div>
+              <label for="event-date" class="admin-form-label">Event Date / Span</label>
+              <input type="text" id="event-date" class="admin-input" placeholder="e.g. MARCH 14 — 16, 2026">
+            </div>
+            <div>
+              <label for="event-location" class="admin-form-label">Location / Venue</label>
+              <input type="text" id="event-location" class="admin-input" placeholder="e.g. Pydah Main Auditorium &amp; Labs">
+            </div>
+          </div>
+
+          <!-- Grid Span Layout -->
+          <div class="form-group-full">
+            <label for="event-gridspan" class="admin-form-label">Collage Grid Layout Span</label>
+            <select id="event-gridspan" class="admin-select">
+              <option value="span-2x2">2x2 Large Featured Hero Tile</option>
+              <option value="span-2x1">2x1 Wide Panoramic Tile</option>
+              <option value="span-1x2">1x2 Tall Vertical Editorial Tile</option>
+              <option value="span-1x1" selected>1x1 Standard Square Tile</option>
+            </select>
+          </div>
+
+          <!-- Description -->
+          <div class="form-group-full">
+            <label for="event-description" class="admin-form-label">Event Description &amp; Highlights</label>
+            <textarea id="event-description" class="admin-textarea" placeholder="Detailed technical and community notes about what happened during the event..."></textarea>
+          </div>
+
+          <!-- =================================================================
+               MULTI-MEDIA BUILDER (MULTIPLE PHOTOS & VIDEOS PER EVENT)
+               ================================================================= -->
+          <div class="media-manager-box">
+            <div class="media-manager-header">
+              <h3 class="media-manager-title">ATTACHED MEDIA (PHOTOS &amp; VIDEOS)</h3>
+              <span class="admin-badge-tag" style="font-size: 0.68rem;">MULTIPLE MEDIA SUPPORT</span>
+            </div>
+            <p class="media-manager-desc">
+              Attach multiple photos and videos to this single event. Visitors can cycle through all media in the lightbox carousel.
+            </p>
+
+            <!-- Google Drive Instructions Banner -->
+            <div class="google-drive-hint-box">
+              <span style="font-size: 1.2rem;">💡</span>
+              <div>
+                <strong>Google Drive Video Storage:</strong> Paste your Google Drive video share link (set to <em>"Anyone with the link can view"</em>). It will automatically convert into a seamless streaming embed! YouTube, Vimeo, and direct MP4s are also supported.
+              </div>
+            </div>
+
+            <!-- Add Media Row -->
+            <div class="media-add-panel">
+              <div>
+                <label for="media-type-select" class="admin-form-label">Type</label>
+                <select id="media-type-select" class="admin-select" style="padding: 0.6rem;">
+                  <option value="image">📷 Photo</option>
+                  <option value="video">🎥 Video (G-Drive/YT)</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="media-url-input" class="admin-form-label">Media URL / Link</label>
+                <input type="text" id="media-url-input" class="admin-input" placeholder="https://... or select local file below">
+                <input type="file" id="media-file-input" accept="image/*" style="font-size: 0.75rem; margin-top: 0.35rem; color: var(--color-gray);">
+              </div>
+
+              <div>
+                <label for="media-caption-input" class="admin-form-label">Caption / Description</label>
+                <input type="text" id="media-caption-input" class="admin-input" placeholder="e.g. Award Ceremony &amp; Trophies">
+              </div>
+
+              <div>
+                <button type="button" class="btn-brutalist btn-primary btn-sm" id="btn-add-media" style="width: 100%;">
+                  + Add Media
+                </button>
+              </div>
+            </div>
+
+            <!-- Attached Items Table/List -->
+            <label class="admin-form-label" style="margin-bottom: 0.75rem;">CURRENTLY ATTACHED MEDIA ITEMS:</label>
+            <div class="media-items-list" id="media-items-list">
+              <!-- Injected via renderMediaList() -->
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer-bar">
+        <button type="button" class="btn-brutalist btn-secondary" id="event-modal-cancel">
+          Cancel
+        </button>
+        <button type="submit" form="event-form" class="btn-brutalist btn-primary">
+          Save &amp; Publish Event →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       04. JSON IMPORT / EXPORT MODAL
+       ========================================================================= -->
+  <div class="admin-modal-backdrop" id="json-modal" aria-hidden="true" role="dialog" aria-labelledby="json-modal-title">
+    <div class="admin-modal-box" style="max-width: 750px;">
+      <div class="modal-header-bar">
+        <div>
+          <h2 class="modal-title" id="json-modal-title">EVENT CONFIGURATION JSON</h2>
+          <span class="modal-subtitle">BACKUP &amp; SYNC UTILITY</span>
+        </div>
+        <button class="modal-close-btn" id="json-modal-close" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body-scroll">
+        <p style="font-size: 0.88rem; color: var(--color-gray); margin-bottom: 1rem;">
+          You can copy or download the entire event database JSON configuration to share with other administrators, preserve as backup, or paste below to restore.
+        </p>
+        <textarea id="json-textarea" class="admin-textarea" style="height: 320px; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.4;"></textarea>
+      </div>
+
+      <div class="modal-footer-bar">
+        <button type="button" class="btn-brutalist btn-secondary btn-sm" id="btn-copy-json">
+          Copy to Clipboard
+        </button>
+        <button type="button" class="btn-brutalist btn-secondary btn-sm" id="btn-download-json">
+          Download File (.json)
+        </button>
+        <button type="button" class="btn-brutalist btn-primary btn-sm" id="btn-apply-import">
+          Apply &amp; Import JSON
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="admin-toast" id="admin-toast" role="status" aria-live="polite"></div>
+
+  <!-- Vanilla JavaScript -->
+  <script src="admin.js"></script>
+</body>
+</html>

@@ -17,7 +17,8 @@
     { "source": "/team/qc-004", "destination": "/team/QC-004/index.html" },
     { "source": "/team/qc-005", "destination": "/team/QC-005/index.html" },
     { "source": "/team/qc-006", "destination": "/team/QC-006/index.html" },
-    { "source": "/team/qc-007", "destination": "/team/QC-007/index.html" },
+    { "source": "/admin", "destination": "/admin/index.html" },
+    { "source": "/admin/", "destination": "/admin/index.html" },
     { "source": "/team/:id", "destination": "/team/:id/index.html" }
   ]
 }

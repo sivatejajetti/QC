@@ -259,14 +259,303 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ----------------------------------------------------------------------------
-  // 7. Gallery Category Filter & Asymmetric Grid Transitions
+  // 7. Dynamic Multi-Media Event Gallery (localStorage & Seed Sync)
   // ----------------------------------------------------------------------------
-  const filterPills = document.querySelectorAll('.filter-pill');
-  const galleryItems = document.querySelectorAll('.gallery-item');
+  const GALLERY_STORAGE_KEY = 'qc_event_gallery';
 
+  const DEFAULT_GALLERY_EVENTS = [
+    {
+      id: 'EVT-001',
+      title: 'Quantum Hack 2026: 36h Sprint',
+      category: 'events',
+      badge: 'EVENTS // FLAGSHIP',
+      date: 'MARCH 14 — 16, 2026',
+      location: 'Pydah Main Auditorium & High-Compute Labs',
+      description: 'The flagship 36-hour non-stop collegiate hackathon bringing together 240+ engineers building distributed systems, AI copilots, and autonomous agents under real-world pressure.',
+      gridSpan: 'span-2x2',
+      media: [
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_1.svg',
+          caption: 'Hackathon Arena & Midnight Sprints',
+          isCover: true
+        },
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_2.svg',
+          caption: 'Mentorship Breakouts & Architecture Reviews',
+          isCover: false
+        },
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_3.svg',
+          caption: 'Final Demo Pitch Showcase',
+          isCover: false
+        },
+        {
+          type: 'video',
+          url: 'https://drive.google.com/file/d/1demoQuantumHackReel/preview',
+          caption: 'Official Quantum Hack 2026 Highlight Reel (Google Drive Stream)',
+          isCover: false
+        }
+      ]
+    },
+    {
+      id: 'EVT-002',
+      title: 'Generative AI & LLM Systems Lab',
+      category: 'workshops',
+      badge: 'WORKSHOPS // APPLIED AI',
+      date: 'FEBRUARY 22, 2026',
+      location: 'Advanced Computing Lab 03',
+      description: 'Hands-on masterclass covering local model quantization, vector databases (RAG), and fine-tuning open-source LLMs on bespoke datasets.',
+      gridSpan: 'span-2x1',
+      media: [
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_2.svg',
+          caption: 'Hands-on Neural Network Fine-tuning',
+          isCover: true
+        },
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_4.svg',
+          caption: 'Vector Embeddings Architecture Walkthrough',
+          isCover: false
+        },
+        {
+          type: 'video',
+          url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+          caption: 'Workshop Keynote & Code Walkthrough',
+          isCover: false
+        }
+      ]
+    },
+    {
+      id: 'EVT-003',
+      title: 'Core Council Strategy Summit',
+      category: 'team',
+      badge: 'TEAM // COUNCIL',
+      date: 'JANUARY 18, 2026',
+      location: 'Pydah Innovation Boardroom',
+      description: 'The annual leadership retreat to formulate the academic syllabus, event roadmap, and internal open-source engineering initiatives.',
+      gridSpan: 'span-1x2',
+      media: [
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_3.svg',
+          caption: 'Council Roadmap & Leadership Strategy',
+          isCover: true
+        },
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_1.svg',
+          caption: 'Whiteboard System Architecture',
+          isCover: false
+        }
+      ]
+    },
+    {
+      id: 'EVT-004',
+      title: 'Open Source Community Sprint',
+      category: 'activities',
+      badge: 'ACTIVITIES // FOSS',
+      date: 'FEBRUARY 08, 2026',
+      location: 'Open Common Area & Virtual Meet',
+      description: 'A global contribution day where club members submitted 35+ pull requests to notable open-source repositories and club utilities.',
+      gridSpan: 'span-1x1',
+      media: [
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_5.svg',
+          caption: 'Real-time PR Submission Tracker',
+          isCover: true
+        },
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_7.svg',
+          caption: 'Pair Programming & Git Conflict Resolution',
+          isCover: false
+        }
+      ]
+    },
+    {
+      id: 'EVT-005',
+      title: 'Advanced Web Architecture Jam',
+      category: 'workshops',
+      badge: 'WORKSHOPS // WEB TECH',
+      date: 'MARCH 02, 2026',
+      location: 'Software Engineering Lab 01',
+      description: 'Deep dive into performant web mechanics: micro-frontends, edge computing workers, web assembly, and zero-framework brutalist styling.',
+      gridSpan: 'span-2x1',
+      media: [
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_4.svg',
+          caption: 'Server-Driven UI & Edge Caching Lab',
+          isCover: true
+        },
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_8.svg',
+          caption: 'Profiling Web Vitals in DevTools',
+          isCover: false
+        },
+        {
+          type: 'video',
+          url: 'https://drive.google.com/file/d/1demoWebArchStream/preview',
+          caption: 'Web Performance Benchmark Demo (Google Drive)',
+          isCover: false
+        }
+      ]
+    },
+    {
+      id: 'EVT-006',
+      title: 'Brutalist UI/UX Design Slam',
+      category: 'activities',
+      badge: 'ACTIVITIES // CREATIVE',
+      date: 'FEBRUARY 28, 2026',
+      location: 'Creative Media Studio',
+      description: 'Speed design challenge centered around editorial brutalism, physical card textures, halftones, and high-impact typography.',
+      gridSpan: 'span-1x1',
+      media: [
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_7.svg',
+          caption: 'Poster Typography & Halftone Design Review',
+          isCover: true
+        },
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_2.svg',
+          caption: 'Digital Texture Workshop',
+          isCover: false
+        }
+      ]
+    },
+    {
+      id: 'EVT-007',
+      title: 'Annual Tech Nexus Keynote',
+      category: 'events',
+      badge: 'EVENTS // ANNUAL SUMMIT',
+      date: 'JANUARY 30, 2026',
+      location: 'Pydah Central Auditorium',
+      description: 'The premier technical assembly inaugurating the 2026 engineering chapters with visionary guest keynotes from enterprise software leaders.',
+      gridSpan: 'span-2x1',
+      media: [
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_6.svg',
+          caption: 'Inauguration & Presidential Address',
+          isCover: true
+        },
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_3.svg',
+          caption: 'Keynote Panel on Decentralized Intelligence',
+          isCover: false
+        },
+        {
+          type: 'video',
+          url: 'https://drive.google.com/file/d/1demoTechNexusKeynote/preview',
+          caption: 'Full Keynote Recording (Google Drive Cloud Stream)',
+          isCover: false
+        }
+      ]
+    },
+    {
+      id: 'EVT-008',
+      title: 'Autumn Prototype Expo',
+      category: 'events',
+      badge: 'EVENTS // DEMO DAY',
+      date: 'OCTOBER 24, 2025',
+      location: 'Engineering Showcase Quad',
+      description: 'Exhibition of autonomous rovers, IoT sensory devices, and student-built production web apps presented to faculty and industry sponsors.',
+      gridSpan: 'span-1x1',
+      media: [
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_8.svg',
+          caption: 'Hardware Sensor Prototyping & Live Demos',
+          isCover: true
+        },
+        {
+          type: 'image',
+          url: 'assets/gallery/moment_5.svg',
+          caption: 'Robotics Control Dashboard',
+          isCover: false
+        }
+      ]
+    }
+  ];
+
+  const loadGalleryEvents = () => {
+    try {
+      const stored = localStorage.getItem(GALLERY_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Adjust paths for main index if imported from admin relative
+          return parsed.map(ev => ({
+            ...ev,
+            media: ev.media ? ev.media.map(m => ({
+              ...m,
+              url: m.url.startsWith('../') ? m.url.replace('../', '') : m.url
+            })) : []
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading gallery from localStorage:', e);
+    }
+    return DEFAULT_GALLERY_EVENTS;
+  };
+
+  const galleryEvents = loadGalleryEvents();
+  const galleryGrid = document.getElementById('gallery-grid');
+  const filterPills = document.querySelectorAll('.filter-pill');
+
+  // Render dynamic gallery tiles into #gallery-grid
+  if (galleryGrid) {
+    galleryGrid.innerHTML = galleryEvents.map((ev, eventIdx) => {
+      const cover = (ev.media && ev.media.find(m => m.isCover)) || (ev.media && ev.media[0]) || { url: 'assets/gallery/moment_1.svg' };
+      const imageCount = ev.media ? ev.media.filter(m => m.type !== 'video').length : 0;
+      const videoCount = ev.media ? ev.media.filter(m => m.type === 'video').length : 0;
+      const totalMedia = ev.media ? ev.media.length : 1;
+
+      // Badge pill if multi-media
+      let mediaPillHtml = '';
+      if (totalMedia > 1) {
+        mediaPillHtml = `
+          <div class="gallery-media-pill-badge" title="${totalMedia} media files available">
+            <span>📷 ${imageCount}</span>
+            ${videoCount > 0 ? `<span style="color: var(--color-purple); font-weight: bold;">• 🎥 ${videoCount}</span>` : ''}
+          </div>
+        `;
+      } else if (videoCount === 1) {
+        mediaPillHtml = `
+          <div class="gallery-media-pill-badge" style="border-color: var(--color-purple); color: var(--color-purple);">
+            <span>🎥 VIDEO</span>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="gallery-item ${ev.gridSpan || 'span-1x1'}" data-category="${ev.category}" data-event-idx="${eventIdx}" data-cursor="VIEW">
+          ${mediaPillHtml}
+          <img src="${cover.url}" alt="${ev.title}" class="gallery-img" loading="lazy" onerror="this.src='assets/gallery/moment_1.svg'">
+          <div class="gallery-overlay">
+            <div class="gallery-overlay-cat">${ev.badge || ev.category.toUpperCase()}</div>
+            <h3 class="gallery-overlay-title">${ev.title}</h3>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Category Filtering
+  const galleryItemNodes = document.querySelectorAll('.gallery-item');
   filterPills.forEach((pill) => {
     pill.addEventListener('click', () => {
-      // Set active pill
       filterPills.forEach((p) => {
         p.classList.remove('active');
         p.setAttribute('aria-selected', 'false');
@@ -276,7 +565,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const selectedFilter = pill.getAttribute('data-filter');
 
-      galleryItems.forEach((item) => {
+      galleryItemNodes.forEach((item) => {
         const itemCategory = item.getAttribute('data-category');
         if (selectedFilter === 'all' || itemCategory === selectedFilter) {
           item.style.display = '';
@@ -296,128 +585,210 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ----------------------------------------------------------------------------
-  // 8. Fullscreen Lightbox with Keyboard & Touch Gesture Controls
+  // 8. Fullscreen Multi-Media Lightbox (Supports Multiple Images & Google Drive Videos)
   // ----------------------------------------------------------------------------
   const lightboxModal = document.getElementById('lightbox-modal');
   const lightboxImg = document.getElementById('lightbox-img');
+  const lightboxVideoFrame = document.getElementById('lightbox-video-frame');
+  const lightboxIframe = document.getElementById('lightbox-iframe');
+  const lightboxVideo = document.getElementById('lightbox-video');
   const lightboxTitle = document.getElementById('lightbox-title');
   const lightboxCat = document.getElementById('lightbox-cat');
+  const lightboxCounter = document.getElementById('lightbox-counter-badge');
+  const lightboxCaption = document.getElementById('lightbox-caption-text');
+  const lightboxFilmstrip = document.getElementById('lightbox-filmstrip-bar');
   const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
   const lightboxPrevBtn = document.getElementById('lightbox-prev-btn');
   const lightboxNextBtn = document.getElementById('lightbox-next-btn');
 
-  // Collect image data
-  const galleryData = [];
-  galleryItems.forEach((item, idx) => {
-    const img = item.querySelector('.gallery-img');
-    const title = item.querySelector('.gallery-overlay-title');
-    const cat = item.querySelector('.gallery-overlay-cat');
+  let currentActiveEvent = null;
+  let currentActiveMediaIdx = 0;
 
-    galleryData.push({
-      src: img ? img.getAttribute('src') : '',
-      alt: img ? img.getAttribute('alt') : 'Quantum Coders Moment',
-      title: title ? title.textContent : 'Event Showcase',
-      cat: cat ? cat.textContent : 'ARCHIVE',
-      category: item.getAttribute('data-category')
-    });
+  const updateMediaStage = (mediaIdx) => {
+    if (!currentActiveEvent || !currentActiveEvent.media || currentActiveEvent.media.length === 0) return;
 
-    item.addEventListener('click', () => {
-      openLightbox(idx);
-    });
-  });
+    currentActiveMediaIdx = mediaIdx;
+    const media = currentActiveEvent.media[mediaIdx];
+    if (!media) return;
 
-  let currentLightboxIdx = 0;
+    // Update Counter & Titles
+    if (lightboxCounter) {
+      lightboxCounter.textContent = `MEDIA ${mediaIdx + 1} OF ${currentActiveEvent.media.length}`;
+    }
+    if (lightboxTitle) lightboxTitle.textContent = currentActiveEvent.title;
+    if (lightboxCat) lightboxCat.textContent = currentActiveEvent.badge || currentActiveEvent.category.toUpperCase();
+    if (lightboxCaption) {
+      lightboxCaption.textContent = media.caption || currentActiveEvent.description || '';
+    }
 
-  const getVisibleIndices = () => {
-    const activeFilter = document.querySelector('.filter-pill.active')?.getAttribute('data-filter') || 'all';
-    const visible = [];
-    galleryData.forEach((d, i) => {
-      if (activeFilter === 'all' || d.category === activeFilter) {
-        visible.push(i);
+    // Render Image vs Video
+    if (media.type === 'video') {
+      if (lightboxImg) lightboxImg.style.display = 'none';
+      if (lightboxVideoFrame) lightboxVideoFrame.style.display = 'flex';
+
+      const isDirectVideo = media.url.endsWith('.mp4') || media.url.endsWith('.webm') || media.url.endsWith('.ogg');
+      if (isDirectVideo) {
+        if (lightboxIframe) {
+          lightboxIframe.src = '';
+          lightboxIframe.style.display = 'none';
+        }
+        if (lightboxVideo) {
+          lightboxVideo.src = media.url;
+          lightboxVideo.style.display = 'block';
+        }
+      } else {
+        // Embed Player (Google Drive preview, YouTube, Vimeo)
+        if (lightboxVideo) {
+          lightboxVideo.pause();
+          lightboxVideo.src = '';
+          lightboxVideo.style.display = 'none';
+        }
+        if (lightboxIframe) {
+          lightboxIframe.src = media.url;
+          lightboxIframe.style.display = 'block';
+        }
       }
-    });
-    return visible.length > 0 ? visible : [0];
+    } else {
+      // Photo Image
+      if (lightboxVideoFrame) {
+        lightboxVideoFrame.style.display = 'none';
+        if (lightboxIframe) lightboxIframe.src = '';
+        if (lightboxVideo) {
+          lightboxVideo.pause();
+          lightboxVideo.src = '';
+        }
+      }
+      if (lightboxImg) {
+        lightboxImg.src = media.url;
+        lightboxImg.alt = media.caption || currentActiveEvent.title;
+        lightboxImg.style.display = 'block';
+      }
+    }
+
+    // Update Active Thumbnail in Filmstrip
+    if (lightboxFilmstrip) {
+      const thumbs = lightboxFilmstrip.querySelectorAll('.filmstrip-thumb-btn');
+      thumbs.forEach((t, i) => {
+        if (i === mediaIdx) t.classList.add('active');
+        else t.classList.remove('active');
+      });
+    }
   };
 
-  const updateLightboxContent = (index) => {
-    currentLightboxIdx = index;
-    const data = galleryData[index];
-    if (!data) return;
+  const openEventLightbox = (eventIdx) => {
+    currentActiveEvent = galleryEvents[eventIdx];
+    if (!currentActiveEvent) return;
 
-    lightboxImg.src = data.src;
-    lightboxImg.alt = data.alt;
-    lightboxTitle.textContent = data.title;
-    lightboxCat.textContent = data.cat;
-  };
+    // Render Filmstrip
+    if (lightboxFilmstrip) {
+      if (currentActiveEvent.media && currentActiveEvent.media.length > 1) {
+        lightboxFilmstrip.style.display = 'flex';
+        lightboxFilmstrip.innerHTML = currentActiveEvent.media.map((m, idx) => {
+          if (m.type === 'video') {
+            return `
+              <button type="button" class="filmstrip-thumb-btn filmstrip-video-btn ${idx === 0 ? 'active' : ''}" data-idx="${idx}" title="${m.caption || 'Video'}">
+                ▶ VIDEO
+              </button>
+            `;
+          }
+          return `
+            <img src="${m.url}" alt="${m.caption || ''}" class="filmstrip-thumb-btn filmstrip-item ${idx === 0 ? 'active' : ''}" data-idx="${idx}" onerror="this.src='assets/gallery/moment_1.svg'">
+          `;
+        }).join('');
 
-  const openLightbox = (index) => {
-    updateLightboxContent(index);
-    lightboxModal.classList.add('active');
-    lightboxModal.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
+        lightboxFilmstrip.querySelectorAll('.filmstrip-thumb-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const idx = parseInt(btn.getAttribute('data-idx'), 10);
+            updateMediaStage(idx);
+          });
+        });
+      } else {
+        lightboxFilmstrip.style.display = 'none';
+      }
+    }
+
+    // Find cover index or start at 0
+    let startIdx = 0;
+    if (currentActiveEvent.media) {
+      const coverIdx = currentActiveEvent.media.findIndex(m => m.isCover);
+      if (coverIdx >= 0) startIdx = coverIdx;
+    }
+
+    updateMediaStage(startIdx);
+
+    if (lightboxModal) {
+      lightboxModal.classList.add('active');
+      lightboxModal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
   };
 
   const closeLightbox = () => {
+    if (!lightboxModal) return;
     lightboxModal.classList.remove('active');
     lightboxModal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
+
+    // Stop video / iframe playback
+    if (lightboxIframe) lightboxIframe.src = '';
+    if (lightboxVideo) {
+      lightboxVideo.pause();
+      lightboxVideo.src = '';
+    }
   };
 
-  const nextLightboxImg = () => {
-    const visible = getVisibleIndices();
-    const curPos = visible.indexOf(currentLightboxIdx);
-    const nextPos = (curPos + 1) % visible.length;
-    updateLightboxContent(visible[nextPos]);
+  const nextMediaItem = () => {
+    if (!currentActiveEvent || !currentActiveEvent.media || currentActiveEvent.media.length === 0) return;
+    const nextIdx = (currentActiveMediaIdx + 1) % currentActiveEvent.media.length;
+    updateMediaStage(nextIdx);
   };
 
-  const prevLightboxImg = () => {
-    const visible = getVisibleIndices();
-    const curPos = visible.indexOf(currentLightboxIdx);
-    const prevPos = (curPos - 1 + visible.length) % visible.length;
-    updateLightboxContent(visible[prevPos]);
+  const prevMediaItem = () => {
+    if (!currentActiveEvent || !currentActiveEvent.media || currentActiveEvent.media.length === 0) return;
+    const prevIdx = (currentActiveMediaIdx - 1 + currentActiveEvent.media.length) % currentActiveEvent.media.length;
+    updateMediaStage(prevIdx);
   };
+
+  // Attach card click handlers
+  galleryItemNodes.forEach(item => {
+    item.addEventListener('click', () => {
+      const eventIdx = parseInt(item.getAttribute('data-event-idx'), 10);
+      openEventLightbox(eventIdx);
+    });
+  });
 
   if (lightboxModal) {
-    lightboxCloseBtn.addEventListener('click', closeLightbox);
-    lightboxNextBtn.addEventListener('click', nextLightboxImg);
-    lightboxPrevBtn.addEventListener('click', prevLightboxImg);
+    if (lightboxCloseBtn) lightboxCloseBtn.addEventListener('click', closeLightbox);
+    if (lightboxNextBtn) lightboxNextBtn.addEventListener('click', nextMediaItem);
+    if (lightboxPrevBtn) lightboxPrevBtn.addEventListener('click', prevMediaItem);
 
-    // Close when clicking modal backdrop
+    // Close on click outside
     lightboxModal.addEventListener('click', (e) => {
-      if (e.target === lightboxModal) {
-        closeLightbox();
-      }
+      if (e.target === lightboxModal) closeLightbox();
     });
 
-    // Keyboard Navigation: Escape, ArrowLeft, ArrowRight
+    // Keyboard controls
     window.addEventListener('keydown', (e) => {
       if (!lightboxModal.classList.contains('active')) return;
-
       if (e.key === 'Escape') closeLightbox();
-      if (e.key === 'ArrowRight') nextLightboxImg();
-      if (e.key === 'ArrowLeft') prevLightboxImg();
+      if (e.key === 'ArrowRight') nextMediaItem();
+      if (e.key === 'ArrowLeft') prevMediaItem();
     });
 
-    // Touch Swipe Gesture Support
-    let touchStartX = 0;
-    let touchEndX = 0;
-
+    // Touch Swipe
+    let tStartX = 0;
+    let tEndX = 0;
     lightboxModal.addEventListener('touchstart', (e) => {
-      touchStartX = e.changedTouches[0].screenX;
+      tStartX = e.changedTouches[0].screenX;
     }, { passive: true });
-
     lightboxModal.addEventListener('touchend', (e) => {
-      touchEndX = e.changedTouches[0].screenX;
-      handleSwipe();
-    }, { passive: true });
-
-    const handleSwipe = () => {
-      const delta = touchEndX - touchStartX;
+      tEndX = e.changedTouches[0].screenX;
+      const delta = tEndX - tStartX;
       if (Math.abs(delta) > 50) {
-        if (delta < 0) nextLightboxImg();
-        else prevLightboxImg();
+        if (delta < 0) nextMediaItem();
+        else prevMediaItem();
       }
-    };
+    }, { passive: true });
   }
 
   // ----------------------------------------------------------------------------
@@ -762,5 +1133,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     handleCadreResponsiveMode();
     window.addEventListener('resize', handleCadreResponsiveMode);
+  }
+
+  // ----------------------------------------------------------------------------
+  // Hidden Stealth Admin Triggers (Ctrl+Shift+A or Triple-Click Copyright)
+  // ----------------------------------------------------------------------------
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+      e.preventDefault();
+      window.location.href = 'admin/index.html';
+    }
+  });
+
+  const secretTrigger = document.getElementById('footer-secret-trigger');
+  if (secretTrigger) {
+    let clickCount = 0;
+    let clickTimer = null;
+    secretTrigger.addEventListener('click', () => {
+      clickCount++;
+      clearTimeout(clickTimer);
+      if (clickCount >= 3) {
+        clickCount = 0;
+        window.location.href = 'admin/index.html';
+      } else {
+        clickTimer = setTimeout(() => {
+          clickCount = 0;
+        }, 1200);
+      }
+    });
   }
 });
