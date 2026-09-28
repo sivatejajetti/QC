@@ -2500,7 +2500,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Commemorate in Hero ESTD Badge
         const heroBadge = document.querySelector('.hero-badge');
         if (heroBadge) {
-          heroBadge.innerHTML = '<span class="accent-dot"></span><span>ESTD. 2026 // INAUGURATED BY SRIRAM SIR</span>';
+          heroBadge.innerHTML = '<span class="accent-dot"></span><span>ESTD. 2026 // INAUGURATED BY Dr M VeeraBhadra Rao Sir, Dr Surya Prakash Sir, Dr Ravi Kumar Sir </span>';
           heroBadge.style.boxShadow = '0 0 25px rgba(251, 191, 36, 0.7)';
         }
 
