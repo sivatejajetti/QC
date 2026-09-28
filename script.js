@@ -1167,4 +1167,1028 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // ----------------------------------------------------------------------------
+  // 12. Ceremonial Launch Mode Controller (Multi-Device Realtime Sync)
+  // ----------------------------------------------------------------------------
+  const launchOverlay = document.getElementById('launch-mode-overlay');
+  const launchCoreBtn = document.getElementById('launch-core-button');
+  const launchExitBtn = document.getElementById('launch-exit-btn');
+  const launchResetBtn = document.getElementById('launch-reset-btn');
+  const footerLaunchBtn = document.getElementById('footer-launch-trigger');
+  const launchHud = document.getElementById('launch-hud-overlay');
+  const launchHudStatus = document.getElementById('launch-hud-status');
+  const launchHudCount = document.getElementById('launch-hud-countdown');
+  const launchHudBar = document.getElementById('launch-hud-bar');
+  const launchCelebrateCard = document.getElementById('launch-celebrate-card');
+  const launchCanvas = document.getElementById('launch-canvas');
+
+  const LAUNCH_SYNC_TOPIC = 'qc-pydah-launch-sriram-2026';
+  let isLaunching = false;
+  let animFrameId = null;
+  let confettiParticles = [];
+  let ambientParticles = [];
+  let warpStars = [];
+  let shockwaves = [];
+  let supernovaFlash = { active: false, radius: 0, maxRadius: 0, alpha: 0, spikeAngle: 0 };
+  let warpSpeed = 0;
+  let targetWarpSpeed = 0;
+  let lastRemoteTriggerTime = 0;
+
+  // Web Audio Synthesizer Engine (Self-contained, zero external audio assets)
+  let sharedAudioCtx = null;
+  const getAudioContext = () => {
+    try {
+      if (!sharedAudioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) sharedAudioCtx = new AudioCtx();
+      }
+      if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
+        sharedAudioCtx.resume();
+      }
+      return sharedAudioCtx;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  // Pre-unlock audio on any user interaction (essential for laptop/projector audio)
+  const unlockAudioOnce = () => {
+    getAudioContext();
+  };
+  window.addEventListener('click', unlockAudioOnce, { once: true });
+  window.addEventListener('touchstart', unlockAudioOnce, { once: true });
+  window.addEventListener('keydown', unlockAudioOnce, { once: true });
+
+  // 1. High-Tech Countdown Laser Blip
+  const playCountdownBlip = (count) => {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      const freqs = { 5: 587, 4: 659, 3: 784, 2: 988, 1: 1318 };
+      const baseFreq = freqs[count] || 880;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(baseFreq, now);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, now + 0.12);
+
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.24);
+    } catch (err) {}
+  };
+
+  // 2. Escalating Reactor Core Hyperdrive Charge (Scaled for 5-Second Countdown)
+  const playReactorCharge = () => {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc1.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(80, now);
+      osc1.frequency.exponentialRampToValueAtTime(880, now + 5.2);
+
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(160, now);
+      osc2.frequency.exponentialRampToValueAtTime(1760, now + 5.2);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(200, now);
+      filter.frequency.exponentialRampToValueAtTime(4500, now + 5.2);
+      filter.Q.setValueAtTime(5, now);
+
+      gain.gain.setValueAtTime(0.01, now);
+      gain.gain.linearRampToValueAtTime(0.32, now + 1.0);
+      gain.gain.linearRampToValueAtTime(0.55, now + 4.8);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 5.4);
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 5.5);
+      osc2.stop(now + 5.5);
+    } catch (err) {
+      console.warn('Audio charge error:', err);
+    }
+  };
+
+  // 3. Supernova 808 Sub-Bass Impact Boom & White Noise Detonation
+  const playExplosionBoom = () => {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+
+      // Heavy 808 Sub-bass drop
+      const subOsc = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      subOsc.type = 'sine';
+      subOsc.frequency.setValueAtTime(180, now);
+      subOsc.frequency.exponentialRampToValueAtTime(32, now + 1.4);
+
+      subGain.gain.setValueAtTime(0.85, now);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+      subOsc.connect(subGain);
+      subGain.connect(ctx.destination);
+      subOsc.start(now);
+      subOsc.stop(now + 1.5);
+
+      // Noise crackle burst (rocket launch ignition roar)
+      const bufferSize = ctx.sampleRate * 0.8;
+      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+      const whiteNoise = ctx.createBufferSource();
+      whiteNoise.buffer = noiseBuffer;
+
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = 'bandpass';
+      noiseFilter.frequency.setValueAtTime(1200, now);
+      noiseFilter.frequency.exponentialRampToValueAtTime(180, now + 0.8);
+      noiseFilter.Q.setValueAtTime(2.5, now);
+
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.4, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+      whiteNoise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+      whiteNoise.start(now);
+      whiteNoise.stop(now + 0.85);
+    } catch (err) {}
+  };
+
+  // 4. Celebratory Triumphant Polyphonic Fanfare Chord Progression
+  const playLaunchFanfare = () => {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+
+      // C-Major 9th celebratory fanfare arpeggio
+      const notes = [
+        { freq: 523.25, time: 0.00, gain: 0.28 }, // C5
+        { freq: 659.25, time: 0.07, gain: 0.28 }, // E5
+        { freq: 783.99, time: 0.14, gain: 0.30 }, // G5
+        { freq: 987.77, time: 0.21, gain: 0.30 }, // B5
+        { freq: 1046.5, time: 0.28, gain: 0.35 }, // C6
+        { freq: 1318.5, time: 0.35, gain: 0.32 }, // E6
+        { freq: 1567.9, time: 0.42, gain: 0.28 }  // G6
+      ];
+
+      notes.forEach((item) => {
+        const osc = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(item.freq, now + item.time);
+
+        osc2.type = 'sawtooth';
+        osc2.frequency.setValueAtTime(item.freq * 1.004, now + item.time); // rich chorus detune
+
+        gain.gain.setValueAtTime(0.001, now + item.time);
+        gain.gain.linearRampToValueAtTime(item.gain, now + item.time + 0.06);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + item.time + 2.5);
+
+        osc.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + item.time);
+        osc2.start(now + item.time);
+        osc.stop(now + item.time + 2.6);
+        osc2.stop(now + item.time + 2.6);
+      });
+    } catch (err) {
+      console.warn('Fanfare audio error:', err);
+    }
+  };
+
+  // ============================================================================
+  // CINEMATIC CANVAS VFX SYSTEM (WARP SPEED, SHOCKWAVES, 3D RIBBONS)
+  // ============================================================================
+  const initCanvas = () => {
+    if (!launchCanvas) return;
+    launchCanvas.width = window.innerWidth;
+    launchCanvas.height = window.innerHeight;
+  };
+
+  const initWarpStars = () => {
+    warpStars = [];
+    const count = 220;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    for (let i = 0; i < count; i++) {
+      warpStars.push({
+        x: (Math.random() - 0.5) * w * 2,
+        y: (Math.random() - 0.5) * h * 2,
+        z: Math.random() * 1000 + 1,
+        pz: 1000,
+        color: Math.random() > 0.3 ? '#60a5fa' : (Math.random() > 0.5 ? '#a855f7' : '#ffffff')
+      });
+    }
+  };
+
+  const initAmbientDust = () => {
+    ambientParticles = [];
+    const count = window.innerWidth <= 768 ? 25 : 55;
+    for (let i = 0; i < count; i++) {
+      ambientParticles.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        radius: Math.random() * 2.2 + 1,
+        color: Math.random() > 0.5 ? 'rgba(96, 165, 250, 0.55)' : 'rgba(168, 85, 247, 0.55)'
+      });
+    }
+  };
+
+  // Add a sonic shockwave ring expanding from center
+  const emitShockwave = (color = '#3b82f6', maxR = null, lineWidth = 4) => {
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    shockwaves.push({
+      x: cx,
+      y: cy,
+      radius: 10,
+      maxRadius: maxR || Math.max(window.innerWidth, window.innerHeight) * 0.85,
+      speed: (maxR ? 16 : 24),
+      lineWidth: lineWidth,
+      color: color,
+      alpha: 1
+    });
+  };
+
+  // Trigger Blinding Supernova Whiteout Flare
+  const triggerSupernovaFlash = () => {
+    supernovaFlash.active = true;
+    supernovaFlash.radius = 10;
+    supernovaFlash.maxRadius = Math.max(window.innerWidth, window.innerHeight) * 1.35;
+    supernovaFlash.alpha = 1;
+    supernovaFlash.spikeAngle = 0;
+  };
+
+  // 3D Metallic Ribbon & Quantum Crystal Confetti System (450+ particles)
+  const createConfettiExplosion = (centerX, centerY) => {
+    const cx = centerX || window.innerWidth / 2;
+    const cy = centerY || window.innerHeight / 2;
+
+    const colors = [
+      '#3b82f6', '#60a5fa', '#93c5fd', // Electric Blue
+      '#fbbf24', '#f59e0b', '#fef08a', // Metallic Gold
+      '#a855f7', '#c084fc', '#e879f9', // Neon Violet
+      '#34d399', '#10b981',             // Emerald Cyber
+      '#f43f5e', '#ffffff'              // Ruby & Diamond
+    ];
+
+    const count = window.innerWidth <= 480 ? 240 : 450;
+    confettiParticles = [];
+
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 24 + 6;
+      const type = Math.random() > 0.5 ? 'ribbon' : (Math.random() > 0.4 ? 'metallic-rect' : 'diamond');
+
+      confettiParticles.push({
+        x: cx,
+        y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 8,
+        width: Math.random() * 10 + 6,
+        length: Math.random() * 20 + 10,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        angle: Math.random() * Math.PI * 2,
+        angleSpeed: (Math.random() - 0.5) * 0.25,
+        wobble: Math.random() * Math.PI * 2,
+        wobbleSpeed: Math.random() * 0.12 + 0.05,
+        drag: 0.945,
+        gravity: 0.28,
+        opacity: 1,
+        decay: Math.random() * 0.0035 + 0.002,
+        type: type
+      });
+    }
+  };
+
+  // Secondary firework burst (pops celebratory embers in top corners)
+  const triggerSecondaryBurst = (x, y, color = '#fbbf24') => {
+    const burstCount = 45;
+    for (let i = 0; i < burstCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 10 + 3;
+      confettiParticles.push({
+        x: x,
+        y: y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 3,
+        width: Math.random() * 6 + 4,
+        length: Math.random() * 8 + 4,
+        color: color,
+        angle: Math.random() * Math.PI * 2,
+        angleSpeed: (Math.random() - 0.5) * 0.3,
+        wobble: Math.random() * Math.PI,
+        wobbleSpeed: 0.1,
+        drag: 0.93,
+        gravity: 0.25,
+        opacity: 1,
+        decay: Math.random() * 0.007 + 0.004,
+        type: 'diamond'
+      });
+    }
+  };
+
+  // Main 60fps Canvas Render Loop
+  const renderParticles = () => {
+    if (!launchCanvas) return;
+    const ctx = launchCanvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, launchCanvas.width, launchCanvas.height);
+    const w = launchCanvas.width;
+    const h = launchCanvas.height;
+    const cx = w / 2;
+    const cy = h / 2;
+
+    // 1. Render Speed-of-Light Hyperdrive Warp Stars
+    if (warpStars.length > 0 && warpSpeed > 0.05) {
+      ctx.save();
+      for (let i = 0; i < warpStars.length; i++) {
+        const star = warpStars[i];
+        star.pz = star.z;
+        star.z -= warpSpeed;
+
+        if (star.z <= 0) {
+          star.z = 1000;
+          star.pz = 1000;
+          star.x = (Math.random() - 0.5) * w * 2;
+          star.y = (Math.random() - 0.5) * h * 2;
+        }
+
+        const sx = (star.x / star.z) * (w / 2) + cx;
+        const sy = (star.y / star.z) * (h / 2) + cy;
+        const px = (star.x / star.pz) * (w / 2) + cx;
+        const py = (star.y / star.pz) * (h / 2) + cy;
+
+        const starAlpha = Math.min(1, (1000 - star.z) / 400);
+
+        if (sx >= 0 && sx <= w && sy >= 0 && sy <= h) {
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(sx, sy);
+          ctx.strokeStyle = star.color;
+          ctx.globalAlpha = starAlpha;
+          ctx.lineWidth = Math.min(3.5, (1000 - star.z) / 250);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    // 2. Render Ambient Dust with Constellation Threads
+    if (ambientParticles.length > 0 && warpSpeed < 5) {
+      ctx.save();
+      for (let i = 0; i < ambientParticles.length; i++) {
+        const p = ambientParticles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0) p.x = w;
+        if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h;
+        if (p.y > h) p.y = 0;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+
+        // Connect nearby dust with delicate cyan filaments
+        for (let j = i + 1; j < ambientParticles.length; j++) {
+          const p2 = ambientParticles[j];
+          const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+          if (dist < 85) {
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = `rgba(96, 165, 250, ${(1 - dist / 85) * 0.18})`;
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+          }
+        }
+      }
+      ctx.restore();
+    }
+
+    // 3. Render Expanding Sonic Shockwave Rings
+    if (shockwaves.length > 0) {
+      ctx.save();
+      for (let i = shockwaves.length - 1; i >= 0; i--) {
+        const sw = shockwaves[i];
+        sw.radius += sw.speed;
+        sw.alpha = Math.max(0, 1 - sw.radius / sw.maxRadius);
+
+        if (sw.radius >= sw.maxRadius || sw.alpha <= 0) {
+          shockwaves.splice(i, 1);
+          continue;
+        }
+
+        ctx.beginPath();
+        ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = sw.color;
+        ctx.globalAlpha = sw.alpha;
+        ctx.lineWidth = sw.lineWidth * sw.alpha;
+        ctx.shadowColor = sw.color;
+        ctx.shadowBlur = 18;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 4. Render Supernova Whiteout Flare & Diffraction Starburst
+    if (supernovaFlash.active) {
+      ctx.save();
+      supernovaFlash.radius += 45;
+      supernovaFlash.alpha = Math.max(0, 1 - supernovaFlash.radius / supernovaFlash.maxRadius);
+      supernovaFlash.spikeAngle += 0.04;
+
+      if (supernovaFlash.alpha <= 0) {
+        supernovaFlash.active = false;
+      } else {
+        // Radial Plasma Flare
+        const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, supernovaFlash.radius);
+        gradient.addColorStop(0, `rgba(255, 255, 255, ${supernovaFlash.alpha})`);
+        gradient.addColorStop(0.3, `rgba(147, 197, 253, ${supernovaFlash.alpha * 0.8})`);
+        gradient.addColorStop(0.7, `rgba(168, 85, 247, ${supernovaFlash.alpha * 0.4})`);
+        gradient.addColorStop(1, 'transparent');
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, h);
+
+        // 8-Point Diffraction Spikes
+        ctx.translate(cx, cy);
+        ctx.rotate(supernovaFlash.spikeAngle);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${supernovaFlash.alpha * 0.9})`;
+        ctx.lineWidth = 3;
+        ctx.shadowColor = '#60a5fa';
+        ctx.shadowBlur = 25;
+
+        for (let s = 0; s < 8; s++) {
+          const spikeLen = supernovaFlash.radius * (s % 2 === 0 ? 0.9 : 0.5);
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(spikeLen, 0);
+          ctx.stroke();
+          ctx.rotate(Math.PI / 4);
+        }
+      }
+      ctx.restore();
+    }
+
+    // 5. Render 3D Ribbon & Metallic Confetti System
+    if (confettiParticles.length > 0) {
+      for (let i = confettiParticles.length - 1; i >= 0; i--) {
+        const p = confettiParticles[i];
+        p.vx *= p.drag;
+        p.vy *= p.drag;
+        p.vy += p.gravity;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.angleSpeed;
+        p.wobble += p.wobbleSpeed;
+        p.opacity -= p.decay;
+
+        if (p.opacity <= 0 || p.y > h + 70) {
+          confettiParticles.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.globalAlpha = Math.max(0, p.opacity);
+
+        const cosWobble = Math.cos(p.wobble);
+
+        if (p.type === 'ribbon') {
+          // 3D Fluttering Ribbon Quad
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.moveTo(-p.width / 2 * cosWobble, -p.length / 2);
+          ctx.lineTo(p.width / 2 * cosWobble, -p.length / 2 + 4);
+          ctx.lineTo(p.width / 2 * cosWobble, p.length / 2);
+          ctx.lineTo(-p.width / 2 * cosWobble, p.length / 2 - 4);
+          ctx.closePath();
+          ctx.fill();
+
+          // Shiny specular highlight stripe
+          if (cosWobble > 0.4) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+            ctx.fillRect(-p.width / 4 * cosWobble, -p.length / 2, (p.width / 2) * cosWobble, p.length);
+          }
+        } else if (p.type === 'diamond') {
+          // Quantum Crystal Diamond
+          ctx.fillStyle = p.color;
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.moveTo(0, -p.width);
+          ctx.lineTo(p.width * cosWobble, 0);
+          ctx.lineTo(0, p.width);
+          ctx.lineTo(-p.width * cosWobble, 0);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          // Metallic Foil Square
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.width / 2 * cosWobble, -p.length / 4, p.width * cosWobble, p.length / 2);
+        }
+
+        ctx.restore();
+      }
+    }
+
+    // Smoothly interpolate warp speed toward target
+    warpSpeed += (targetWarpSpeed - warpSpeed) * 0.08;
+
+    animFrameId = requestAnimationFrame(renderParticles);
+  };
+
+  // Open Launch Mode UI
+  const openLaunchMode = () => {
+    if (!launchOverlay) return;
+    initCanvas();
+    initAmbientDust();
+    initWarpStars();
+    isLaunching = false;
+    warpSpeed = 0;
+    targetWarpSpeed = 0;
+    shockwaves = [];
+    supernovaFlash.active = false;
+
+    // Reset overlay elements
+    launchOverlay.classList.remove('launching-exit', 'shaking');
+    if (launchHud) launchHud.classList.remove('active');
+    if (launchCelebrateCard) launchCelebrateCard.classList.remove('active');
+    if (launchHudBar) launchHudBar.style.width = '0%';
+    if (launchCoreBtn) {
+      launchCoreBtn.disabled = false;
+      launchCoreBtn.style.pointerEvents = 'auto';
+    }
+
+    // Check URL parameters for explicit mode overrides or auto-detect by screen width
+    const currentParams = new URLSearchParams(window.location.search);
+    launchOverlay.classList.remove('mode-screen', 'mode-controller');
+    if (currentParams.get('mode') === 'screen' || currentParams.has('screen') || currentParams.get('launch') === 'screen') {
+      launchOverlay.classList.add('mode-screen');
+    } else if (currentParams.get('mode') === 'controller' || currentParams.has('mobile') || currentParams.get('launch') === 'mobile') {
+      launchOverlay.classList.add('mode-controller');
+    } else {
+      // Automatic detection: desktop / laptop screen -> clean info panel; mobile device -> launch controller
+      if (window.innerWidth >= 993) {
+        launchOverlay.classList.add('mode-screen');
+      } else {
+        launchOverlay.classList.add('mode-controller');
+      }
+    }
+
+    launchOverlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    void launchOverlay.offsetWidth;
+    launchOverlay.classList.add('active');
+    launchOverlay.setAttribute('aria-hidden', 'false');
+
+    if (!animFrameId) {
+      animFrameId = requestAnimationFrame(renderParticles);
+    }
+  };
+
+  // Close / Exit Launch Mode UI
+  const exitLaunchMode = () => {
+    if (!launchOverlay) return;
+    launchOverlay.classList.remove('active');
+    launchOverlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+
+    setTimeout(() => {
+      launchOverlay.style.display = 'none';
+      if (animFrameId) {
+        cancelAnimationFrame(animFrameId);
+        animFrameId = null;
+      }
+      confettiParticles = [];
+      ambientParticles = [];
+    }, 400);
+
+    if (window.location.search.includes('launch') || window.location.hash.includes('launch')) {
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  };
+
+  // Reset launch state across all connected devices
+  const resetLaunchState = (broadcast = true) => {
+    isLaunching = false;
+    sessionStorage.removeItem('qc_launched_by_sriram');
+    openLaunchMode();
+
+    if (broadcast) {
+      broadcastLaunchSignal('reset');
+    }
+  };
+
+  // ----------------------------------------------------------------------------
+  // Realtime Cross-Device Synchronization Engine
+  // ----------------------------------------------------------------------------
+  const broadcastLaunchSignal = (action = 'launch') => {
+    const payload = JSON.stringify({
+      action: action,
+      by: 'Sriram Sir',
+      timestamp: Date.now()
+    });
+
+    // 1. Cloud PubSub Push via ntfy.sh (synchronizes mobile <-> laptop / Vercel in real-time)
+    fetch(`https://ntfy.sh/${LAUNCH_SYNC_TOPIC}`, {
+      method: 'POST',
+      body: payload,
+      headers: {
+        'Title': 'Quantum Coders Launch Event',
+        'Priority': 'urgent',
+        'Tags': 'rocket,tada'
+      }
+    }).catch((err) => console.warn('Sync broadcast notice:', err));
+
+    // 2. BroadcastChannel for instant local cross-tab testing
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('qc_launch_channel');
+        bc.postMessage({ action: action, by: 'Sriram Sir', timestamp: Date.now() });
+        bc.close();
+      }
+    } catch (e) {}
+
+    // 3. LocalStorage event as browser fallback
+    try {
+      localStorage.setItem('qc_launch_event_sync', JSON.stringify({ action: action, by: 'Sriram Sir', timestamp: Date.now() }));
+    } catch (e) {}
+  };
+
+  const handleIncomingSignal = (data) => {
+    if (!data || !data.action) return;
+
+    if (data.action === 'launch') {
+      const now = Date.now();
+      if (now - lastRemoteTriggerTime < 8000) return; // Prevent duplicate multi-triggers
+      lastRemoteTriggerTime = now;
+
+      console.log('⚡ [SYNC] REMOTE LAUNCH SIGNAL RECEIVED FROM SRIRAM SIR!');
+
+      // If this screen is not already launching, initiate the sequence!
+      if (!isLaunching) {
+        if (!launchOverlay.classList.contains('active')) {
+          openLaunchMode();
+        }
+        initiateLaunchSequence(true); // true = remote trigger
+      }
+    } else if (data.action === 'reset') {
+      console.log('🔄 [SYNC] REMOTE RESET SIGNAL RECEIVED!');
+      resetLaunchState(false);
+    }
+  };
+
+  const startRealtimeSyncListeners = () => {
+    // A. Server-Sent Events (SSE) via ntfy.sh
+    try {
+      if (typeof EventSource !== 'undefined') {
+        const sse = new EventSource(`https://ntfy.sh/${LAUNCH_SYNC_TOPIC}/sse`);
+        sse.onmessage = (e) => {
+          try {
+            const raw = JSON.parse(e.data);
+            if (raw && raw.message) {
+              try {
+                const inner = JSON.parse(raw.message);
+                handleIncomingSignal(inner);
+              } catch (_) {
+                if (raw.message.includes('launch')) handleIncomingSignal({ action: 'launch' });
+              }
+            } else if (raw && raw.action) {
+              handleIncomingSignal(raw);
+            }
+          } catch (_) {
+            if (e.data && e.data.includes('launch')) handleIncomingSignal({ action: 'launch' });
+          }
+        };
+        sse.onerror = () => {
+          // EventSource auto-reconnects natively
+        };
+      }
+    } catch (err) {
+      console.warn('SSE sync listener warning:', err);
+    }
+
+    // B. BroadcastChannel for local cross-tab testing
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('qc_launch_channel');
+        bc.onmessage = (e) => {
+          if (e.data) handleIncomingSignal(e.data);
+        };
+      }
+    } catch (e) {}
+
+    // C. LocalStorage sync fallback
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'qc_launch_event_sync' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          handleIncomingSignal(parsed);
+        } catch (err) {}
+      }
+    });
+  };
+
+  // Initiate Launch Sequence (Works on both Phone and Laptop simultaneously)
+  const initiateLaunchSequence = (isRemote = false) => {
+    if (isLaunching) return;
+    isLaunching = true;
+
+    // If triggered locally by pressing the button, broadcast signal to laptop/projector!
+    if (!isRemote) {
+      broadcastLaunchSignal('launch');
+    }
+
+    // 1. Audio and Haptics: Begin Reactor Ramp & Warp Speed
+    playReactorCharge();
+    targetWarpSpeed = 8;
+    if (navigator.vibrate) {
+      navigator.vibrate([100, 50, 150]);
+    }
+
+    // 2. Lock Button & Trigger Screen Shake
+    if (launchCoreBtn) {
+      launchCoreBtn.disabled = true;
+      launchCoreBtn.style.pointerEvents = 'none';
+    }
+    launchOverlay.classList.add('shaking');
+
+    // 3. Show Countdown HUD
+    if (launchHud) launchHud.classList.add('active');
+
+    const launchHudGhost = document.getElementById('launch-hud-count-ghost');
+
+    // Progress Bar Animation (0% to 100% over 5.4s)
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+      progress += 1.0;
+      if (launchHudBar) launchHudBar.style.width = `${Math.min(100, progress)}%`;
+      if (progress >= 100) clearInterval(progressInterval);
+    }, 54);
+
+    // Initial Authenticating Status
+    if (launchHudStatus) launchHudStatus.textContent = 'AUTHENTICATING: SRIRAM SIR...';
+    if (launchHudCount) launchHudCount.textContent = '5';
+    if (launchHudGhost) launchHudGhost.textContent = '5';
+
+    // Countdown Step 5: T = 0.5s
+    setTimeout(() => {
+      if (launchHudStatus) launchHudStatus.textContent = 'QUANTUM CORE ENGAGED...';
+      if (launchHudCount) launchHudCount.textContent = '5';
+      if (launchHudGhost) launchHudGhost.textContent = '5';
+      playCountdownBlip(5);
+      emitShockwave('#3b82f6', 200, 3);
+      targetWarpSpeed = 10;
+      if (navigator.vibrate) navigator.vibrate(40);
+    }, 500);
+
+    // Countdown Step 4: T = 1.5s
+    setTimeout(() => {
+      if (launchHudStatus) launchHudStatus.textContent = 'CALIBRATING HYPERDRIVE FLUX...';
+      if (launchHudCount) launchHudCount.textContent = '4';
+      if (launchHudGhost) launchHudGhost.textContent = '4';
+      playCountdownBlip(4);
+      emitShockwave('#60a5fa', 280, 3);
+      targetWarpSpeed = 16;
+      if (navigator.vibrate) navigator.vibrate(50);
+    }, 1500);
+
+    // Countdown Step 3: T = 2.5s
+    setTimeout(() => {
+      if (launchHudStatus) launchHudStatus.textContent = 'STABILIZING POWER GRIDS...';
+      if (launchHudCount) launchHudCount.textContent = '3';
+      if (launchHudGhost) launchHudGhost.textContent = '3';
+      playCountdownBlip(3);
+      emitShockwave('#a855f7', 360, 4);
+      targetWarpSpeed = 22;
+      if (navigator.vibrate) navigator.vibrate(60);
+    }, 2500);
+
+    // Countdown Step 2: T = 3.5s
+    setTimeout(() => {
+      if (launchHudStatus) launchHudStatus.textContent = 'WARPING SPACE-TIME: 80%...';
+      if (launchHudCount) launchHudCount.textContent = '2';
+      if (launchHudGhost) launchHudGhost.textContent = '2';
+      playCountdownBlip(2);
+      emitShockwave('#c084fc', 440, 4);
+      targetWarpSpeed = 30;
+      if (navigator.vibrate) navigator.vibrate(75);
+    }, 3500);
+
+    // Countdown Step 1: T = 4.5s
+    setTimeout(() => {
+      if (launchHudStatus) launchHudStatus.textContent = 'FINAL OVERDRIVE IGNITION...';
+      if (launchHudCount) launchHudCount.textContent = '1';
+      if (launchHudGhost) launchHudGhost.textContent = '1';
+      playCountdownBlip(1);
+      emitShockwave('#fbbf24', 520, 5);
+      targetWarpSpeed = 40;
+      if (navigator.vibrate) navigator.vibrate(100);
+    }, 4500);
+
+    // T = 5.4s: 🚀 BLAST OFF! (SUPERNOVA DETONATION & TRIUMPHANT FANFARE)
+    setTimeout(() => {
+      targetWarpSpeed = 0;
+      launchOverlay.classList.remove('shaking');
+      if (launchHudCount) launchHudCount.textContent = '🚀';
+      if (launchHudGhost) launchHudGhost.textContent = '🚀';
+      if (launchHudStatus) launchHudStatus.textContent = 'STATUS: 100% ONLINE!';
+
+      // 1. Supernova Detonation Sound & Fanfare
+      playExplosionBoom();
+      playLaunchFanfare();
+      if (navigator.vibrate) {
+        navigator.vibrate([200, 80, 200, 80, 500]);
+      }
+
+      // 2. Blinding Supernova Whiteout Flare
+      triggerSupernovaFlash();
+
+      // 3. Chromatic Shockwave Blast (Triple Concentric Rings)
+      emitShockwave('#3b82f6', null, 8);
+      setTimeout(() => emitShockwave('#fbbf24', null, 6), 80);
+      setTimeout(() => emitShockwave('#a855f7', null, 5), 160);
+
+      // 4. 450+ 3D Metallic Ribbon & Crystal Confetti Explosion
+      const rect = launchCoreBtn ? launchCoreBtn.getBoundingClientRect() : null;
+      const blastX = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+      const blastY = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
+      createConfettiExplosion(blastX, blastY);
+
+      // 5. Hide HUD & Display Grand Celebration Proclamation Card
+      setTimeout(() => {
+        if (launchHud) launchHud.classList.remove('active');
+        if (launchCelebrateCard) launchCelebrateCard.classList.add('active');
+      }, 350);
+
+      // 6. Secondary Celebration Firework Bursts during proclamation
+      setTimeout(() => {
+        triggerSecondaryBurst(window.innerWidth * 0.22, window.innerHeight * 0.32, '#fbbf24');
+      }, 1000);
+
+      setTimeout(() => {
+        triggerSecondaryBurst(window.innerWidth * 0.78, window.innerHeight * 0.32, '#60a5fa');
+      }, 2000);
+
+      setTimeout(() => {
+        triggerSecondaryBurst(window.innerWidth * 0.50, window.innerHeight * 0.24, '#a855f7');
+      }, 3000);
+
+      setTimeout(() => {
+        triggerSecondaryBurst(window.innerWidth * 0.30, window.innerHeight * 0.40, '#fbbf24');
+      }, 4200);
+    }, 5400);
+
+    // T = 11.2s: Cinematic Hyperspace Warp Wipe into the Live Website
+    setTimeout(() => {
+      launchOverlay.classList.add('launching-exit');
+
+      // T = 12.3s: Final cleanup, show toast & commemorative banner
+      setTimeout(() => {
+        launchOverlay.style.display = 'none';
+        launchOverlay.classList.remove('active', 'launching-exit');
+        launchOverlay.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        isLaunching = false;
+
+        // Commemorate in Hero ESTD Badge
+        const heroBadge = document.querySelector('.hero-badge');
+        if (heroBadge) {
+          heroBadge.innerHTML = '<span class="accent-dot"></span><span>ESTD. 2026 // INAUGURATED BY SRIRAM SIR</span>';
+          heroBadge.style.boxShadow = '0 0 25px rgba(251, 191, 36, 0.7)';
+        }
+
+        // Display Celebratory Toast Banner
+        let toastEl = document.getElementById('launch-celebratory-toast');
+        if (!toastEl) {
+          toastEl = document.createElement('div');
+          toastEl.id = 'launch-celebratory-toast';
+          toastEl.className = 'launch-celebratory-toast';
+          toastEl.innerHTML = `
+            <span class="launch-toast-badge">OFFICIAL LAUNCH</span>
+            <span>INAUGURATED BY SRIRAM SIR • QUANTUM CODERS IS LIVE!</span>
+          `;
+          document.body.appendChild(toastEl);
+        }
+
+        requestAnimationFrame(() => {
+          toastEl.classList.add('active');
+          setTimeout(() => {
+            toastEl.classList.remove('active');
+          }, 8000);
+        });
+
+        // Store launch acknowledgment
+        try {
+          sessionStorage.setItem('qc_launched_by_sriram', 'true');
+        } catch (e) {}
+      }, 1100);
+    }, 11200);
+  };
+
+  // Event Listeners for Launch Mode
+  if (launchCoreBtn) {
+    launchCoreBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      initiateLaunchSequence(false); // local click
+    });
+  }
+
+  if (launchExitBtn) {
+    launchExitBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      exitLaunchMode();
+    });
+  }
+
+  if (launchResetBtn) {
+    launchResetBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      resetLaunchState(true);
+    });
+  }
+
+  if (footerLaunchBtn) {
+    footerLaunchBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openLaunchMode();
+    });
+  }
+
+  // Keyboard Shortcuts for Presentation & Rehearsal
+  window.addEventListener('keydown', (e) => {
+    if (launchOverlay && launchOverlay.classList.contains('active')) {
+      if (e.key === 'Escape') {
+        exitLaunchMode();
+      } else if (e.shiftKey && (e.key === 'R' || e.key === 'r')) {
+        resetLaunchState(true);
+      }
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (launchCanvas && launchOverlay && launchOverlay.classList.contains('active')) {
+      launchCanvas.width = window.innerWidth;
+      launchCanvas.height = window.innerHeight;
+    }
+  });
+
+  // Start real-time sync listeners immediately (listens for Sriram Sir's remote launch)
+  startRealtimeSyncListeners();
+
+  // Auto-launch via URL query parameter or hash: ?launch=true or #launch
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasLaunchParam = urlParams.has('launch') || urlParams.get('mode') === 'launch' || window.location.hash.toLowerCase().includes('launch');
+
+  if (hasLaunchParam) {
+    setTimeout(() => {
+      openLaunchMode();
+    }, 200);
+  }
+
+  // Global helpers for easy console testing or external triggering
+  window.openLaunchMode = openLaunchMode;
+  window.triggerRemoteLaunch = () => broadcastLaunchSignal('launch');
+  window.resetRemoteLaunch = () => resetLaunchState(true);
 });
+
