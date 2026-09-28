@@ -7,12 +7,6 @@
   <meta name="description" content="Official Event Gallery Management Dashboard for Quantum Coders, Pydah College of Engineering. Manage multi-image and video archives.">
   <link rel="icon" type="image/png" href="../assets/logo.png">
 
-  <!-- Ensure correct relative path resolution on Vercel / GitHub Pages when accessing /admin -->
-  <script>
-    if (window.location.pathname.endsWith('/admin')) {
-      window.location.replace(window.location.pathname + '/' + window.location.search + window.location.hash);
-    }
-  </script>
 
   <!-- Critical Inline CSS: Prevents FOUC, guarantees full-screen gatekeeper lockdown, and hides dashboard until authenticated -->
   <style>
@@ -176,6 +170,19 @@
       text-align: center !important;
     }
 
+    .security-lock-notice {
+      color: #60A5FA !important;
+      font-family: monospace !important;
+      font-size: 0.78rem !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.1em !important;
+      margin-bottom: 1.25rem !important;
+      padding: 0.5rem 0.85rem !important;
+      background: rgba(59, 130, 246, 0.12) !important;
+      border: 1px solid rgba(59, 130, 246, 0.35) !important;
+      text-transform: uppercase !important;
+    }
+
     .security-hint-note code {
       color: #3B82F6 !important;
       background: rgba(59, 130, 246, 0.15) !important;
@@ -184,8 +191,10 @@
     }
   </style>
 
+  <!-- Multi-Path CSS links to guarantee styling under /admin, /admin/, or root -->
   <link rel="stylesheet" href="./admin.css">
-  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="/admin.css">
+  <link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body class="halftone-bg">
   <div class="film-grain" aria-hidden="true"></div>
@@ -196,6 +205,9 @@
   <div class="security-gate-backdrop" id="security-gate">
     <div class="security-gate-box">
       <div class="security-status-badge">RESTRICTED ACCESS // LEVEL 4 CLEARANCE</div>
+      <div class="security-lock-notice" id="security-lock-notice" style="display: none;">
+        🔒 CONSOLE LOCKED // AUTHENTICATION REQUIRED
+      </div>
       <h2 class="security-title">CADRE COMMAND GATE</h2>
       <p class="security-desc">
         This administration console is restricted to authorized Quantum Coders leads &amp; faculty advisors. Enter system passcode to decrypt the controller interface.
@@ -824,7 +836,7 @@
   <!-- Toast Notification -->
   <div class="admin-toast" id="admin-toast" role="status" aria-live="polite"></div>
 
-  <!-- Vanilla JavaScript -->
-  <script src="admin.js"></script>
+  <!-- Vanilla JavaScript Admin Engine with Multi-Path Fallback -->
+  <script src="admin.js" onerror="if(!window.__adminLoaded){var s=document.createElement('script');s.src='/admin/admin.js';document.body.appendChild(s);}"></script>
 </body>
 </html>
