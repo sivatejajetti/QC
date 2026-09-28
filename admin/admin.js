@@ -6,6 +6,17 @@
 document.addEventListener('DOMContentLoaded', () => {
   const STORAGE_KEY = 'qc_event_gallery';
 
+  // Helper to safely escape HTML in rendered templates
+  const escapeHtml = (str) => {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
   // ---------------------------------------------------------------------------
   // 1. Google Drive & Video URL Helper
   // ---------------------------------------------------------------------------

@@ -1292,49 +1292,100 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ----------------------------------------------------------------------------
-  // 11. Contact Form Handler & Toast Feedback Dispatcher
+  // 11. Contact Form Handler & Google Apps Script Integration
   // ----------------------------------------------------------------------------
-  const contactForm = document.getElementById('contact-quick-form');
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSwhqJZShmVRZgXhvvKmts7yXLPdK6BN3-PMdUk0l_ye4T2vR49E1SGIKalrO2ysfY/exec';
+
+  const contactForm = document.querySelector('#contact-form') || document.querySelector('#contact-quick-form');
   const contactName = document.getElementById('contact-name');
   const contactEmail = document.getElementById('contact-email');
   const contactMsg = document.getElementById('contact-message');
+  const contactSubmitBtn = document.getElementById('contact-submit-btn');
 
   const contactErrName = document.getElementById('contact-err-name');
   const contactErrEmail = document.getElementById('contact-err-email');
   const contactErrMsg = document.getElementById('contact-err-message');
 
   if (contactForm) {
-    contactForm.addEventListener('submit', (e) => {
+    contactForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       let hasError = false;
 
-      if (!contactName.value.trim()) {
-        contactErrName.style.display = 'block';
+      const nameVal = (contactName ? contactName.value : (e.target.name ? e.target.name.value : '')).trim();
+      const emailVal = (contactEmail ? contactEmail.value : (e.target.email ? e.target.email.value : '')).trim();
+      const messageVal = (contactMsg ? contactMsg.value : (e.target.message ? e.target.message.value : '')).trim();
+
+      if (!nameVal) {
+        if (contactErrName) contactErrName.style.display = 'block';
         hasError = true;
       } else {
-        contactErrName.style.display = 'none';
+        if (contactErrName) contactErrName.style.display = 'none';
       }
 
-      if (!contactEmail.value.trim() || !validateEmail(contactEmail.value.trim())) {
-        contactErrEmail.style.display = 'block';
+      if (!emailVal || !validateEmail(emailVal)) {
+        if (contactErrEmail) contactErrEmail.style.display = 'block';
         hasError = true;
       } else {
-        contactErrEmail.style.display = 'none';
+        if (contactErrEmail) contactErrEmail.style.display = 'none';
       }
 
-      if (!contactMsg.value.trim()) {
-        contactErrMsg.style.display = 'block';
+      if (!messageVal) {
+        if (contactErrMsg) contactErrMsg.style.display = 'block';
         hasError = true;
       } else {
-        contactErrMsg.style.display = 'none';
+        if (contactErrMsg) contactErrMsg.style.display = 'none';
       }
 
       if (hasError) return;
 
-      // Success Feedback
-      showToast('Message transmitted to Quantum Coders council. We will reach out soon!');
-      contactForm.reset();
+      const payload = {
+        name: nameVal,
+        email: emailVal,
+        message: messageVal
+      };
+
+      // Button loading state
+      const originalBtnText = contactSubmitBtn ? contactSubmitBtn.innerHTML : 'Send Message →';
+      if (contactSubmitBtn) {
+        contactSubmitBtn.disabled = true;
+        contactSubmitBtn.innerHTML = 'Transmitting... <span class="btn-arrow">⏳</span>';
+      }
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          // text/plain avoids the CORS preflight that Apps Script can't handle
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+
+        let result = {};
+        try {
+          result = await res.json();
+        } catch (jsonErr) {
+          // If Apps Script returns raw text or HTML redirect
+          result = { status: 'success' };
+        }
+
+        if (result.status === 'success' || result.result === 'success') {
+          showToast('Submitted successfully! Your message was received.');
+          alert('Submitted successfully!');
+          e.target.reset();
+        } else {
+          showToast('Error: ' + (result.message || 'Submission failed.'));
+          alert('Error: ' + (result.message || 'Submission failed.'));
+        }
+      } catch (err) {
+        console.error('Apps Script submission error:', err);
+        showToast('Something went wrong. Please check your connection and try again.');
+        alert('Something went wrong. Try again.');
+      } finally {
+        if (contactSubmitBtn) {
+          contactSubmitBtn.disabled = false;
+          contactSubmitBtn.innerHTML = originalBtnText;
+        }
+      }
     });
   }
 

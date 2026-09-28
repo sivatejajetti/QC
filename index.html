@@ -1043,26 +1043,26 @@
           <!-- Right: Message Form -->
           <div class="contact-form-col">
             <div class="contact-form-box halftone-dense">
-              <form id="contact-quick-form" novalidate>
+              <form id="contact-form" class="contact-quick-form" novalidate>
                 <div class="form-group" style="margin-bottom: 2rem;">
                   <label for="contact-name" class="editorial-label">Your Name <span class="req-star">*</span></label>
-                  <input type="text" id="contact-name" class="editorial-input" placeholder="e.g. Sarah Connor" required>
+                  <input type="text" id="contact-name" name="name" class="editorial-input" placeholder="e.g. Sarah Connor" required>
                   <span class="form-error-msg" id="contact-err-name">Please provide your name.</span>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 2rem;">
                   <label for="contact-email" class="editorial-label">Email Address <span class="req-star">*</span></label>
-                  <input type="email" id="contact-email" class="editorial-input" placeholder="e.g. sarah@cyberdyne.io" required>
+                  <input type="email" id="contact-email" name="email" class="editorial-input" placeholder="e.g. sarah@cyberdyne.io" required>
                   <span class="form-error-msg" id="contact-err-email">Please provide a valid email.</span>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 2.5rem;">
                   <label for="contact-message" class="editorial-label">Message / Proposal <span class="req-star">*</span></label>
-                  <textarea id="contact-message" class="editorial-textarea" placeholder="Describe your proposal or question..." required></textarea>
+                  <textarea id="contact-message" name="message" class="editorial-textarea" placeholder="Describe your proposal or question..." required></textarea>
                   <span class="form-error-msg" id="contact-err-message">Please enter your message.</span>
                 </div>
 
-                <button type="submit" class="btn-brutalist" style="width: 100%;" data-cursor="SEND">
+                <button type="submit" class="btn-brutalist" id="contact-submit-btn" style="width: 100%;" data-cursor="SEND">
                   Send Message <span class="btn-arrow">→</span>
                 </button>
               </form>
