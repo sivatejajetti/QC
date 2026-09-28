@@ -1404,6 +1404,56 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ----------------------------------------------------------------------------
+  // Google Drive Embedded Video Section Controller (Multi-Video Config)
+  // ----------------------------------------------------------------------------
+  const DRIVE_VIDEOS = [
+    {
+      id: 'FILE_ID_HERE', // <-- Replace with your Google Drive File ID
+      title: 'PROJECT_NAME demo',
+      label: 'Featured Demo'
+    }
+    // To support multiple videos, simply add more entries:
+    // { id: 'ANOTHER_FILE_ID', title: 'ReconX Project Demo', label: 'ReconX' }
+  ];
+
+  const driveIframe = document.getElementById('drive-video-iframe');
+  const driveTitle = document.getElementById('drive-video-title');
+  const driveTabsContainer = document.getElementById('drive-video-tabs');
+
+  if (driveIframe && Array.isArray(DRIVE_VIDEOS) && DRIVE_VIDEOS.length > 0) {
+    const setDriveVideo = (videoObj) => {
+      // Must use /preview format for embedding
+      driveIframe.src = `https://drive.google.com/file/d/${videoObj.id}/preview`;
+      driveIframe.title = `${videoObj.title} - Google Drive Video Player`;
+      if (driveTitle) driveTitle.textContent = videoObj.title;
+    };
+
+    // Set first video
+    setDriveVideo(DRIVE_VIDEOS[0]);
+
+    // If multiple videos exist, render interactive switch tabs
+    if (DRIVE_VIDEOS.length > 1 && driveTabsContainer) {
+      driveTabsContainer.style.display = 'flex';
+      driveTabsContainer.innerHTML = DRIVE_VIDEOS.map((vid, idx) => `
+        <button type="button" class="drive-tab-btn ${idx === 0 ? 'active' : ''}" data-idx="${idx}">
+          ▶ ${vid.label || vid.title}
+        </button>
+      `).join('');
+
+      driveTabsContainer.querySelectorAll('.drive-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          driveTabsContainer.querySelectorAll('.drive-tab-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const idx = parseInt(btn.dataset.idx, 10);
+          if (DRIVE_VIDEOS[idx]) {
+            setDriveVideo(DRIVE_VIDEOS[idx]);
+          }
+        });
+      });
+    }
+  }
+
+  // ----------------------------------------------------------------------------
   // 12. 3D Tiered Cadre Deck Controller (Synchronized Pop-out & Layered Slabs)
   // ----------------------------------------------------------------------------
   const cadreStage = document.getElementById('cadre-deck-stage');

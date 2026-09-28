@@ -6,6 +6,185 @@
   <title>GALLERY CONTROLLER // Quantum Coders Admin</title>
   <meta name="description" content="Official Event Gallery Management Dashboard for Quantum Coders, Pydah College of Engineering. Manage multi-image and video archives.">
   <link rel="icon" type="image/png" href="../assets/logo.png">
+
+  <!-- Ensure correct relative path resolution on Vercel / GitHub Pages when accessing /admin -->
+  <script>
+    if (window.location.pathname.endsWith('/admin')) {
+      window.location.replace(window.location.pathname + '/' + window.location.search + window.location.hash);
+    }
+  </script>
+
+  <!-- Critical Inline CSS: Prevents FOUC, guarantees full-screen gatekeeper lockdown, and hides dashboard until authenticated -->
+  <style>
+    /* Global Reset & Base */
+    html, body {
+      background-color: #050505 !important;
+      color: #FFFFFF !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* CRITICAL SECURITY: Hide ALL admin navigation and dashboard contents until passcode is authenticated */
+    body:not(.auth-cleared) .admin-header,
+    body:not(.auth-cleared) main,
+    body:not(.auth-cleared) .admin-modal-backdrop:not(#security-gate),
+    body:not(.auth-cleared) .admin-toast {
+      display: none !important;
+      visibility: hidden !important;
+    }
+
+    /* Fullscreen pitch-black gatekeeper backdrop */
+    .security-gate-backdrop {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      background: #050505 !important;
+      z-index: 999999 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 1.5rem !important;
+      box-sizing: border-box !important;
+    }
+
+    .security-gate-backdrop.unlocked {
+      display: none !important;
+    }
+
+    .security-gate-box {
+      background: #0D0D10 !important;
+      border: 1.5px solid #3B82F6 !important;
+      box-shadow: 0 0 50px rgba(59, 130, 246, 0.25), 0 30px 70px rgba(0, 0, 0, 0.95) !important;
+      max-width: 520px !important;
+      width: 100% !important;
+      padding: 2.5rem !important;
+      text-align: center !important;
+      position: relative !important;
+      box-sizing: border-box !important;
+    }
+
+    .security-status-badge {
+      font-family: monospace !important;
+      font-size: 0.72rem !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.2em !important;
+      color: #F97316 !important;
+      background: rgba(249, 115, 22, 0.12) !important;
+      border: 1px solid #F97316 !important;
+      display: inline-block !important;
+      padding: 0.25rem 0.75rem !important;
+      margin-bottom: 1rem !important;
+      text-transform: uppercase !important;
+    }
+
+    .security-title {
+      font-family: Impact, -apple-system, sans-serif !important;
+      font-size: 2.2rem !important;
+      letter-spacing: 0.05em !important;
+      color: #FFFFFF !important;
+      line-height: 1.1 !important;
+      margin-bottom: 0.75rem !important;
+    }
+
+    .security-desc {
+      font-size: 0.88rem !important;
+      color: #A0A0A0 !important;
+      line-height: 1.6 !important;
+      margin-bottom: 1.75rem !important;
+    }
+
+    .security-form-block {
+      text-align: left !important;
+    }
+
+    .admin-form-label {
+      display: block !important;
+      font-family: monospace !important;
+      font-size: 0.75rem !important;
+      color: #D1D5DB !important;
+      margin-bottom: 0.4rem !important;
+      letter-spacing: 0.05em !important;
+    }
+
+    .admin-input {
+      width: 100% !important;
+      box-sizing: border-box !important;
+      background: #141418 !important;
+      border: 1px solid rgba(255, 255, 255, 0.25) !important;
+      color: #FFFFFF !important;
+      padding: 0.85rem 1rem !important;
+      font-family: monospace !important;
+      font-size: 0.95rem !important;
+      outline: none !important;
+      transition: border-color 0.2s ease !important;
+    }
+
+    .admin-input:focus {
+      border-color: #3B82F6 !important;
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.3) !important;
+    }
+
+    .btn-brutalist {
+      font-family: monospace !important;
+      font-weight: 700 !important;
+      font-size: 0.85rem !important;
+      letter-spacing: 0.08em !important;
+      padding: 0.85rem 1.4rem !important;
+      cursor: pointer !important;
+      text-transform: uppercase !important;
+      border: 1px solid transparent !important;
+      transition: all 0.2s ease !important;
+      display: inline-flex !important;
+      align-items: center !important;
+    }
+
+    .btn-primary {
+      background: #3B82F6 !important;
+      color: #FFFFFF !important;
+      border-color: #2563EB !important;
+    }
+
+    .btn-primary:hover {
+      background: #2563EB !important;
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.5) !important;
+    }
+
+    .security-error-msg {
+      display: none;
+      color: #EF4444 !important;
+      font-family: monospace !important;
+      font-size: 0.75rem !important;
+      letter-spacing: 0.1em !important;
+      margin-top: 0.5rem !important;
+      font-weight: 700 !important;
+    }
+
+    .security-error-msg.visible {
+      display: block !important;
+    }
+
+    .security-hint-note {
+      margin-top: 1.5rem !important;
+      font-family: monospace !important;
+      font-size: 0.75rem !important;
+      color: #A0A0A0 !important;
+      text-align: center !important;
+    }
+
+    .security-hint-note code {
+      color: #3B82F6 !important;
+      background: rgba(59, 130, 246, 0.15) !important;
+      padding: 0.2rem 0.5rem !important;
+      border-radius: 4px !important;
+    }
+  </style>
+
+  <link rel="stylesheet" href="./admin.css">
   <link rel="stylesheet" href="admin.css">
 </head>
 <body class="halftone-bg">

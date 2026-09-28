@@ -5718,4 +5718,122 @@ button {
   transform: translateY(0) scale(1);
 }
 
+/* ==========================================================================
+   GOOGLE DRIVE EMBEDDED VIDEO SECTION (16:9 RESPONSIVE & BRUTALIST ACCENTS)
+   ========================================================================== */
+.drive-video-section {
+  padding: 5rem 0 4rem 0;
+  position: relative;
+  background: radial-gradient(circle at 50% 30%, rgba(59, 130, 246, 0.06), transparent 70%);
+}
+
+.drive-video-wrapper {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
+}
+
+.drive-video-frame-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #08080A;
+  border: 1.5px solid var(--border-medium);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(59, 130, 246, 0.15);
+  transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.drive-video-frame-container:hover {
+  border-color: var(--color-blue);
+  box-shadow: 0 30px 75px rgba(0, 0, 0, 0.95), 0 0 45px rgba(59, 130, 246, 0.28);
+}
+
+.drive-video-iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+.drive-video-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.1rem;
+  padding: 0 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.drive-video-badge {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--color-blue);
+  border: 1px solid var(--color-blue);
+  padding: 0.25rem 0.65rem;
+  border-radius: 4px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.drive-video-title {
+  color: var(--color-light-gray);
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+/* Multi-Video Selector Tabs */
+.drive-video-tabs {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.drive-tab-btn {
+  background: #101015;
+  border: 1px solid var(--border-medium);
+  color: var(--color-gray);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.drive-tab-btn:hover {
+  color: var(--color-white);
+  border-color: var(--border-light);
+}
+
+.drive-tab-btn.active {
+  background: var(--color-blue);
+  color: #FFFFFF;
+  border-color: var(--color-blue);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+}
+
+@media (max-width: 600px) {
+  .drive-video-section {
+    padding: 3.5rem 0 2.5rem 0;
+  }
+  .drive-video-frame-container {
+    border-radius: 8px;
+  }
+}
+
+
 

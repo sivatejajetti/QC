@@ -842,10 +842,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnLockConsole = document.getElementById('btn-lock-console');
 
   const checkAuth = () => {
+    // If URL has ?lock=true or #lock, force lock immediately
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('lock') === 'true' || window.location.hash === '#lock') {
+      sessionStorage.removeItem(AUTH_KEY);
+    }
+
     if (sessionStorage.getItem(AUTH_KEY) === 'true') {
       if (securityGate) securityGate.classList.add('unlocked');
+      document.body.classList.add('auth-cleared');
     } else {
       if (securityGate) securityGate.classList.remove('unlocked');
+      document.body.classList.remove('auth-cleared');
       if (adminPasscode) {
         setTimeout(() => adminPasscode.focus(), 150);
       }
@@ -858,11 +866,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const entered = (adminPasscode ? adminPasscode.value : '').trim();
       if (VALID_KEYS.includes(entered)) {
         sessionStorage.setItem(AUTH_KEY, 'true');
+        document.body.classList.add('auth-cleared');
         if (securityError) securityError.classList.remove('visible');
         if (securityGate) securityGate.classList.add('unlocked');
         showToast('Access Granted. Welcome to Cadre Command.');
         if (adminPasscode) adminPasscode.value = '';
       } else {
+        document.body.classList.remove('auth-cleared');
         if (securityError) securityError.classList.add('visible');
         if (adminPasscode) {
           adminPasscode.value = '';
@@ -876,6 +886,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnLockConsole) {
     btnLockConsole.addEventListener('click', () => {
       sessionStorage.removeItem(AUTH_KEY);
+      document.body.classList.remove('auth-cleared');
       if (securityGate) securityGate.classList.remove('unlocked');
       if (securityError) securityError.classList.remove('visible');
       if (adminPasscode) {
