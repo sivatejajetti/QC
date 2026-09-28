@@ -1,4 +1,4 @@
-/* ==========================================================================
+w2w2e/* ==========================================================================
    QUANTUM CODERS // PREMIUM EDITORIAL CLUB WEBSITE
    STYLE ARCHITECTURE:
    1. Google Fonts & CSS Reset
@@ -2831,18 +2831,139 @@ button {
   }
 }
 
-.card-success-banner {
+.card-success-banner,
+.card-status-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding: 1.4rem 2rem;
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 2.5rem;
+  transition: all 0.3s ease;
+}
+
+.card-status-banner-pending {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1.5px solid #F59E0B;
+  color: #FBBF24;
+}
+
+.card-status-banner-approved {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1.5px solid #10B981;
+  color: #34D399;
+}
+
+.card-status-banner-rejected {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1.5px solid #EF4444;
+  color: #F87171;
+}
+
+.status-banner-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.status-banner-title {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+}
+
+.status-banner-desc {
+  font-size: 0.82rem;
+  color: var(--color-light-gray);
+  line-height: 1.5;
+}
+
+.status-banner-desc code {
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.15);
+  padding: 0.15rem 0.4rem;
+  border-radius: 2px;
+}
+
+/* Watermark Notice on Pending Card */
+.dcard-pending-notice {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px dashed #F59E0B;
+  color: #FBBF24;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1.5rem;
   display: flex;
   align-items: center;
+  gap: 0.6rem;
+  text-transform: uppercase;
+}
+
+.pending-pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: #F59E0B;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 10px #F59E0B;
+  animation: pendingPulse 1.4s infinite ease-in-out;
+}
+
+@keyframes pendingPulse {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+    box-shadow: 0 0 16px #F59E0B;
+  }
+}
+
+/* Registration Status Lookup Helper */
+.registration-lookup-bar {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed var(--border-medium);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 1rem;
-  padding: 1.25rem 2rem;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid #10B981;
-  color: #10B981;
+  flex-wrap: wrap;
+}
+
+.lookup-bar-label {
   font-family: var(--font-mono);
-  font-size: 0.95rem;
-  letter-spacing: 0.1em;
-  margin-bottom: 2.5rem;
+  font-size: 0.8rem;
+  color: var(--color-gray);
+}
+
+.btn-lookup-status {
+  background: transparent;
+  border: 1px solid var(--border-medium);
+  color: var(--color-blue);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-lookup-status:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: var(--color-blue);
+  color: #FFFFFF;
 }
 
 /* 3D Physical-Digital Card Object */
@@ -5553,4 +5674,48 @@ button {
     border-radius: 12px;
   }
 }
+
+/* ==========================================================================
+   APPLICATION STATUS LOOKUP MODAL (MAIN SITE)
+   ========================================================================== */
+#status-lookup-modal.admin-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+#status-lookup-modal.admin-modal-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#status-lookup-modal .admin-modal-box {
+  background: #0E0E14;
+  border: 1.5px solid var(--border-medium);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95), 0 0 35px rgba(59, 130, 246, 0.25);
+  width: 100%;
+  max-width: 540px;
+  padding: 2rem;
+  position: relative;
+  transform: translateY(20px) scale(0.97);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#status-lookup-modal.admin-modal-backdrop.active .admin-modal-box {
+  transform: translateY(0) scale(1);
+}
+
 

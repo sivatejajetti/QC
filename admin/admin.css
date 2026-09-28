@@ -1085,3 +1085,534 @@ body {
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
 }
+
+/* ==========================================================================
+   CONSOLE VIEW SWITCHER & TABS
+   ========================================================================== */
+.admin-tab-nav {
+  display: flex;
+  align-items: center;
+  background: #111116;
+  border: 1px solid var(--border-medium);
+  padding: 0.25rem;
+  border-radius: 2px;
+  gap: 0.25rem;
+}
+
+.admin-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-gray);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all var(--transition-fast);
+  border-radius: 2px;
+}
+
+.admin-tab-btn:hover {
+  color: var(--color-white);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-tab-btn.active {
+  background: var(--color-blue);
+  color: #FFFFFF;
+}
+
+.admin-tab-badge {
+  background: #EF4444;
+  color: #FFFFFF;
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.admin-tab-badge.badge-zero {
+  background: #374151;
+  color: #9CA3AF;
+}
+
+/* View Panels */
+.admin-view-panel {
+  display: none;
+  animation: fadeInPanel 0.25s ease-out forwards;
+}
+
+.admin-view-panel.active {
+  display: block;
+}
+
+@keyframes fadeInPanel {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   STUDENT REGISTRATIONS FILTER PILLS
+   ========================================================================== */
+.reg-filter-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.btn-filter-pill {
+  background: #141419;
+  border: 1px solid var(--border-medium);
+  color: var(--color-gray);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-filter-pill:hover {
+  color: var(--color-white);
+  border-color: var(--border-light);
+}
+
+.btn-filter-pill.active {
+  background: var(--color-white);
+  color: #000000;
+  border-color: var(--color-white);
+  font-weight: 700;
+}
+
+.btn-filter-pill.pill-pending.active {
+  background: #F59E0B;
+  color: #000000;
+  border-color: #F59E0B;
+}
+
+.btn-filter-pill.pill-approved.active {
+  background: #10B981;
+  color: #FFFFFF;
+  border-color: #10B981;
+}
+
+.btn-filter-pill.pill-rejected.active {
+  background: #EF4444;
+  color: #FFFFFF;
+  border-color: #EF4444;
+}
+
+/* ==========================================================================
+   STUDENT REGISTRATIONS LIST & CARDS
+   ========================================================================== */
+.registrations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+  margin-bottom: 4rem;
+}
+
+.reg-card {
+  background: #0E0E12;
+  border: 1.5px solid var(--border-medium);
+  padding: 1.5rem;
+  position: relative;
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.reg-card:hover {
+  border-color: var(--border-light);
+  transform: translateY(-2px);
+}
+
+.reg-card.status-pending {
+  border-left: 5px solid #F59E0B;
+}
+
+.reg-card.status-approved {
+  border-left: 5px solid #10B981;
+}
+
+.reg-card.status-rejected {
+  border-left: 5px solid #EF4444;
+}
+
+.reg-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+  flex-wrap: wrap;
+}
+
+.reg-student-name {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  color: var(--color-white);
+  letter-spacing: 0.02em;
+  margin-bottom: 0.35rem;
+}
+
+.reg-ids-line {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--color-gray);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.reg-member-id-tag {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34D399;
+  border: 1px solid #059669;
+  padding: 0.15rem 0.5rem;
+  font-weight: 700;
+  border-radius: 2px;
+}
+
+.reg-app-id-tag {
+  background: rgba(255, 255, 255, 0.05);
+  color: #94A3B8;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--border-medium);
+}
+
+/* Status Pill */
+.reg-status-badge {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 0.35rem 0.85rem;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 2px;
+}
+
+.status-badge-pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: #FBBF24;
+  border: 1px solid #F59E0B;
+}
+
+.status-badge-approved {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34D399;
+  border: 1px solid #10B981;
+}
+
+.status-badge-rejected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #F87171;
+  border: 1px solid #EF4444;
+}
+
+/* Info Grid */
+.reg-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  background: #09090C;
+  border: 1px solid var(--border-medium);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.reg-info-cell .reg-cell-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--color-gray);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.reg-info-cell .reg-cell-val {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  color: var(--color-white);
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.reg-statement-box {
+  background: rgba(255, 255, 255, 0.02);
+  border-left: 2px solid var(--color-blue);
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  color: var(--color-light-gray);
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+  font-style: italic;
+}
+
+.reg-card-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border-medium);
+  padding-top: 1rem;
+}
+
+.reg-time-stamp {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--color-gray);
+}
+
+.reg-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Action button variations */
+.btn-reg-action {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.btn-reg-approve {
+  background: #10B981;
+  color: #FFFFFF;
+  border-color: #059669;
+}
+.btn-reg-approve:hover {
+  background: #059669;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+.btn-reg-reject {
+  background: rgba(239, 68, 68, 0.12);
+  color: #F87171;
+  border-color: #EF4444;
+}
+.btn-reg-reject:hover {
+  background: #EF4444;
+  color: #FFFFFF;
+}
+
+.btn-reg-preview {
+  background: #1E293B;
+  color: #94A3B8;
+  border-color: #334155;
+}
+.btn-reg-preview:hover {
+  background: #334155;
+  color: #FFFFFF;
+}
+
+.btn-reg-del {
+  background: transparent;
+  color: #64748B;
+  border-color: transparent;
+  padding: 0.45rem 0.5rem;
+}
+.btn-reg-del:hover {
+  color: #EF4444;
+}
+
+/* Empty State */
+.empty-registrations-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: #0A0A0E;
+  border: 1px dashed var(--border-medium);
+}
+
+/* ==========================================================================
+   ADMIN CARD PREVIEW MODAL 3D STYLES (MATCHES EDITORIAL PASS)
+   ========================================================================== */
+.admin-card-preview-wrap {
+  display: flex;
+  justify-content: center;
+  perspective: 1200px;
+}
+
+.admin-card-preview-wrap .digital-card-object {
+  width: 100%;
+  max-width: 440px;
+  background: #08080A;
+  border: 1.5px solid var(--border-medium);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(59, 130, 246, 0.2);
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+}
+
+.admin-card-preview-wrap .digital-card-paper-header {
+  background-color: var(--color-paper);
+  color: var(--color-paper-text);
+  padding: 1.4rem 1.75rem 1.8rem 1.75rem;
+  position: relative;
+}
+
+.admin-card-preview-wrap .digital-card-paper-header::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 0;
+  width: 100%;
+  height: 14px;
+  background-color: var(--color-paper);
+  clip-path: polygon(
+    0% 0%, 2% 100%, 5% 15%, 8% 85%, 11% 10%, 15% 95%, 18% 25%, 22% 80%,
+    25% 15%, 29% 90%, 32% 20%, 36% 100%, 40% 30%, 44% 85%, 47% 10%, 51% 95%,
+    55% 20%, 58% 90%, 62% 15%, 66% 85%, 70% 20%, 74% 100%, 78% 30%, 82% 90%,
+    85% 10%, 89% 85%, 93% 20%, 97% 95%, 100% 0%
+  );
+}
+
+.admin-card-preview-wrap .dcard-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-card-preview-wrap .dcard-logo {
+  height: 38px;
+  width: auto;
+}
+
+.admin-card-preview-wrap .dcard-pydah-logo {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+}
+
+.admin-card-preview-wrap .dcard-logos-pair {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.admin-card-preview-wrap .dcard-pass-type {
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  padding: 0.2rem 0.5rem;
+  border: 1.5px solid var(--color-paper-text);
+  text-transform: uppercase;
+}
+
+.admin-card-preview-wrap .dcard-body {
+  padding: 1.6rem;
+  position: relative;
+}
+
+.admin-card-preview-wrap .dcard-member-title {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--color-blue);
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
+.admin-card-preview-wrap .dcard-member-name {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--color-white);
+  margin-bottom: 1.25rem;
+  text-transform: uppercase;
+}
+
+.admin-card-preview-wrap .dcard-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.admin-card-preview-wrap .dcard-info-item .info-lbl {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--color-gray);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+}
+
+.admin-card-preview-wrap .dcard-info-item .info-val {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-white);
+}
+
+.admin-card-preview-wrap .dcard-bottom-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.admin-card-preview-wrap .dcard-barcode-mock {
+  display: flex;
+  gap: 3px;
+  height: 32px;
+  align-items: stretch;
+}
+
+.admin-card-preview-wrap .dcard-barcode-mock span {
+  background: var(--color-white);
+  display: block;
+}
+
+.admin-card-preview-wrap .dcard-signature-wrap {
+  text-align: right;
+}
+
+.admin-card-preview-wrap .dcard-signature {
+  font-family: var(--font-signature);
+  font-size: 1.9rem;
+  color: var(--color-white);
+  transform: rotate(-5deg);
+  line-height: 1;
+}
+
+.admin-card-preview-wrap .dcard-signature-label {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--color-gray);
+  letter-spacing: 0.15em;
+  margin-top: 0.35rem;
+}
+

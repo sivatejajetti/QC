@@ -917,39 +917,344 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Generate Member ID (e.g. QC-2026-4819)
+      // ----------------------------------------------------------------------
+      // Registration Submission with Admin Approval Pipeline
+      // ----------------------------------------------------------------------
+      const REG_STORAGE_KEY = 'qc_student_registrations';
+      const REG_CHANNEL_NAME = 'qc_registration_channel';
+
+      const inputStatement = document.getElementById('reg-statement');
       const randomIdSuffix = Math.floor(1000 + Math.random() * 9000);
-      const generatedMemberId = `QC-2026-${randomIdSuffix}`;
+      const generatedAppId = `APP-2026-${randomIdSuffix}`;
 
-      // Populate Digital Card
-      const cardName = document.getElementById('card-display-name');
-      const cardId = document.getElementById('card-display-id');
-      const cardDomain = document.getElementById('card-display-domain');
-      const cardCollege = document.getElementById('card-display-college');
+      const newRegistration = {
+        id: generatedAppId,
+        memberId: null, // Assigned only after Admin Approval
+        fullName: inputName.value.trim().toUpperCase(),
+        email: inputEmail.value.trim(),
+        phone: inputPhone.value.trim(),
+        college: inputCollege.value.trim(),
+        year: inputYear.value,
+        branch: inputBranch.value.trim(),
+        interest: inputInterest.value,
+        statement: inputStatement ? inputStatement.value.trim() : '',
+        status: 'pending', // Awaiting Admin Approval!
+        appliedAt: Date.now(),
+        reviewedAt: null
+      };
 
-      if (cardName) cardName.textContent = inputName.value.trim().toUpperCase();
-      if (cardId) cardId.textContent = generatedMemberId;
-      if (cardDomain) cardDomain.textContent = inputInterest.value.toUpperCase();
-      if (cardCollege) cardCollege.textContent = inputCollege.value.trim().toUpperCase();
+      // Save to localStorage registrations array
+      try {
+        let existingList = [];
+        const stored = localStorage.getItem(REG_STORAGE_KEY);
+        if (stored) {
+          existingList = JSON.parse(stored);
+        }
+        existingList.unshift(newRegistration);
+        localStorage.setItem(REG_STORAGE_KEY, JSON.stringify(existingList));
+        localStorage.setItem('qc_current_user_app_id', generatedAppId);
+      } catch (err) {
+        console.error('Failed to save registration:', err);
+      }
 
-      // Transition to Success State
+      // Broadcast to Admin Panel via BroadcastChannel
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          const channel = new BroadcastChannel(REG_CHANNEL_NAME);
+          channel.postMessage({
+            action: 'NEW_REGISTRATION',
+            student: newRegistration,
+            timestamp: Date.now()
+          });
+        }
+      } catch (err) {
+        console.warn('BroadcastChannel error:', err);
+      }
+
+      // Render the Pending Card State
+      currentActiveRegistration = newRegistration;
+      renderCardFromRecord(newRegistration);
+
+      // Transition to Result Container
       regFormBox.style.display = 'none';
       membershipResult.classList.add('active');
-
-      // Scroll smoothly to membership result
       membershipResult.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-      showToast(`Welcome ${inputName.value.trim()}! Your ID ${generatedMemberId} is active.`);
+      showToast(`Application submitted! Awaiting Admin Approval in Admin Panel.`);
     });
   }
 
   // ----------------------------------------------------------------------------
-  // 10. Digital Membership Card Generator & 3D Tilt Physics
+  // 10. Student Membership Pass Engine: Reactive Pending vs Approved States
   // ----------------------------------------------------------------------------
   const digitalCard = document.getElementById('interactive-digital-card');
   const printBtn = document.getElementById('btn-print-card');
   const resetFormBtn = document.getElementById('btn-reset-form');
+  const btnCheckApprovalStatus = document.getElementById('btn-check-approval-status');
 
+  const cardStatusBanner = document.getElementById('reg-status-banner');
+  const statusBannerIcon = document.getElementById('status-banner-icon');
+  const statusBannerTitle = document.getElementById('status-banner-title');
+  const statusBannerDesc = document.getElementById('status-banner-desc');
+
+  const cardPassType = document.getElementById('card-display-pass-type');
+  const cardStatusTag = document.getElementById('card-display-status-tag');
+  const cardName = document.getElementById('card-display-name');
+  const cardIdLabel = document.getElementById('card-display-id-label');
+  const cardId = document.getElementById('card-display-id');
+  const cardDomain = document.getElementById('card-display-domain');
+  const cardCollege = document.getElementById('card-display-college');
+  const cardValidity = document.getElementById('card-display-validity');
+  const cardPendingNotice = document.getElementById('card-pending-notice');
+
+  let currentActiveRegistration = null;
+
+  // Render card based on registration record data and status
+  const renderCardFromRecord = (reg) => {
+    if (!reg) return;
+    currentActiveRegistration = reg;
+
+    const isApproved = reg.status === 'approved';
+    const isPending = reg.status === 'pending';
+
+    if (cardName) cardName.textContent = (reg.fullName || 'YOUR NAME').toUpperCase();
+    if (cardDomain) cardDomain.textContent = (reg.interest || 'ENGINEERING').toUpperCase();
+    if (cardCollege) cardCollege.textContent = (reg.college || 'PYDAH GROUP').toUpperCase();
+
+    if (isApproved) {
+      // Banner -> Approved Emerald
+      if (cardStatusBanner) {
+        cardStatusBanner.className = 'card-status-banner card-status-banner-approved';
+      }
+      if (statusBannerIcon) statusBannerIcon.textContent = '✓';
+      if (statusBannerTitle) statusBannerTitle.textContent = 'APPLICATION OFFICIALLY APPROVED // CADRE CREDENTIALS ACTIVE';
+      if (statusBannerDesc) {
+        statusBannerDesc.innerHTML = `Welcome to <strong>Quantum Coders</strong>! Your application was officially approved by the admin. Your verified Member ID <code>${reg.memberId || 'QC-2026-ACTIVE'}</code> has been minted and your official 3D pass is active.`;
+      }
+
+      // Card Fields -> Approved State
+      if (cardPassType) cardPassType.textContent = 'MEMBER PASS';
+      if (cardStatusTag) {
+        cardStatusTag.textContent = 'VERIFIED ACTIVE FELLOW';
+        cardStatusTag.style.color = 'var(--color-blue)';
+      }
+      if (cardIdLabel) cardIdLabel.textContent = 'MEMBER ID';
+      if (cardId) {
+        cardId.textContent = reg.memberId || 'QC-2026-ACTIVE';
+        cardId.style.color = '#34D399';
+      }
+      if (cardValidity) cardValidity.textContent = '2026 — 2027';
+      if (cardPendingNotice) cardPendingNotice.style.display = 'none';
+
+      // Action buttons
+      if (btnCheckApprovalStatus) btnCheckApprovalStatus.style.display = 'none';
+      if (printBtn) printBtn.style.display = 'inline-block';
+    } else if (isPending) {
+      // Banner -> Pending Amber
+      if (cardStatusBanner) {
+        cardStatusBanner.className = 'card-status-banner card-status-banner-pending';
+      }
+      if (statusBannerIcon) statusBannerIcon.textContent = '⏳';
+      if (statusBannerTitle) statusBannerTitle.textContent = 'APPLICATION SUBMITTED // AWAITING CADRE APPROVAL';
+      if (statusBannerDesc) {
+        statusBannerDesc.innerHTML = `Your application <code>${reg.id}</code> is currently <strong>awaiting approval by the admin in the Admin Panel</strong>. Once the admin clicks approve, this card will automatically activate in real time.`;
+      }
+
+      // Card Fields -> Pending State
+      if (cardPassType) cardPassType.textContent = 'APPLICANT PASS';
+      if (cardStatusTag) {
+        cardStatusTag.textContent = 'APPLICATION STATUS: PENDING CADRE REVIEW';
+        cardStatusTag.style.color = '#FBBF24';
+      }
+      if (cardIdLabel) cardIdLabel.textContent = 'APPLICATION REF';
+      if (cardId) {
+        cardId.textContent = reg.id;
+        cardId.style.color = '#FBBF24';
+      }
+      if (cardValidity) cardValidity.textContent = 'PENDING APPROVAL';
+      if (cardPendingNotice) cardPendingNotice.style.display = 'flex';
+
+      // Action buttons
+      if (btnCheckApprovalStatus) btnCheckApprovalStatus.style.display = 'inline-block';
+      if (printBtn) printBtn.style.display = 'none';
+    } else {
+      // Rejected State
+      if (cardStatusBanner) {
+        cardStatusBanner.className = 'card-status-banner card-status-banner-rejected';
+      }
+      if (statusBannerIcon) statusBannerIcon.textContent = '✕';
+      if (statusBannerTitle) statusBannerTitle.textContent = 'APPLICATION REVISION REQUIRED';
+      if (statusBannerDesc) {
+        statusBannerDesc.innerHTML = `Your registration was not approved or requires revision. Please reach out to the club cadre or submit a revised application.`;
+      }
+      if (cardPassType) cardPassType.textContent = 'REVISION REQUIRED';
+      if (cardPendingNotice) cardPendingNotice.style.display = 'none';
+      if (btnCheckApprovalStatus) btnCheckApprovalStatus.style.display = 'inline-block';
+      if (printBtn) printBtn.style.display = 'none';
+    }
+  };
+
+  // Check Approval Status manually
+  const checkCurrentApprovalStatus = (showFeedback = true) => {
+    if (!currentActiveRegistration) {
+      const savedAppId = localStorage.getItem('qc_current_user_app_id');
+      if (savedAppId) {
+        try {
+          const list = JSON.parse(localStorage.getItem('qc_student_registrations') || '[]');
+          const found = list.find(r => r.id === savedAppId);
+          if (found) currentActiveRegistration = found;
+        } catch (e) {}
+      }
+    }
+
+    if (!currentActiveRegistration) {
+      if (showFeedback) showToast('No active application found. Please register first.');
+      return;
+    }
+
+    // Refresh from localStorage
+    try {
+      const list = JSON.parse(localStorage.getItem('qc_student_registrations') || '[]');
+      const updated = list.find(r => r.id === currentActiveRegistration.id);
+      if (updated) {
+        const wasPending = currentActiveRegistration.status === 'pending';
+        currentActiveRegistration = updated;
+        renderCardFromRecord(updated);
+
+        if (updated.status === 'approved') {
+          if (wasPending || showFeedback) {
+            showToast(`🎉 APPROVED! Member ID: ${updated.memberId} is active!`, 'success');
+          }
+        } else if (updated.status === 'pending') {
+          if (showFeedback) {
+            showToast(`⏳ Status: Still awaiting admin approval in Admin Panel.`);
+          }
+        } else {
+          if (showFeedback) {
+            showToast(`✕ Status: Application marked for revision.`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (btnCheckApprovalStatus) {
+    btnCheckApprovalStatus.addEventListener('click', () => {
+      checkCurrentApprovalStatus(true);
+    });
+  }
+
+  // Real-time listener for Admin Approval via BroadcastChannel & Storage Event
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      const clientRegChannel = new BroadcastChannel('qc_registration_channel');
+      clientRegChannel.onmessage = (event) => {
+        if (!event || !event.data) return;
+        const { action, id, memberId, student } = event.data;
+
+        if (action === 'APPROVE') {
+          if (currentActiveRegistration && currentActiveRegistration.id === id) {
+            currentActiveRegistration.status = 'approved';
+            currentActiveRegistration.memberId = memberId;
+            renderCardFromRecord(currentActiveRegistration);
+            showToast(`🎉 Congratulations! Your application has been approved by the Admin!`);
+          }
+        } else if (action === 'REJECT' || action === 'REVOKE') {
+          if (currentActiveRegistration && currentActiveRegistration.id === id) {
+            checkCurrentApprovalStatus(false);
+          }
+        }
+      };
+    }
+  } catch (err) {
+    console.warn('BroadcastChannel error in client:', err);
+  }
+
+  // Cross-tab storage event sync
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'qc_student_registrations' || e.key === 'qc_last_broadcast_approval') {
+      checkCurrentApprovalStatus(false);
+    }
+  });
+
+  // Also check periodically in background every 3.5 seconds if on screen
+  setInterval(() => {
+    if (membershipResult && membershipResult.classList.contains('active') && currentActiveRegistration && currentActiveRegistration.status === 'pending') {
+      checkCurrentApprovalStatus(false);
+    }
+  }, 3500);
+
+  // Status Lookup Modal
+  const statusLookupModal = document.getElementById('status-lookup-modal');
+  const btnOpenStatusLookup = document.getElementById('btn-open-status-lookup');
+  const statusLookupModalClose = document.getElementById('status-lookup-modal-close');
+  const statusLookupCancel = document.getElementById('status-lookup-cancel');
+  const statusLookupForm = document.getElementById('status-lookup-form');
+  const lookupInput = document.getElementById('lookup-input');
+  const lookupErrorMsg = document.getElementById('lookup-error-msg');
+
+  const openStatusLookupModal = () => {
+    if (statusLookupForm) statusLookupForm.reset();
+    if (lookupErrorMsg) lookupErrorMsg.style.display = 'none';
+
+    // Autofill with last application ID or email if available
+    const lastAppId = localStorage.getItem('qc_current_user_app_id');
+    if (lastAppId && lookupInput) {
+      lookupInput.value = lastAppId;
+    }
+
+    if (statusLookupModal) statusLookupModal.classList.add('active');
+  };
+
+  const closeStatusLookupModal = () => {
+    if (statusLookupModal) statusLookupModal.classList.remove('active');
+  };
+
+  if (btnOpenStatusLookup) btnOpenStatusLookup.addEventListener('click', openStatusLookupModal);
+  if (statusLookupModalClose) statusLookupModalClose.addEventListener('click', closeStatusLookupModal);
+  if (statusLookupCancel) statusLookupCancel.addEventListener('click', closeStatusLookupModal);
+  if (statusLookupModal) {
+    statusLookupModal.addEventListener('click', (e) => {
+      if (e.target === statusLookupModal) closeStatusLookupModal();
+    });
+  }
+
+  if (statusLookupForm) {
+    statusLookupForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = (lookupInput ? lookupInput.value : '').trim().toLowerCase();
+      if (!val) return;
+
+      try {
+        const list = JSON.parse(localStorage.getItem('qc_student_registrations') || '[]');
+        const found = list.find(r =>
+          (r.id && r.id.toLowerCase() === val) ||
+          (r.email && r.email.toLowerCase() === val) ||
+          (r.memberId && r.memberId.toLowerCase() === val)
+        );
+
+        if (found) {
+          closeStatusLookupModal();
+          regFormBox.style.display = 'none';
+          membershipResult.classList.add('active');
+          renderCardFromRecord(found);
+          membershipResult.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showToast(`Loaded application for ${found.fullName}!`);
+        } else {
+          if (lookupErrorMsg) {
+            lookupErrorMsg.textContent = 'No application found with this email or Application ID. Please verify or register anew.';
+            lookupErrorMsg.style.display = 'block';
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  }
+
+  // 3D Tilt Physics for digital card
   if (digitalCard && !hasTouch) {
     digitalCard.addEventListener('mousemove', (e) => {
       const rect = digitalCard.getBoundingClientRect();

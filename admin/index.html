@@ -66,14 +66,23 @@
       </a>
 
       <div class="admin-header-actions">
-        <span class="admin-badge-tag">ADMIN // GALLERY CONTROLLER</span>
+        <!-- Section Navigation Switcher -->
+        <nav class="admin-tab-nav" aria-label="Console Navigation">
+          <button type="button" class="admin-tab-btn active" id="tab-gallery-btn">
+            🖼️ Events Gallery
+          </button>
+          <button type="button" class="admin-tab-btn" id="tab-registrations-btn">
+            🎓 Student Registrations <span class="admin-tab-badge" id="tab-pending-badge">0</span>
+          </button>
+        </nav>
+
         <a href="../index.html?launch=true" class="btn-brutalist btn-primary btn-sm" target="_blank" rel="noopener" style="background: #2563eb; color: #fff;">
           🚀 Launch Mode
         </a>
         <button type="button" class="btn-brutalist btn-outline btn-sm" id="btn-lock-console" title="Lock console and require passcode again">
-          🔒 Lock Console
+          🔒 Lock
         </button>
-        <a href="../index.html#gallery" class="btn-brutalist btn-secondary btn-sm" target="_blank" rel="noopener">
+        <a href="../index.html#register" class="btn-brutalist btn-secondary btn-sm" target="_blank" rel="noopener">
           View Live Site ↗
         </a>
       </div>
@@ -82,85 +91,178 @@
 
   <main>
     <!-- =======================================================================
-         01. DASHBOARD HERO & METRICS
+         VIEW 1: EVENT GALLERY CONSOLE
          ======================================================================= -->
-    <section class="dashboard-hero">
-      <div class="container">
-        <div class="hero-head-row">
-          <div>
-            <h1 class="dashboard-title">EVENT GALLERY <span style="color: var(--color-blue);">CONSOLE</span></h1>
-            <p class="dashboard-desc">
-              Manage the public editorial moments grid for <strong>Quantum Coders (Pydah College of Engineering)</strong>. Attach multiple photographs and streaming videos (Google Drive, YouTube, Vimeo) to each individual event.
-            </p>
+    <div class="admin-view-panel active" id="view-gallery">
+      <section class="dashboard-hero">
+        <div class="container">
+          <div class="hero-head-row">
+            <div>
+              <h1 class="dashboard-title">EVENT GALLERY <span style="color: var(--color-blue);">CONSOLE</span></h1>
+              <p class="dashboard-desc">
+                Manage the public editorial moments grid for <strong>Quantum Coders (Pydah College of Engineering)</strong>. Attach multiple photographs and streaming videos (Google Drive, YouTube, Vimeo) to each individual event.
+              </p>
+            </div>
+
+            <div>
+              <button class="btn-brutalist btn-primary" id="btn-new-event">
+                + Create New Event
+              </button>
+            </div>
           </div>
 
-          <div>
-            <button class="btn-brutalist btn-primary" id="btn-new-event">
-              + Create New Event
+          <!-- Live Metrics Counter Strip -->
+          <div class="stats-counter-row">
+            <div class="counter-box">
+              <div class="counter-num" id="count-total-events">0</div>
+              <div class="counter-label">Total Events</div>
+            </div>
+            <div class="counter-box" style="border-left-color: var(--color-orange);">
+              <div class="counter-num" id="count-total-photos">0</div>
+              <div class="counter-label">Archived Photos</div>
+            </div>
+            <div class="counter-box" style="border-left-color: var(--color-purple);">
+              <div class="counter-num" id="count-total-videos">0</div>
+              <div class="counter-label">Embedded Videos</div>
+            </div>
+            <div class="counter-box" style="border-left-color: var(--color-green);">
+              <div class="counter-num" id="count-workshops">0</div>
+              <div class="counter-label">Workshops &amp; Labs</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container">
+        <div class="toolbar-section">
+          <div class="search-filter-wrap">
+            <div class="search-input-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="search-input" class="admin-search-input" placeholder="Search events by title, badge, venue, description...">
+            </div>
+
+            <select id="category-filter" class="filter-category-select" aria-label="Filter by category">
+              <option value="all">ALL CATEGORIES</option>
+              <option value="events">EVENTS (Flagship &amp; Hackathons)</option>
+              <option value="workshops">WORKSHOPS &amp; LABS</option>
+              <option value="team">TEAM &amp; COUNCIL</option>
+              <option value="activities">ACTIVITIES &amp; FOSS</option>
+            </select>
+          </div>
+
+          <div class="toolbar-action-btns">
+            <button class="btn-brutalist btn-secondary btn-sm" id="btn-export-json" title="Export current events to JSON">
+              Export JSON
+            </button>
+            <button class="btn-brutalist btn-secondary btn-sm" id="btn-import-json" title="Import events from JSON">
+              Import JSON
+            </button>
+            <button class="btn-brutalist btn-secondary btn-sm" id="btn-reset-defaults" title="Reset to initial curated demo events">
+              ↺ Defaults
             </button>
           </div>
         </div>
 
-        <!-- Live Metrics Counter Strip -->
-        <div class="stats-counter-row">
-          <div class="counter-box">
-            <div class="counter-num" id="count-total-events">0</div>
-            <div class="counter-label">Total Events</div>
-          </div>
-          <div class="counter-box" style="border-left-color: var(--color-orange);">
-            <div class="counter-num" id="count-total-photos">0</div>
-            <div class="counter-label">Archived Photos</div>
-          </div>
-          <div class="counter-box" style="border-left-color: var(--color-purple);">
-            <div class="counter-num" id="count-total-videos">0</div>
-            <div class="counter-label">Embedded Videos</div>
-          </div>
-          <div class="counter-box" style="border-left-color: var(--color-green);">
-            <div class="counter-num" id="count-workshops">0</div>
-            <div class="counter-label">Workshops &amp; Labs</div>
-          </div>
+        <!-- Events Management Grid -->
+        <div class="events-management-grid" id="events-grid">
+          <!-- Injected via admin.js -->
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
 
     <!-- =======================================================================
-         02. CONTROLLER TOOLBAR
+         VIEW 2: STUDENT REGISTRATIONS APPROVAL CONSOLE
          ======================================================================= -->
-    <section class="container">
-      <div class="toolbar-section">
-        <div class="search-filter-wrap">
-          <div class="search-input-box">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="search-input" class="admin-search-input" placeholder="Search events by title, badge, venue, description...">
+    <div class="admin-view-panel" id="view-registrations">
+      <section class="dashboard-hero">
+        <div class="container">
+          <div class="hero-head-row">
+            <div>
+              <div class="admin-badge-tag" style="margin-bottom: 0.6rem; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: #3b82f6;">
+                MEMBERSHIP PIPELINE // APPROVAL AUTHORITY
+              </div>
+              <h1 class="dashboard-title">STUDENT REGISTRATIONS <span style="color: var(--color-green);">APPROVALS</span></h1>
+              <p class="dashboard-desc">
+                Review, verify, and officially approve student membership applications for <strong>Quantum Coders (Pydah College of Engineering)</strong>. Approving an applicant immediately assigns their verified Member ID (<code>QC-2026-XXXX</code>) and activates their official 3D Digital Membership Pass.
+              </p>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+              <button class="btn-brutalist btn-primary" id="btn-approve-all-pending" style="background: #10B981; border-color: #059669; color: #fff;">
+                ✓ Approve All Pending
+              </button>
+              <button class="btn-brutalist btn-secondary" id="btn-manual-add-student">
+                + Add Student Manually
+              </button>
+            </div>
           </div>
 
-          <select id="category-filter" class="filter-category-select" aria-label="Filter by category">
-            <option value="all">ALL CATEGORIES</option>
-            <option value="events">EVENTS (Flagship &amp; Hackathons)</option>
-            <option value="workshops">WORKSHOPS &amp; LABS</option>
-            <option value="team">TEAM &amp; COUNCIL</option>
-            <option value="activities">ACTIVITIES &amp; FOSS</option>
-          </select>
+          <!-- Live Registration Metrics Strip -->
+          <div class="stats-counter-row">
+            <div class="counter-box" style="border-left-color: var(--color-blue);">
+              <div class="counter-num" id="reg-count-total">0</div>
+              <div class="counter-label">Total Applications</div>
+            </div>
+            <div class="counter-box" style="border-left-color: #fbbf24; background: rgba(251, 191, 36, 0.05);">
+              <div class="counter-num" id="reg-count-pending" style="color: #fbbf24;">0</div>
+              <div class="counter-label">Awaiting Approval</div>
+            </div>
+            <div class="counter-box" style="border-left-color: var(--color-green); background: rgba(16, 185, 129, 0.05);">
+              <div class="counter-num" id="reg-count-approved" style="color: #34d399;">0</div>
+              <div class="counter-label">Approved Members</div>
+            </div>
+            <div class="counter-box" style="border-left-color: var(--color-red);">
+              <div class="counter-num" id="reg-count-rejected" style="color: #f87171;">0</div>
+              <div class="counter-label">Rejected / Revision</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Registrations Toolbar & Filter -->
+      <section class="container">
+        <div class="toolbar-section">
+          <div class="search-filter-wrap">
+            <div class="search-input-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="reg-search-input" class="admin-search-input" placeholder="Search by student name, email, phone, branch, college...">
+            </div>
+
+            <div class="reg-filter-buttons" role="group" aria-label="Filter registrations by status">
+              <button type="button" class="btn-filter-pill active" data-filter="all" id="filter-all-btn">
+                All (<span id="pill-count-all">0</span>)
+              </button>
+              <button type="button" class="btn-filter-pill pill-pending" data-filter="pending" id="filter-pending-btn">
+                ⏳ Pending (<span id="pill-count-pending">0</span>)
+              </button>
+              <button type="button" class="btn-filter-pill pill-approved" data-filter="approved" id="filter-approved-btn">
+                ✓ Approved (<span id="pill-count-approved">0</span>)
+              </button>
+              <button type="button" class="btn-filter-pill pill-rejected" data-filter="rejected" id="filter-rejected-btn">
+                ✕ Rejected (<span id="pill-count-rejected">0</span>)
+              </button>
+            </div>
+          </div>
+
+          <div class="toolbar-action-btns">
+            <button class="btn-brutalist btn-secondary btn-sm" id="btn-export-reg-json" title="Export registrations as JSON">
+              Export JSON
+            </button>
+            <button class="btn-brutalist btn-secondary btn-sm" id="btn-export-reg-csv" title="Export registrations as CSV">
+              Export CSV
+            </button>
+            <button class="btn-brutalist btn-secondary btn-sm" id="btn-reset-reg-defaults" title="Reset sample applications">
+              ↺ Reset Samples
+            </button>
+          </div>
         </div>
 
-        <div class="toolbar-action-btns">
-          <button class="btn-brutalist btn-secondary btn-sm" id="btn-export-json" title="Export current events to JSON">
-            Export JSON
-          </button>
-          <button class="btn-brutalist btn-secondary btn-sm" id="btn-import-json" title="Import events from JSON">
-            Import JSON
-          </button>
-          <button class="btn-brutalist btn-secondary btn-sm" id="btn-reset-defaults" title="Reset to initial curated demo events">
-            ↺ Defaults
-          </button>
+        <!-- Student Registrations Cards / Table -->
+        <div class="registrations-list" id="registrations-list">
+          <!-- Injected via admin.js -->
         </div>
-      </div>
-
-      <!-- Events Management Grid -->
-      <div class="events-management-grid" id="events-grid">
-        <!-- Injected via admin.js -->
-      </div>
-    </section>
+      </section>
+    </div>
   </main>
 
   <!-- =========================================================================
@@ -329,6 +431,212 @@
         </button>
         <button type="button" class="btn-brutalist btn-primary btn-sm" id="btn-apply-import">
           Apply &amp; Import JSON
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       05. STUDENT DIGITAL PASS PREVIEW MODAL
+       ========================================================================= -->
+  <div class="admin-modal-backdrop" id="student-card-modal" aria-hidden="true" role="dialog" aria-labelledby="card-modal-title">
+    <div class="admin-modal-box" style="max-width: 620px;">
+      <div class="modal-header-bar">
+        <div>
+          <h2 class="modal-title" id="card-modal-title">DIGITAL MEMBERSHIP PASS</h2>
+          <span class="modal-subtitle">CADRE VERIFICATION &amp; CREDENTIALS PREVIEW</span>
+        </div>
+        <button class="modal-close-btn" id="student-card-modal-close" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body-scroll" style="text-align: center; padding: 2rem 1.5rem;">
+        <!-- Status Indicator Bar -->
+        <div id="modal-card-status-banner" style="margin-bottom: 1.5rem; padding: 0.75rem 1rem; font-family: var(--font-mono); font-size: 0.85rem; border: 1px solid; display: flex; align-items: center; justify-content: space-between;">
+          <span id="modal-card-status-text">STATUS: PENDING APPROVAL</span>
+          <span id="modal-card-app-id" style="opacity: 0.8;">APP-2026-0000</span>
+        </div>
+
+        <!-- 3D Card Object (matches live site brutalist card) -->
+        <div class="admin-card-preview-wrap">
+          <div class="digital-card-object" id="admin-preview-digital-card">
+            <!-- Torn White Paper Header -->
+            <div class="digital-card-paper-header halftone-paper">
+              <div class="dcard-top-row">
+                <div class="dcard-logos-pair">
+                  <img src="../assets/logo.png" alt="Quantum Coders Emblem" class="dcard-logo">
+                  <span class="dcard-logo-sep">|</span>
+                  <img src="../images/Pydah%20Logo.png" alt="Pydah College of Engineering" class="dcard-pydah-logo">
+                </div>
+                <span class="dcard-pass-type" id="modal-card-pass-type">MEMBER PASS</span>
+              </div>
+            </div>
+
+            <!-- Black Card Body -->
+            <div class="dcard-body halftone-dense">
+              <div class="dcard-member-title" id="modal-card-member-title">VERIFIED ACTIVE FELLOW</div>
+              <div class="dcard-member-name" id="modal-card-name">STUDENT NAME</div>
+
+              <div class="dcard-info-grid">
+                <div class="dcard-info-item">
+                  <div class="info-lbl">MEMBER ID</div>
+                  <div class="info-val" id="modal-card-id" style="color: #60a5fa;">QC-2026-0000</div>
+                </div>
+                <div class="dcard-info-item">
+                  <div class="info-lbl">DOMAIN</div>
+                  <div class="info-val" id="modal-card-domain">AI / ML</div>
+                </div>
+                <div class="dcard-info-item">
+                  <div class="info-lbl">COLLEGE</div>
+                  <div class="info-val" id="modal-card-college">PYDAH GROUP</div>
+                </div>
+                <div class="dcard-info-item">
+                  <div class="info-lbl">BRANCH / YEAR</div>
+                  <div class="info-val" id="modal-card-branch-year">CSE • 3RD YEAR</div>
+                </div>
+              </div>
+
+              <!-- Student Contact Strip -->
+              <div style="font-family: var(--font-mono); font-size: 0.75rem; color: #94a3b8; text-align: left; margin-bottom: 1.25rem; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 0.75rem;">
+                <div>✉ <span id="modal-card-email">student@example.com</span></div>
+                <div style="margin-top: 0.25rem;">📱 <span id="modal-card-phone">+91 00000 00000</span></div>
+              </div>
+
+              <div class="dcard-bottom-row">
+                <!-- Barcode -->
+                <div class="dcard-barcode-mock" aria-hidden="true">
+                  <span style="width: 3px;"></span>
+                  <span style="width: 1px;"></span>
+                  <span style="width: 5px;"></span>
+                  <span style="width: 2px;"></span>
+                  <span style="width: 6px;"></span>
+                  <span style="width: 2px;"></span>
+                  <span style="width: 4px;"></span>
+                  <span style="width: 1px;"></span>
+                  <span style="width: 5px;"></span>
+                  <span style="width: 3px;"></span>
+                  <span style="width: 2px;"></span>
+                  <span style="width: 6px;"></span>
+                  <span style="width: 4px;"></span>
+                  <span style="width: 2px;"></span>
+                  <span style="width: 7px;"></span>
+                  <span style="width: 3px;"></span>
+                </div>
+
+                <!-- President Signature -->
+                <div class="dcard-signature-wrap">
+                  <div class="dcard-signature">Praveen</div>
+                  <div class="dcard-signature-label">PRESIDENT AUTOGRAPH</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer-bar" style="justify-content: space-between;">
+        <button type="button" class="btn-brutalist btn-secondary btn-sm" id="btn-modal-print-card">
+          ⎙ Print / Save Pass
+        </button>
+        <div style="display: flex; gap: 0.5rem;" id="modal-card-action-buttons">
+          <!-- Dynamically populated: Approve / Reject toggle -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       06. MANUAL STUDENT REGISTRATION MODAL
+       ========================================================================= -->
+  <div class="admin-modal-backdrop" id="manual-student-modal" aria-hidden="true" role="dialog" aria-labelledby="manual-modal-title">
+    <div class="admin-modal-box" style="max-width: 650px;">
+      <div class="modal-header-bar">
+        <div>
+          <h2 class="modal-title" id="manual-modal-title">MANUAL STUDENT REGISTRATION</h2>
+          <span class="modal-subtitle">CADRE DIRECT ADMISSION ENTRY</span>
+        </div>
+        <button class="modal-close-btn" id="manual-student-modal-close" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body-scroll">
+        <form id="manual-student-form" novalidate>
+          <div class="form-group-full">
+            <label for="m-student-name" class="admin-form-label">Full Name *</label>
+            <input type="text" id="m-student-name" class="admin-input" placeholder="e.g. SIVA TEJA JETTI" required>
+          </div>
+
+          <div class="form-grid-2">
+            <div>
+              <label for="m-student-email" class="admin-form-label">Email Address *</label>
+              <input type="email" id="m-student-email" class="admin-input" placeholder="e.g. student@pydah.edu.in" required>
+            </div>
+            <div>
+              <label for="m-student-phone" class="admin-form-label">Phone / WhatsApp Number *</label>
+              <input type="tel" id="m-student-phone" class="admin-input" placeholder="e.g. +91 98765 43210" required>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div>
+              <label for="m-student-college" class="admin-form-label">College Name *</label>
+              <input type="text" id="m-student-college" class="admin-input" value="Pydah College of Engineering" required>
+            </div>
+            <div>
+              <label for="m-student-year" class="admin-form-label">Year of Study *</label>
+              <select id="m-student-year" class="admin-select" required>
+                <option value="1st Year">1st Year (Freshman)</option>
+                <option value="2nd Year">2nd Year (Sophomore)</option>
+                <option value="3rd Year" selected>3rd Year (Junior)</option>
+                <option value="4th Year">4th Year (Senior)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div>
+              <label for="m-student-branch" class="admin-form-label">Branch / Department *</label>
+              <input type="text" id="m-student-branch" class="admin-input" placeholder="e.g. CSE / AI &amp; DS" required>
+            </div>
+            <div>
+              <label for="m-student-interest" class="admin-form-label">Primary Interest Domain *</label>
+              <select id="m-student-interest" class="admin-select" required>
+                <option value="AI / ML">AI / ML (Artificial Intelligence)</option>
+                <option value="FULL STACK">FULL STACK WEB &amp; MOBILE</option>
+                <option value="SYSTEMS">SYSTEMS &amp; CLOUD ARCHITECTURE</option>
+                <option value="CYBERSECURITY">CYBERSECURITY &amp; INFRASTRUCTURE</option>
+                <option value="OPEN SOURCE">OPEN SOURCE &amp; DEV ADVOCACY</option>
+                <option value="UI/UX DESIGN">UI/UX DESIGN &amp; BRANDING</option>
+                <option value="MEDIA">MEDIA (Video / PR / Content)</option>
+                <option value="MANAGEMENT">MANAGEMENT &amp; COMMUNITY OPS</option>
+                <option value="EVENTS">EVENTS &amp; HACKATHON LOGISTICS</option>
+                <option value="OTHER">OTHER TECHNICAL DOMAIN</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group-full">
+            <label for="m-student-statement" class="admin-form-label">Notes / Statement of Motivation</label>
+            <textarea id="m-student-statement" class="admin-textarea" placeholder="Optional notes regarding the candidate or admission background..." style="height: 80px;"></textarea>
+          </div>
+
+          <div class="form-group-full" style="background: rgba(59, 130, 246, 0.08); padding: 1rem; border: 1px solid var(--border-medium); border-radius: 4px;">
+            <label for="m-student-status" class="admin-form-label" style="color: #60a5fa; margin-bottom: 0.5rem;">INITIAL ADMISSION STATUS *</label>
+            <select id="m-student-status" class="admin-select" style="font-weight: 700;">
+              <option value="approved" selected>✓ APPROVED (Direct Admission - Mint Member ID Now)</option>
+              <option value="pending">⏳ PENDING (Awaiting Review Pipeline)</option>
+            </select>
+            <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray); margin-top: 0.4rem;">
+              Selecting "Approved" assigns verified Member ID (QC-2026-XXXX) instantly and activates their pass.
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer-bar">
+        <button type="button" class="btn-brutalist btn-secondary" id="manual-student-modal-cancel">
+          Cancel
+        </button>
+        <button type="submit" form="manual-student-form" class="btn-brutalist btn-primary">
+          + Add &amp; Save Student Record
         </button>
       </div>
     </div>

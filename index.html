@@ -863,14 +863,26 @@
                   </button>
                 </div>
               </form>
+
+              <!-- Application Lookup Helper Bar -->
+              <div class="registration-lookup-bar">
+                <span class="lookup-bar-label">Already applied for membership?</span>
+                <button type="button" class="btn-lookup-status" id="btn-open-status-lookup">
+                  🔍 Check Approval / Pass Status
+                </button>
+              </div>
             </div>
 
-            <!-- Successful Registration State: Digital Membership Card Display -->
+            <!-- Registration State: Digital Membership Card Display (Pending or Approved) -->
             <div class="membership-result-container" id="membership-result-container">
-              <div class="card-success-banner">
-                <span style="font-size: 1.5rem; line-height: 1;">✓</span>
-                <div>
-                  <strong>APPLICATION ACCEPTED</strong> — Welcome to the collective. Your credentials have been minted.
+              <!-- Live Status Banner (Dynamic: Pending vs Approved vs Revision) -->
+              <div class="card-status-banner card-status-banner-pending" id="reg-status-banner">
+                <span class="status-banner-icon" id="status-banner-icon">⏳</span>
+                <div class="status-banner-text">
+                  <div class="status-banner-title" id="status-banner-title">APPLICATION SUBMITTED // AWAITING CADRE APPROVAL</div>
+                  <div class="status-banner-desc" id="status-banner-desc">
+                    Your registration application has been submitted to the Cadre Council. Once approved in the Admin Console, your official Member ID (<code>QC-2026-XXXX</code>) will be minted and this digital pass will automatically unlock.
+                  </div>
                 </div>
               </div>
 
@@ -885,19 +897,19 @@
                         <span class="dcard-logo-sep">|</span>
                         <img src="images/Pydah%20Logo.png" alt="Pydah College of Engineering" class="dcard-pydah-logo">
                       </div>
-                      <span class="dcard-pass-type">MEMBER PASS</span>
+                      <span class="dcard-pass-type" id="card-display-pass-type">APPLICANT PASS</span>
                     </div>
                   </div>
 
                   <!-- Black Card Body -->
                   <div class="dcard-body halftone-dense">
-                    <div class="dcard-member-title">VERIFIED ACTIVE FELLOW</div>
+                    <div class="dcard-member-title" id="card-display-status-tag">APPLICATION STATUS: PENDING CADRE REVIEW</div>
                     <div class="dcard-member-name" id="card-display-name">YOUR NAME</div>
 
                     <div class="dcard-info-grid">
                       <div class="dcard-info-item">
-                        <div class="info-lbl">MEMBER ID</div>
-                        <div class="info-val" id="card-display-id">QC-2026-0042</div>
+                        <div class="info-lbl" id="card-display-id-label">APPLICATION REF</div>
+                        <div class="info-val" id="card-display-id" style="color: #fbbf24;">APP-2026-0042</div>
                       </div>
                       <div class="dcard-info-item">
                         <div class="info-lbl">DOMAIN</div>
@@ -909,8 +921,14 @@
                       </div>
                       <div class="dcard-info-item">
                         <div class="info-lbl">VALID THROUGH</div>
-                        <div class="info-val">2026 — 2027</div>
+                        <div class="info-val" id="card-display-validity">PENDING APPROVAL</div>
                       </div>
+                    </div>
+
+                    <!-- Pending Approval Watermark Notice -->
+                    <div class="dcard-pending-notice" id="card-pending-notice">
+                      <span class="pending-pulse-dot"></span>
+                      <span>AWAITING ADMIN APPROVAL IN ADMIN PANEL</span>
                     </div>
 
                     <div class="dcard-bottom-row">
@@ -946,7 +964,10 @@
 
               <!-- Action buttons for Card -->
               <div class="dcard-actions">
-                <button type="button" class="btn-brutalist" id="btn-print-card" data-cursor="SAVE">
+                <button type="button" class="btn-brutalist" id="btn-check-approval-status" data-cursor="CHECK">
+                  🔄 Check Approval Status
+                </button>
+                <button type="button" class="btn-brutalist" id="btn-print-card" data-cursor="SAVE" style="display: none;">
                   Save / Print Card ⎙
                 </button>
                 <button type="button" class="btn-brutalist btn-brutalist-secondary" id="btn-reset-form" data-cursor="RESET">
@@ -1337,6 +1358,45 @@
           </div>
         </div>
       </main>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       APPLICATION / MEMBERSHIP STATUS LOOKUP MODAL
+       ========================================================================= -->
+  <div class="admin-modal-backdrop" id="status-lookup-modal" aria-hidden="true" role="dialog" aria-labelledby="lookup-modal-title">
+    <div class="admin-modal-box" style="max-width: 540px; background: #0c0c10; border: 1.5px solid var(--border-medium); padding: 2rem; box-shadow: 0 25px 60px rgba(0,0,0,0.9);">
+      <div class="modal-header-bar" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-medium); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+        <div>
+          <h2 class="modal-title" id="lookup-modal-title" style="font-family: var(--font-heading); font-size: 1.4rem; color: #fff; margin: 0;">CHECK APPLICATION STATUS</h2>
+          <span class="modal-subtitle" style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-blue); letter-spacing: 0.1em;">CADRE MEMBERSHIP VERIFICATION</span>
+        </div>
+        <button class="modal-close-btn" id="status-lookup-modal-close" aria-label="Close modal" style="background: none; border: none; font-size: 1.8rem; color: #fff; cursor: pointer;">&times;</button>
+      </div>
+
+      <div class="modal-body-scroll">
+        <p style="font-family: var(--font-mono); font-size: 0.82rem; color: #94a3b8; line-height: 1.5; margin-bottom: 1.25rem;">
+          Enter the email address or Application Reference ID (e.g. <code>APP-2026-XXXX</code>) you used when registering:
+        </p>
+
+        <form id="status-lookup-form" novalidate>
+          <div class="form-group-full" style="margin-bottom: 1.25rem;">
+            <label for="lookup-input" class="editorial-label" style="display: block; font-family: var(--font-mono); font-size: 0.75rem; color: #cbd5e1; margin-bottom: 0.4rem;">EMAIL OR APPLICATION ID</label>
+            <input type="text" id="lookup-input" class="editorial-input" placeholder="student@pydah.edu.in or APP-2026-..." required style="width: 100%; box-sizing: border-box; background: #16161c; border: 1px solid #334155; padding: 0.75rem 1rem; color: #fff; font-family: var(--font-mono); font-size: 0.9rem;">
+          </div>
+
+          <div id="lookup-error-msg" style="display: none; color: #f87171; font-family: var(--font-mono); font-size: 0.78rem; margin-bottom: 1rem;"></div>
+
+          <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+            <button type="button" class="btn-brutalist btn-secondary btn-sm" id="status-lookup-cancel">
+              Cancel
+            </button>
+            <button type="submit" class="btn-brutalist btn-sm" id="btn-submit-lookup">
+              Search Status →
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
