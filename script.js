@@ -2512,7 +2512,7 @@ document.addEventListener('DOMContentLoaded', () => {
           toastEl.className = 'launch-celebratory-toast';
           toastEl.innerHTML = `
             <span class="launch-toast-badge">OFFICIAL LAUNCH</span>
-            <span>INAUGURATED BY SRIRAM SIR • QUANTUM CODERS IS LIVE!</span>
+            <span>INAUGURATED BY Dr M VeeraBhadra Rao Sir, Dr P Surya Prakash Sir & Mr K Ravi Kumar Sir • QUANTUM CODERS IS LIVE!</span>
           `;
           document.body.appendChild(toastEl);
         }
