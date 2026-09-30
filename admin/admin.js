@@ -3748,6 +3748,22 @@ const initAdmin = () => {
     });
   };
 
+  const downloadCsvData = (filename, headers, rows) => {
+    const csvContent = '\uFEFF' + [
+      headers.join(','),
+      ...rows.map(row => (Array.isArray(row) ? row.join(',') : row))
+    ].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (btnExportAttendanceCsv) {
     btnExportAttendanceCsv.addEventListener('click', (e) => {
       e.preventDefault();
@@ -3762,23 +3778,28 @@ const initAdmin = () => {
         return;
       }
 
-      const headers = ['Registration ID', 'Attendee Name', 'Phone', 'Email', 'Event', 'Attendance Status', 'Verified Method', 'Timestamp'];
+      const headers = ['Registration ID', 'Attendee Name', 'Phone', 'Email', 'Event', 'Attendance Status', 'Verified Method', 'Check-In Timestamp'];
       const rows = list.map(r => {
-        const isPresent = r.is_present || checkedInNames.has(r.full_name);
+        const isPresent = r.is_present || checkedInNames.has(r.full_name) || checkedInNames.has(r.name);
+        const timeStr = isPresent
+          ? (r.check_in_time ? new Date(r.check_in_time).toLocaleString() : new Date().toLocaleString())
+          : '—';
+
         return [
           `"${r.registration_id || ''}"`,
-          `"${(r.full_name || '').replace(/"/g, '""')}"`,
+          `"${(r.full_name || r.name || '').replace(/"/g, '""')}"`,
           `"${r.phone || ''}"`,
           `"${r.email || ''}"`,
           `"${(r.event_title || '').replace(/"/g, '""')}"`,
           `"${isPresent ? 'PRESENT' : 'ABSENT'}"`,
           `"${isPresent ? 'QR_SCANNER' : 'NONE'}"`,
-          `"${isPresent ? new Date().toISOString() : ''}"`
+          `"${timeStr}"`
         ];
       });
 
-      downloadCsvData(`qc_attendance_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
-      showToast(`✓ Exported attendance register for ${list.length} attendees!`, 'success');
+      const eventSuffix = activeAttEventId !== 'all' ? `_event_${activeAttEventId}` : '';
+      downloadCsvData(`quantum_coders_attendance${eventSuffix}_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+      showToast(`✓ Exported attendance register (${list.length} records) to CSV/Excel!`, 'success');
     });
   }
 
