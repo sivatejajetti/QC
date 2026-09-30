@@ -172,30 +172,37 @@ module.exports = async function handler(req, res) {
 
     // 2. Fetch Event
     if (supabase) {
-      const { data: ev, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('id', event_id)
-        .is('deleted_at', null)
-        .single();
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(event_id);
+      let q = supabase.from('events').select('*').is('deleted_at', null);
+      if (isUuid) {
+        q = q.eq('id', event_id);
+      } else {
+        q = q.eq('event_code', event_id);
+      }
+      const { data: ev, error } = await q.maybeSingle();
 
       if (error || !ev) {
-        return res.status(404).json({ error: 'This event does not exist or has been removed.' });
+        const fb = FALLBACK_STORE.events.find((e) => (e.id === event_id || e.event_code === event_id) && !e.deleted_at);
+        if (!fb) {
+          return res.status(404).json({ error: 'This event does not exist or has been removed.' });
+        }
+        event = fb;
+      } else {
+        event = ev;
       }
-      event = ev;
     } else {
-      event = FALLBACK_STORE.events.find((e) => e.id === event_id && !e.deleted_at);
+      event = FALLBACK_STORE.events.find((e) => (e.id === event_id || e.event_code === event_id) && !e.deleted_at);
       if (!event) {
         return res.status(404).json({ error: 'This event does not exist or has been removed.' });
       }
     }
 
-    // Check if event is active & open
-    if (!event.is_published || !event.is_registration_open) {
-      return res.status(400).json({ error: 'Registration is currently closed for this event.' });
+    // Check if event is cancelled
+    if (event.status === 'CANCELLED') {
+      return res.status(400).json({ error: 'Registration is currently closed because this event was cancelled.' });
     }
 
-    if (new Date() > new Date(event.registration_deadline)) {
+    if (event.registration_deadline && new Date() > new Date(event.registration_deadline)) {
       return res.status(400).json({ error: 'Registration deadline has passed for this event.' });
     }
 

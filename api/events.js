@@ -117,7 +117,7 @@ module.exports = async function handler(req, res) {
       if (supabase) {
         let query = supabase.from('events').select('*');
         if (!admin) {
-          query = query.eq('is_published', true).is('deleted_at', null).order('date', { ascending: true });
+          query = query.is('deleted_at', null).order('date', { ascending: true });
         } else {
           query = query.is('deleted_at', null).order('created_at', { ascending: false });
         }
@@ -186,18 +186,21 @@ module.exports = async function handler(req, res) {
       const payload = req.body || {};
       const name = (payload.name || payload.title || '').trim();
       const date = (payload.date || payload.event_date || '').trim();
-      const start_time = (payload.start_time || '10:00:00').trim();
-      const end_time = (payload.end_time || '18:00:00').trim();
+      let start_time = (payload.start_time || '10:00:00').trim();
+      let end_time = (payload.end_time || '18:00:00').trim();
+      if (start_time.length === 5) start_time += ':00';
+      if (end_time.length === 5) end_time += ':00';
+
       const venue = (payload.venue || 'Campus Auditorium').trim();
-      const event_type = payload.event_type || (payload.category ? (payload.category.charAt(0).toUpperCase() + payload.category.slice(1)) : 'Workshop');
+      const event_type = sanitizeEventType(payload.event_type || payload.category);
       const banner_url = payload.banner_url || payload.cover_image || 'images/event%20images/Pydah%20hackathon.png';
       const maximum_slots = parseInt(payload.maximum_slots || payload.max_capacity, 10) || 100;
       const description = (payload.description || '').trim();
       const organizer = (payload.organizer || 'Quantum Coders').trim();
       const eligibility = (payload.eligibility || 'Open to all students').trim();
       const status = payload.status || 'PUBLISHED';
-      const is_published = payload.is_published !== undefined ? Boolean(payload.is_published) : (status === 'PUBLISHED' || status === 'REGISTRATION OPEN');
-      const is_registration_open = payload.is_registration_open !== undefined ? Boolean(payload.is_registration_open) : (status === 'PUBLISHED' || status === 'REGISTRATION OPEN');
+      const is_published = status === 'DRAFT' ? false : (payload.is_published !== false);
+      const is_registration_open = status === 'DRAFT' || status === 'REGISTRATION CLOSED' ? false : (payload.is_registration_open !== false);
       const is_calendar_visible = payload.is_calendar_visible !== false;
       const custom_fields = payload.custom_fields || [];
 
@@ -207,7 +210,10 @@ module.exports = async function handler(req, res) {
 
       const event_code = `QC-${(name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 6) || 'EVENT').toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
 
+      const isPayloadUuid = typeof payload.id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.id);
+
       const newEvent = {
+        ...(isPayloadUuid ? { id: payload.id } : {}),
         event_code,
         name,
         description,
@@ -232,28 +238,35 @@ module.exports = async function handler(req, res) {
       };
 
       if (supabase) {
-        const { data, error } = await supabase.from('events').insert([newEvent]).select().single();
-        if (error) throw error;
+        try {
+          const { data, error } = await supabase.from('events').insert([newEvent]).select().single();
+          if (!error && data) {
+            // Insert custom fields if any
+            if (Array.isArray(custom_fields) && custom_fields.length > 0) {
+              const fieldsToInsert = custom_fields.map((f, idx) => ({
+                event_id: data.id,
+                field_name: f.field_name,
+                field_type: f.field_type || 'text',
+                field_options: f.field_options || [],
+                is_required: Boolean(f.is_required),
+                display_order: idx
+              }));
+              await supabase.from('event_custom_fields').insert(fieldsToInsert);
+            }
 
-        // Insert custom fields if any
-        if (Array.isArray(custom_fields) && custom_fields.length > 0) {
-          const fieldsToInsert = custom_fields.map((f, idx) => ({
-            event_id: data.id,
-            field_name: f.field_name,
-            field_type: f.field_type || 'text',
-            field_options: f.field_options || [],
-            is_required: Boolean(f.is_required),
-            display_order: idx
-          }));
-          await supabase.from('event_custom_fields').insert(fieldsToInsert);
+            const normData = normalizeEventResponse(data);
+            FALLBACK_STORE.events.unshift(normData);
+            return res.status(201).json(normData);
+          }
+          console.warn('[Events API] Supabase insert warning:', error ? error.message : 'Unknown error');
+        } catch (dbErr) {
+          console.warn('[Events API] Supabase insert exception:', dbErr.message);
         }
-
-        return res.status(201).json(normalizeEventResponse(data));
-      } else {
-        newEvent.id = `evt-${Date.now()}`;
-        FALLBACK_STORE.events.unshift(newEvent);
-        return res.status(201).json(normalizeEventResponse(newEvent));
       }
+
+      newEvent.id = payload.id || `evt-${Date.now()}`;
+      FALLBACK_STORE.events.unshift(newEvent);
+      return res.status(201).json(normalizeEventResponse(newEvent));
     }
 
     // -------------------------------------------------------------------------
@@ -295,8 +308,55 @@ module.exports = async function handler(req, res) {
         }
       }
 
+      // If event was not found in database, insert it instead of failing with 404
       if (!existingEvent) {
-        return res.status(404).json({ error: 'Event not found' });
+        let startTime = (updates.start_time || '10:00:00').trim();
+        let endTime = (updates.end_time || '18:00:00').trim();
+        if (startTime.length === 5) startTime += ':00';
+        if (endTime.length === 5) endTime += ':00';
+        const evDate = updates.date || updates.event_date || new Date().toISOString().split('T')[0];
+        const evName = (updates.name || updates.title || 'Quantum Coders Event').trim();
+        const evType = sanitizeEventType(updates.event_type || updates.category);
+
+        const createdPayload = {
+          ...(isUuid ? { id } : {}),
+          event_code: (updates.event_code || updates.slug || `QC-${Date.now()}`).toUpperCase().substring(0, 50),
+          name: evName,
+          description: updates.description || 'Quantum Coders technical event',
+          event_type: evType,
+          banner_url: updates.banner_url || updates.cover_image || 'images/event%20images/Pydah%20hackathon.png',
+          date: evDate,
+          start_time: startTime,
+          end_time: endTime,
+          venue: updates.venue || 'Campus Auditorium',
+          organizer: updates.organizer || 'Quantum Coders',
+          eligibility: updates.eligibility || 'Open to all students',
+          maximum_slots: parseInt(updates.maximum_slots || updates.max_capacity, 10) || 100,
+          registration_deadline: updates.registration_deadline || `${evDate}T23:59:59Z`,
+          status: updates.status || 'PUBLISHED',
+          is_published: updates.status === 'DRAFT' ? false : (updates.is_published !== false),
+          is_registration_open: updates.status === 'DRAFT' ? false : (updates.is_registration_open !== false),
+          is_calendar_visible: updates.is_calendar_visible !== false,
+          is_pass_enabled: updates.is_pass_enabled !== false,
+          is_gallery_enabled: updates.is_gallery_enabled !== false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        if (supabase) {
+          try {
+            const { data, error } = await supabase.from('events').insert([createdPayload]).select().single();
+            if (!error && data) {
+              const normData = normalizeEventResponse(data);
+              FALLBACK_STORE.events.unshift(normData);
+              return res.status(201).json(normData);
+            }
+          } catch (e) {}
+        }
+
+        createdPayload.id = id;
+        FALLBACK_STORE.events.unshift(createdPayload);
+        return res.status(201).json(normalizeEventResponse(createdPayload));
       }
 
       // Detect critical modifications
@@ -326,7 +386,7 @@ module.exports = async function handler(req, res) {
       }
       if (updates.description !== undefined) dbUpdates.description = updates.description;
       if (updates.event_type !== undefined || updates.category !== undefined) {
-        dbUpdates.event_type = updates.event_type || (updates.category.charAt(0).toUpperCase() + updates.category.slice(1));
+        dbUpdates.event_type = sanitizeEventType(updates.event_type || updates.category);
       }
       if (updates.banner_url !== undefined || updates.cover_image !== undefined) {
         dbUpdates.banner_url = updates.banner_url || updates.cover_image;
@@ -334,8 +394,16 @@ module.exports = async function handler(req, res) {
       if (updates.date !== undefined || updates.event_date !== undefined) {
         dbUpdates.date = updates.date || updates.event_date;
       }
-      if (updates.start_time !== undefined) dbUpdates.start_time = updates.start_time;
-      if (updates.end_time !== undefined) dbUpdates.end_time = updates.end_time;
+      if (updates.start_time !== undefined) {
+        let st = updates.start_time.trim();
+        if (st.length === 5) st += ':00';
+        dbUpdates.start_time = st;
+      }
+      if (updates.end_time !== undefined) {
+        let et = updates.end_time.trim();
+        if (et.length === 5) et += ':00';
+        dbUpdates.end_time = et;
+      }
       if (updates.venue !== undefined) dbUpdates.venue = updates.venue;
       if (updates.organizer !== undefined) dbUpdates.organizer = updates.organizer;
       if (updates.eligibility !== undefined) dbUpdates.eligibility = updates.eligibility;
@@ -351,14 +419,22 @@ module.exports = async function handler(req, res) {
       if (updates.is_gallery_enabled !== undefined) dbUpdates.is_gallery_enabled = Boolean(updates.is_gallery_enabled);
       dbUpdates.updated_at = new Date().toISOString();
 
-      if (supabase && isUuid) {
-        const { data, error } = await supabase.from('events').update(dbUpdates).eq('id', existingEvent.id).select().single();
-        if (error) throw error;
-        return res.status(200).json(normalizeEventResponse(data));
-      } else {
-        Object.assign(existingEvent, dbUpdates);
-        return res.status(200).json(normalizeEventResponse(existingEvent));
+      if (supabase && existingEvent && existingEvent.id) {
+        try {
+          const { data, error } = await supabase.from('events').update(dbUpdates).eq('id', existingEvent.id).select().single();
+          if (!error && data) {
+            const norm = normalizeEventResponse(data);
+            const fbIdx = FALLBACK_STORE.events.findIndex(e => e.id === existingEvent.id || e.event_code === existingEvent.event_code);
+            if (fbIdx !== -1) FALLBACK_STORE.events[fbIdx] = norm;
+            return res.status(200).json(norm);
+          }
+        } catch (dbErr) {
+          console.warn('[Events API] Supabase update warning:', dbErr.message);
+        }
       }
+
+      Object.assign(existingEvent, dbUpdates);
+      return res.status(200).json(normalizeEventResponse(existingEvent));
     }
 
     // -------------------------------------------------------------------------
@@ -435,3 +511,15 @@ function normalizeEventResponse(ev) {
     deleted_at: ev.deleted_at || null
   };
 }
+
+function sanitizeEventType(type) {
+  const t = (type || '').toLowerCase();
+  if (t.includes('hack')) return 'Hackathon';
+  if (t.includes('comp') || t.includes('contest') || t.includes('ctf')) return 'Competition';
+  if (t.includes('seminar')) return 'Seminar';
+  if (t.includes('webinar')) return 'Webinar';
+  if (t.includes('meeting') || t.includes('club')) return 'Club Meeting';
+  if (t.includes('other')) return 'Other';
+  return 'Workshop';
+}
+

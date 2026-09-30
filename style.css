@@ -4209,9 +4209,9 @@ button {
 }
 
 /* ==========================================================================
-   APPLICATION STATUS LOOKUP MODAL (MAIN SITE)
+   GENERIC MODAL BACKDROP (MAIN SITE)
    ========================================================================== */
-#status-lookup-modal.admin-modal-backdrop {
+.admin-modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
@@ -4221,7 +4221,7 @@ button {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: 10000;
-  display: flex;
+  display: none !important;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
@@ -4230,12 +4230,13 @@ button {
   transition: opacity 0.25s ease;
 }
 
-#status-lookup-modal.admin-modal-backdrop.active {
-  opacity: 1;
-  pointer-events: auto;
+.admin-modal-backdrop.active {
+  display: flex !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
-#status-lookup-modal .admin-modal-box {
+.admin-modal-backdrop .admin-modal-box {
   background: #0E0E14;
   border: 1.5px solid var(--border-medium);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95), 0 0 35px rgba(59, 130, 246, 0.25);
@@ -4247,7 +4248,7 @@ button {
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-#status-lookup-modal.admin-modal-backdrop.active .admin-modal-box {
+.admin-modal-backdrop.active .admin-modal-box {
   transform: translateY(0) scale(1);
 }
 

@@ -650,6 +650,8 @@
           </div>
         </div>
       </div>
+    </section>
+
     <!-- =======================================================================
          03.5. EVENT CALENDAR & SPRINT SCHEDULE (MONTHLY VIEW & INTERACTIVE CARDS)
          ======================================================================= -->
@@ -684,6 +686,7 @@
               <button type="button" class="btn-brutalist btn-outline btn-sm" id="cal-today-btn" style="font-size: 0.72rem;">
                 Today
               </button>
+              <div id="cal-months-quick-pills" style="display: inline-flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; margin-left: 0.5rem;"></div>
             </div>
 
             <!-- Event Type Legend / Filter -->
@@ -722,11 +725,21 @@
 
         <!-- Featured Upcoming Event Cards Strip -->
         <div style="margin-top: 2rem;">
-          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
             <div>
               <div class="section-tag" style="margin-bottom: 0.4rem;">UPCOMING CADRE SPRINTS</div>
               <h3 style="font-family: var(--font-display); font-size: 1.8rem; color: #fff; margin: 0;">FEATURED EVENTS</h3>
             </div>
+            
+            <!-- Category Filter Pills Bar for Featured Events -->
+            <div id="upcoming-events-category-filters" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;" role="tablist">
+              <button type="button" class="filter-pill active" data-category="ALL" style="padding: 0.35rem 0.85rem; font-size: 0.72rem;">ALL</button>
+              <button type="button" class="filter-pill" data-category="WORKSHOP" style="padding: 0.35rem 0.85rem; font-size: 0.72rem;">WORKSHOPS</button>
+              <button type="button" class="filter-pill" data-category="HACKATHON" style="padding: 0.35rem 0.85rem; font-size: 0.72rem;">HACKATHONS</button>
+              <button type="button" class="filter-pill" data-category="COMPETITION" style="padding: 0.35rem 0.85rem; font-size: 0.72rem;">COMPETITIONS</button>
+              <button type="button" class="filter-pill" data-category="SEMINAR" style="padding: 0.35rem 0.85rem; font-size: 0.72rem;">SEMINARS</button>
+            </div>
+
             <button type="button" class="btn-brutalist btn-secondary btn-sm" id="cal-open-find-pass-btn">
               🔍 Already Registered? Retrieve Pass
             </button>
@@ -1248,9 +1261,64 @@
 
 
   <!-- =========================================================================
+       UPCOMING EVENT ANNOUNCEMENT POPUP MODAL (AUTO-TRIGGERS ON SITE VISIT)
+       ========================================================================= -->
+  <div class="admin-modal-backdrop" id="upcoming-event-popup-modal" aria-hidden="true" role="dialog" aria-labelledby="popup-event-title" style="display: none;">
+    <div class="admin-modal-box" style="max-width: 580px; width: 100%; background: #0c0c12; border: 1.5px solid var(--border-medium); border-radius: 8px; padding: 0; overflow: hidden; box-shadow: 0 30px 90px rgba(0,0,0,0.95), 0 0 35px rgba(59,130,246,0.25);">
+      <!-- Popup Header Bar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.9rem 1.5rem; background: #12131a; border-bottom: 1px solid var(--border-subtle);">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981;"></span>
+          <span style="font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.12em; color: var(--color-blue); font-weight: 700;">UPCOMING EVENT ALERT // PYDAH CADRE</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="popup-event-close-btn" aria-label="Close modal" style="background: none; border: none; font-size: 1.8rem; color: #fff; cursor: pointer; line-height: 1; padding: 0 0.25rem;">&times;</button>
+      </div>
+
+      <!-- Banner Image Wrap -->
+      <div style="position: relative; width: 100%; height: 200px; background: #161722; overflow: hidden;">
+        <img id="popup-event-banner" src="images/event%20images/Pydah%20hackathon.png" alt="Upcoming Event" style="width: 100%; height: 100%; object-fit: cover;">
+        <span id="popup-event-badge" class="section-tag" style="position: absolute; top: 1rem; left: 1rem; background: var(--color-blue); color: #fff; margin: 0; font-size: 0.68rem; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">WORKSHOP</span>
+        <span id="popup-event-status-pill" class="section-tag" style="position: absolute; top: 1rem; right: 1rem; background: rgba(16,185,129,0.9); color: #fff; margin: 0; font-size: 0.68rem; font-weight: 700;">REGISTRATION OPEN</span>
+      </div>
+
+      <!-- Popup Body Content -->
+      <div style="padding: 1.5rem 1.75rem;">
+        <h3 id="popup-event-title" style="font-family: var(--font-display); font-size: 1.6rem; color: #fff; line-height: 1.2; margin: 0 0 0.75rem 0;">DEEP DIVE INTO LLMS &amp; AGENTIC SYSTEMS</h3>
+        <p id="popup-event-desc" style="font-size: 0.88rem; line-height: 1.55; color: var(--color-gray); margin-bottom: 1.25rem;">Hands-on architectural seminar and coding sprint exploring autonomous agentic workflows and local open-source LLM inference.</p>
+
+        <!-- Meta Details Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; font-family: var(--font-mono); font-size: 0.76rem;">
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); padding: 0.6rem 0.85rem; border-radius: 4px;">
+            <div style="color: var(--color-gray); font-size: 0.65rem; text-transform: uppercase;">DATE &amp; TIME</div>
+            <div id="popup-event-datetime" style="color: #fff; font-weight: 700; margin-top: 0.2rem;">2026-04-10 • 10:00 AM</div>
+          </div>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); padding: 0.6rem 0.85rem; border-radius: 4px;">
+            <div style="color: var(--color-gray); font-size: 0.65rem; text-transform: uppercase;">VENUE</div>
+            <div id="popup-event-venue" style="color: #fff; font-weight: 700; margin-top: 0.2rem;">Campus Auditorium</div>
+          </div>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); padding: 0.6rem 0.85rem; border-radius: 4px;">
+            <div style="color: var(--color-gray); font-size: 0.65rem; text-transform: uppercase;">AVAILABILITY</div>
+            <div id="popup-event-slots" style="color: #38bdf8; font-weight: 700; margin-top: 0.2rem;">27 SLOTS LEFT</div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 0.75rem; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+          <button type="button" class="btn-brutalist btn-secondary btn-sm" id="popup-event-dismiss-btn">
+            Explore Website
+          </button>
+          <a href="event.html" class="btn-brutalist btn-primary btn-sm" id="popup-event-action-btn">
+            Register Entry Pass →
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
        APPLICATION / MEMBERSHIP STATUS LOOKUP MODAL
        ========================================================================= -->
-  <div class="admin-modal-backdrop" id="status-lookup-modal" aria-hidden="true" role="dialog" aria-labelledby="lookup-modal-title">
+  <div class="admin-modal-backdrop" id="status-lookup-modal" aria-hidden="true" role="dialog" aria-labelledby="lookup-modal-title" style="display: none;">
     <div class="admin-modal-box" style="max-width: 540px; background: #0c0c10; border: 1.5px solid var(--border-medium); padding: 2rem; box-shadow: 0 25px 60px rgba(0,0,0,0.9);">
       <div class="modal-header-bar" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-medium); padding-bottom: 1rem; margin-bottom: 1.5rem;">
         <div>
@@ -1286,52 +1354,6 @@
     </div>
   </div>
 
-  <!-- =========================================================================
-       CALENDAR EVENT DETAILS QUICK MODAL
-       ========================================================================= -->
-  <div class="admin-modal-backdrop" id="calendar-event-modal" aria-hidden="true" role="dialog">
-    <div class="admin-modal-box" style="max-width: 540px; background: #0c0c10; border: 1.5px solid var(--border-medium); padding: 2.2rem; box-shadow: 0 25px 60px rgba(0,0,0,0.9);">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
-        <div>
-          <span class="section-tag" id="cal-modal-badge" style="background: var(--color-blue); color: #fff; margin-bottom: 0.5rem;">WORKSHOP</span>
-          <h2 style="font-family: var(--font-display); font-size: 1.8rem; margin: 0; color: #fff; line-height: 1.15;" id="cal-modal-title">EVENT NAME</h2>
-        </div>
-        <button type="button" class="modal-close-btn" id="cal-modal-close" style="background: none; border: none; color: #fff; font-size: 1.7rem; cursor: pointer;">&times;</button>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.25rem; font-family: var(--font-mono); font-size: 0.78rem;">
-        <div style="background: rgba(255,255,255,0.03); padding: 0.6rem 0.85rem; border: 1px solid var(--border-subtle); border-radius: 4px;">
-          <div style="color: var(--color-gray); font-size: 0.68rem;">DATE &amp; TIME</div>
-          <div style="color: #fff; font-weight: 700; margin-top: 0.2rem;" id="cal-modal-datetime">APRIL 10, 2026</div>
-        </div>
-        <div style="background: rgba(255,255,255,0.03); padding: 0.6rem 0.85rem; border: 1px solid var(--border-subtle); border-radius: 4px;">
-          <div style="color: var(--color-gray); font-size: 0.68rem;">VENUE</div>
-          <div style="color: #fff; font-weight: 700; margin-top: 0.2rem;" id="cal-modal-venue">AUDITORIUM</div>
-        </div>
-        <div style="background: rgba(255,255,255,0.03); padding: 0.6rem 0.85rem; border: 1px solid var(--border-subtle); border-radius: 4px;">
-          <div style="color: var(--color-gray); font-size: 0.68rem;">REMAINING CAPACITY</div>
-          <div style="color: var(--color-blue); font-weight: 700; margin-top: 0.2rem;" id="cal-modal-slots">27 SLOTS LEFT</div>
-        </div>
-        <div style="background: rgba(255,255,255,0.03); padding: 0.6rem 0.85rem; border: 1px solid var(--border-subtle); border-radius: 4px;">
-          <div style="color: var(--color-gray); font-size: 0.68rem;">DEADLINE</div>
-          <div style="color: #fbbf24; font-weight: 700; margin-top: 0.2rem;" id="cal-modal-deadline">09 APR 2026</div>
-        </div>
-      </div>
-
-      <p style="font-size: 0.88rem; line-height: 1.6; color: var(--color-gray); margin-bottom: 1.5rem;" id="cal-modal-desc">
-        Short description of event highlights...
-      </p>
-
-      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
-        <button type="button" class="btn-brutalist btn-secondary btn-sm" id="cal-modal-cancel">
-          Close
-        </button>
-        <a href="event.html" class="btn-brutalist btn-primary btn-sm" id="cal-modal-action-btn">
-          View Details &amp; Register →
-        </a>
-      </div>
-    </div>
-  </div>
 
   
 

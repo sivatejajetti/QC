@@ -1300,11 +1300,17 @@ document.addEventListener('DOMContentLoaded', () => {
       lookupInput.value = lastAppId;
     }
 
-    if (statusLookupModal) statusLookupModal.classList.add('active');
+    if (statusLookupModal) {
+      statusLookupModal.style.display = 'flex';
+      statusLookupModal.classList.add('active');
+    }
   };
 
   const closeStatusLookupModal = () => {
-    if (statusLookupModal) statusLookupModal.classList.remove('active');
+    if (statusLookupModal) {
+      statusLookupModal.classList.remove('active');
+      statusLookupModal.style.display = 'none';
+    }
   };
 
   if (btnOpenStatusLookup) btnOpenStatusLookup.addEventListener('click', openStatusLookupModal);
@@ -1396,6 +1402,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  const hasTouch = 'ontouchstart' in window || (navigator.maxTouchPoints > 0);
 
   // 3D Tilt Physics for digital card
   if (digitalCard && !hasTouch) {
@@ -1768,31 +1776,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const calTodayBtn = document.getElementById('cal-today-btn');
   const upcomingCardsGrid = document.getElementById('upcoming-events-cards');
 
-  // Modal elements
-  const calModal = document.getElementById('calendar-event-modal');
-  const calModalClose = document.getElementById('cal-modal-close');
-  const calModalCancel = document.getElementById('cal-modal-cancel');
-  const calModalBadge = document.getElementById('cal-modal-badge');
-  const calModalTitle = document.getElementById('cal-modal-title');
-  const calModalDateTime = document.getElementById('cal-modal-datetime');
-  const calModalVenue = document.getElementById('cal-modal-venue');
-  const calModalSlots = document.getElementById('cal-modal-slots');
-  const calModalDeadline = document.getElementById('cal-modal-deadline');
-  const calModalDesc = document.getElementById('cal-modal-desc');
-  const calModalActionBtn = document.getElementById('cal-modal-action-btn');
-
-  const closeCalModal = () => {
-    if (calModal) calModal.classList.remove('active');
-  };
-
-  if (calModalClose) calModalClose.addEventListener('click', closeCalModal);
-  if (calModalCancel) calModalCancel.addEventListener('click', closeCalModal);
-  if (calModal) {
-    calModal.addEventListener('click', (e) => {
-      if (e.target === calModal) closeCalModal();
-    });
-  }
-
   const escapeHtml = (str) => {
     if (str === null || str === undefined) return '';
     return String(str)
@@ -1803,20 +1786,42 @@ document.addEventListener('DOMContentLoaded', () => {
       .replace(/'/g, '&#039;');
   };
 
+  const extractDateString = (raw) => {
+    if (!raw) return new Date().toISOString().split('T')[0];
+    if (typeof raw === 'string') {
+      const trimmed = raw.trim();
+      if (trimmed.includes('T')) return trimmed.split('T')[0];
+      if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.substring(0, 10);
+      const ddmmyyyy = trimmed.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+      if (ddmmyyyy) {
+        return `${ddmmyyyy[3]}-${ddmmyyyy[2].padStart(2, '0')}-${ddmmyyyy[1].padStart(2, '0')}`;
+      }
+    }
+    try {
+      const d = new Date(raw);
+      if (!isNaN(d.getTime())) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      }
+    } catch (e) {}
+    return new Date().toISOString().split('T')[0];
+  };
+
   const normalizeEvent = (e) => {
     if (!e) return null;
-    const name = e.name || e.title || 'Untitled Event';
-    const date = e.date || e.event_date || new Date().toISOString().split('T')[0];
-    const maximum_slots = parseInt(e.maximum_slots ?? e.max_capacity ?? 100, 10);
-    const event_type = e.event_type || e.category || 'WORKSHOP';
+    const name = e.name || e.title || 'Quantum Coders Sprint';
+    const date = extractDateString(e.date || e.event_date);
+    const maximum_slots = parseInt(e.maximum_slots ?? e.max_capacity ?? 100, 10) || 100;
+    const event_type = (e.event_type || e.category || 'WORKSHOP').toUpperCase();
     const banner_url = e.banner_url || e.cover_image || 'images/event%20images/Pydah%20hackathon.png';
-    const is_published = e.status ? (e.status !== 'DRAFT') : (e.is_published !== false);
     const is_calendar_visible = e.is_calendar_visible !== false;
-    const is_registration_open = e.status ? (e.status === 'PUBLISHED' || e.status === 'REGISTRATION OPEN') : (e.is_registration_open !== false);
+    const is_registration_open = e.deleted_at ? false : (e.is_registration_open !== false && e.status !== 'CANCELLED');
 
     return {
       ...e,
-      id: e.id || `evt-${Date.now()}`,
+      id: String(e.id || e.event_code || `evt-${Date.now()}`),
       name,
       title: name,
       date,
@@ -1824,46 +1829,20 @@ document.addEventListener('DOMContentLoaded', () => {
       maximum_slots,
       max_capacity: maximum_slots,
       event_type,
-      category: event_type,
+      category: event_type.toLowerCase(),
       banner_url,
       cover_image: banner_url,
-      status: is_published ? (e.status || 'PUBLISHED') : 'DRAFT',
-      is_published,
+      status: e.status || 'PUBLISHED',
+      is_published: true, // Show all active events by default so user-added Supabase events are never hidden
       is_calendar_visible,
       is_registration_open,
-      venue: e.venue || 'Auditorium',
+      venue: e.venue || e.location || 'Campus Auditorium',
       start_time: e.start_time || '10:00:00',
       end_time: e.end_time || '18:00:00',
       description: e.description || '',
       confirmed_count: parseInt(e.confirmed_count || 0, 10),
       remaining_slots: e.remaining_slots !== undefined ? e.remaining_slots : Math.max(0, maximum_slots - (e.confirmed_count || 0))
     };
-  };
-
-  const openCalendarEventModal = (ev) => {
-    if (!calModal || !ev) return;
-    const norm = normalizeEvent(ev);
-    if (calModalBadge) {
-      calModalBadge.textContent = (norm.event_type || 'WORKSHOP').toUpperCase();
-    }
-    if (calModalTitle) calModalTitle.textContent = norm.name;
-    if (calModalDateTime) calModalDateTime.textContent = `${norm.date} • ${norm.start_time || ''}`;
-    if (calModalVenue) calModalVenue.textContent = (norm.venue || 'Auditorium').toUpperCase();
-    if (calModalSlots) {
-      const remaining = norm.remaining_slots !== undefined ? norm.remaining_slots : Math.max(0, norm.maximum_slots - (norm.confirmed_count || 0));
-      calModalSlots.textContent = norm.is_full ? 'WAITLIST AVAILABLE' : `${remaining} SLOTS LEFT`;
-      calModalSlots.style.color = norm.is_full ? '#fbbf24' : 'var(--color-blue)';
-    }
-    if (calModalDeadline) {
-      calModalDeadline.textContent = norm.registration_deadline ? new Date(norm.registration_deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'OPEN';
-    }
-    if (calModalDesc) calModalDesc.textContent = norm.description || 'Join this Quantum Coders operational session.';
-    if (calModalActionBtn) {
-      calModalActionBtn.href = `event.html?id=${encodeURIComponent(norm.id)}`;
-      calModalActionBtn.textContent = norm.is_full ? 'Join Waitlist →' : 'View Details & Register →';
-    }
-
-    calModal.classList.add('active');
   };
 
   const renderCalendar = () => {
@@ -1878,7 +1857,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
     calMonthYearTitle.textContent = `${monthNames[month]} ${year}`;
 
-    // Render Quick Month Navigation Pills for any months with events
+    // Render Quick Month Navigation Pills for all months with events
     let quickPillsWrap = document.getElementById('cal-months-quick-pills');
     if (!quickPillsWrap && calTodayBtn && calTodayBtn.parentElement) {
       quickPillsWrap = document.createElement('div');
@@ -1891,8 +1870,8 @@ document.addEventListener('DOMContentLoaded', () => {
       quickPillsWrap.innerHTML = '';
       const monthsMap = new Map();
       calendarEvents.forEach((ev) => {
-        if (!ev || ev.deleted_at || ev.is_calendar_visible === false) return;
-        const d = ev.date || ev.event_date;
+        if (!ev || ev.deleted_at || ev.status === 'CANCELLED' || ev.is_calendar_visible === false) return;
+        const d = extractDateString(ev.date || ev.event_date);
         if (!d) return;
         const [y, m] = d.split('-').map(Number);
         if (!y || !m) return;
@@ -1900,7 +1879,15 @@ document.addEventListener('DOMContentLoaded', () => {
         monthsMap.set(key, (monthsMap.get(key) || 0) + 1);
       });
 
-      monthsMap.forEach((count, key) => {
+      // Sort months chronologically
+      const sortedKeys = Array.from(monthsMap.keys()).sort((a, b) => {
+        const [y1, m1] = a.split('-').map(Number);
+        const [y2, m2] = b.split('-').map(Number);
+        return y1 !== y2 ? y1 - y2 : m1 - m2;
+      });
+
+      sortedKeys.forEach((key) => {
+        const count = monthsMap.get(key);
         const [y, m] = key.split('-').map(Number);
         const isCurrentView = y === year && (m - 1) === month;
         const pill = document.createElement('button');
@@ -1956,10 +1943,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Find events matching this date (YYYY-MM-DD)
       const dayFormatted = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const dayEvents = calendarEvents.filter((e) => {
-        if (!e || e.deleted_at) return false;
+        if (!e || e.deleted_at || e.status === 'CANCELLED') return false;
         if (e.is_calendar_visible === false) return false;
-        if (e.is_published === false && e.status === 'DRAFT') return false;
-        const evDate = (e.date || e.event_date || '').substring(0, 10);
+        const evDate = extractDateString(e.date || e.event_date);
         return evDate === dayFormatted;
       });
 
@@ -1967,22 +1953,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const chip = document.createElement('div');
         const typeClass = (ev.event_type || 'workshop').toLowerCase().replace(/\s+/g, '-');
         chip.className = `cal-event-chip cal-chip-${typeClass}`;
-        chip.textContent = `${ev.start_time ? ev.start_time.substring(0, 5) : ''} ${ev.name}`;
-        chip.title = `${ev.name} (${ev.venue})`;
+        chip.textContent = `${ev.start_time ? ev.start_time.substring(0, 5) : ''} ${ev.name || ev.title}`;
+        chip.title = `${ev.name || ev.title} (${ev.venue || 'Auditorium'}) - Click to view pass`;
         chip.addEventListener('click', (e) => {
           e.stopPropagation();
-          openCalendarEventModal(ev);
+          window.location.href = `event.html?id=${encodeURIComponent(ev.id)}`;
         });
         eventsWrap.appendChild(chip);
       });
 
       cell.appendChild(eventsWrap);
 
-      // Clicking day cell with events opens first event
+      // Clicking day cell with events opens event pass directly
       if (dayEvents.length > 0) {
         cell.style.cursor = 'pointer';
         cell.addEventListener('click', () => {
-          openCalendarEventModal(dayEvents[0]);
+          window.location.href = `event.html?id=${encodeURIComponent(dayEvents[0].id)}`;
         });
       }
 
@@ -1990,25 +1976,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  let activeCategoryFilter = 'ALL';
+
+  const initUpcomingEventsCategoryFilters = () => {
+    const filterContainer = document.getElementById('upcoming-events-category-filters');
+    if (!filterContainer) return;
+    const buttons = filterContainer.querySelectorAll('button[data-category]');
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        buttons.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeCategoryFilter = (btn.getAttribute('data-category') || 'ALL').toUpperCase();
+        renderUpcomingEvents(calendarEvents);
+      });
+    });
+  };
+
   const renderUpcomingEvents = (events) => {
     if (!upcomingCardsGrid) return;
     upcomingCardsGrid.innerHTML = '';
 
-    const published = (events || []).filter((e) => {
-      if (!e || e.deleted_at) return false;
-      if (e.is_published === false && e.status === 'DRAFT') return false;
+    let published = (events || []).filter((e) => {
+      if (!e || e.deleted_at || e.status === 'CANCELLED') return false;
       return true;
     });
 
+    if (activeCategoryFilter !== 'ALL') {
+      published = published.filter((e) => {
+        const type = (e.event_type || e.category || '').toUpperCase();
+        return type.includes(activeCategoryFilter);
+      });
+    }
+
     if (published.length === 0) {
-      upcomingCardsGrid.innerHTML = '<p style="color: var(--color-gray); font-family: var(--font-mono); font-size: 0.85rem;">No upcoming public sprints currently scheduled.</p>';
+      const catLabel = activeCategoryFilter === 'ALL' ? '' : ` ${activeCategoryFilter}`;
+      upcomingCardsGrid.innerHTML = `<p style="color: var(--color-gray); font-family: var(--font-mono); font-size: 0.85rem; padding: 2.5rem; border: 1.5px dashed var(--border-medium); border-radius: 6px; grid-column: 1 / -1; text-align: center;">No upcoming${escapeHtml(catLabel)} public sprints currently scheduled. Visit the Admin Console to schedule a sprint.</p>`;
       return;
     }
 
     // Sort upcoming events: scheduled date ascending
     published.sort((a, b) => {
-      const da = a.date || a.event_date || '';
-      const db = b.date || b.event_date || '';
+      const da = extractDateString(a.date || a.event_date);
+      const db = extractDateString(b.date || b.event_date);
       return da.localeCompare(db);
     });
 
@@ -2016,18 +2025,21 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = document.createElement('div');
       card.className = 'upcoming-event-card';
 
-      const remaining = ev.remaining_slots !== undefined ? ev.remaining_slots : Math.max(0, (ev.maximum_slots || 100) - (ev.confirmed_count || 0));
+      const maxSlots = ev.maximum_slots || ev.max_capacity || 100;
+      const conf = ev.confirmed_count || 0;
+      const remaining = ev.remaining_slots !== undefined ? ev.remaining_slots : Math.max(0, maxSlots - conf);
       const isFull = ev.is_full || remaining === 0;
       const title = ev.title || ev.name || 'Quantum Coders Sprint';
-      const eventDate = ev.date || ev.event_date || 'TBA';
+      const eventDate = extractDateString(ev.date || ev.event_date);
       const cover = ev.banner_url || ev.cover_image || 'images/event%20images/Pydah%20hackathon.png';
+      const typeDisplay = (ev.event_type || 'WORKSHOP').toUpperCase();
 
       card.innerHTML = `
         <img src="${cover}" alt="${escapeHtml(title)}" class="ue-card-banner" onerror="this.src='images/event%20images/Pydah%20hackathon.png'">
         <div class="ue-card-content">
           <div class="ue-badges-row">
             <span class="section-tag" style="background: var(--color-blue); color: #fff; margin: 0; font-size: 0.65rem;">
-              ${(ev.event_type || 'WORKSHOP').toUpperCase()}
+              ${escapeHtml(typeDisplay)}
             </span>
             <span class="section-tag" style="background: ${isFull ? 'rgba(251,191,36,0.15)' : 'rgba(16,185,129,0.15)'}; color: ${isFull ? '#fbbf24' : '#34d399'}; border-color: ${isFull ? '#fbbf24' : '#10b981'}; margin: 0; font-size: 0.65rem;">
               ${isFull ? 'WAITLIST AVAILABLE' : 'REGISTRATION OPEN'}
@@ -2038,7 +2050,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <p class="ue-card-desc">${escapeHtml(ev.description || 'Join this intensive Quantum Coders sprint session.')}</p>
 
           <div class="ue-card-meta-list">
-            <div><span>📅</span> <strong>${eventDate}</strong> • ${ev.start_time ? ev.start_time.substring(0, 5) : '10:00 AM'}</div>
+            <div><span>📅</span> <strong>${escapeHtml(eventDate)}</strong> • ${ev.start_time ? ev.start_time.substring(0, 5) : '10:00 AM'}</div>
             <div><span>📍</span> ${escapeHtml(ev.venue || 'Campus Auditorium')}</div>
           </div>
 
@@ -2088,20 +2100,61 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Tier 3: Offline Local storage catalog fallback ONLY if remote fetch returned nothing
-    if (!loaded.length) {
-      try {
-        const stored = localStorage.getItem('qc_events_catalog');
-        if (stored) {
-          const parsedStored = JSON.parse(stored);
-          if (Array.isArray(parsedStored) && parsedStored.length > 0) {
-            loaded = parsedStored;
-          }
+    // Tier 3: Always check shared local storage catalog and merge any newly added/edited events
+    try {
+      const stored = localStorage.getItem('qc_events_catalog');
+      if (stored) {
+        const parsedStored = JSON.parse(stored);
+        if (Array.isArray(parsedStored) && parsedStored.length > 0) {
+          const existingIds = new Set(loaded.map((e) => String(e.id || e.event_code || '')));
+          parsedStored.forEach((localEv) => {
+            if (!localEv || localEv.deleted_at) return;
+            const k = String(localEv.id || localEv.event_code || '');
+            if (!existingIds.has(k)) {
+              loaded.push(localEv);
+              existingIds.add(k);
+            }
+          });
         }
-      } catch (e) {}
-    }
+      }
+    } catch (e) {}
 
-    // Tier 4: Fallback to seed events if catalog is completely empty
+    // Tier 4: Also check qc_events (Gallery moments console) in case event was created there
+    try {
+      const galleryEventsStored = localStorage.getItem('qc_events');
+      if (galleryEventsStored) {
+        const parsedGallery = JSON.parse(galleryEventsStored);
+        if (Array.isArray(parsedGallery) && parsedGallery.length > 0) {
+          const existingIds = new Set(loaded.map((e) => String(e.id || e.event_code || '')));
+          parsedGallery.forEach((galEv) => {
+            if (!galEv || !galEv.title) return;
+            const k = String(galEv.id || '');
+            if (!existingIds.has(k)) {
+              loaded.push({
+                id: galEv.id,
+                name: galEv.title,
+                title: galEv.title,
+                date: galEv.date || new Date().toISOString().split('T')[0],
+                event_date: galEv.date,
+                venue: galEv.location || 'Campus Auditorium',
+                description: galEv.description || '',
+                banner_url: (galEv.media && galEv.media[0] && galEv.media[0].url) || 'images/event%20images/Pydah%20hackathon.png',
+                cover_image: (galEv.media && galEv.media[0] && galEv.media[0].url) || 'images/event%20images/Pydah%20hackathon.png',
+                category: galEv.category || 'Workshop',
+                event_type: galEv.category || 'Workshop',
+                maximum_slots: 100,
+                is_published: true,
+                is_calendar_visible: true,
+                status: 'PUBLISHED'
+              });
+              existingIds.add(k);
+            }
+          });
+        }
+      }
+    } catch (e) {}
+
+    // Tier 5: Fallback to seed events if catalog is completely empty
     if (!loaded.length) {
       loaded = [
         {
@@ -2159,7 +2212,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (!hasEventsInCurMonth && calendarEvents.length > 0) {
-        // Find nearest future event or first event
         const todayStr = new Date().toISOString().split('T')[0];
         const upcomingEvent = calendarEvents.find((ev) => (ev.date || ev.event_date || '') >= todayStr) || calendarEvents[0];
         const targetDateStr = upcomingEvent ? (upcomingEvent.date || upcomingEvent.event_date) : null;
@@ -2172,8 +2224,107 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    initUpcomingEventsCategoryFilters();
     renderCalendar();
     renderUpcomingEvents(calendarEvents);
+    initUpcomingEventPopup();
+  };
+
+  // ----------------------------------------------------------------------------
+  // 13.5 Automatic Upcoming Event Announcement Popup Modal
+  // ----------------------------------------------------------------------------
+  let hasShownUpcomingPopup = false;
+  const initUpcomingEventPopup = () => {
+    if (hasShownUpcomingPopup) return;
+    const popupModal = document.getElementById('upcoming-event-popup-modal');
+    if (!popupModal) return;
+
+    const popupCloseBtn = document.getElementById('popup-event-close-btn');
+    const popupDismissBtn = document.getElementById('popup-event-dismiss-btn');
+    const popupActionBtn = document.getElementById('popup-event-action-btn');
+    const popupBanner = document.getElementById('popup-event-banner');
+    const popupBadge = document.getElementById('popup-event-badge');
+    const popupStatusPill = document.getElementById('popup-event-status-pill');
+    const popupTitle = document.getElementById('popup-event-title');
+    const popupDesc = document.getElementById('popup-event-desc');
+    const popupDateTime = document.getElementById('popup-event-datetime');
+    const popupVenue = document.getElementById('popup-event-venue');
+    const popupSlots = document.getElementById('popup-event-slots');
+
+    const closePopup = () => {
+      popupModal.classList.remove('active');
+      popupModal.style.display = 'none';
+    };
+
+    if (popupCloseBtn) popupCloseBtn.addEventListener('click', closePopup);
+    if (popupDismissBtn) popupDismissBtn.addEventListener('click', closePopup);
+    popupModal.addEventListener('click', (e) => {
+      if (e.target === popupModal) closePopup();
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && popupModal.classList.contains('active')) {
+        closePopup();
+      }
+    });
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const publishedEvents = (calendarEvents || []).filter((e) => {
+      if (!e || e.deleted_at) return false;
+      if (e.status === 'DRAFT' || e.is_published === false) return false;
+      return true;
+    });
+
+    if (publishedEvents.length === 0) return;
+
+    publishedEvents.sort((a, b) => {
+      const da = extractDateString(a.date || a.event_date);
+      const db = extractDateString(b.date || b.event_date);
+      return da.localeCompare(db);
+    });
+
+    const upcomingEv = publishedEvents.find((e) => extractDateString(e.date || e.event_date) >= todayStr) || publishedEvents[0];
+    if (!upcomingEv) return;
+
+    const maxSlots = upcomingEv.maximum_slots || upcomingEv.max_capacity || 100;
+    const conf = upcomingEv.confirmed_count || 0;
+    const remaining = upcomingEv.remaining_slots !== undefined ? upcomingEv.remaining_slots : Math.max(0, maxSlots - conf);
+    const isFull = upcomingEv.is_full || remaining === 0;
+    const title = upcomingEv.title || upcomingEv.name || 'Quantum Coders Sprint';
+    const evDate = extractDateString(upcomingEv.date || upcomingEv.event_date);
+    const cover = upcomingEv.banner_url || upcomingEv.cover_image || 'images/event%20images/Pydah%20hackathon.png';
+    const typeDisplay = (upcomingEv.event_type || upcomingEv.category || 'WORKSHOP').toUpperCase();
+
+    if (popupTitle) popupTitle.textContent = title;
+    if (popupDesc) popupDesc.textContent = upcomingEv.description || 'Join this intensive technical sprint session hosted by Quantum Coders at Pydah College of Engineering.';
+    if (popupBanner) {
+      popupBanner.src = cover;
+      popupBanner.alt = title;
+    }
+    if (popupBadge) popupBadge.textContent = typeDisplay;
+    if (popupStatusPill) {
+      popupStatusPill.textContent = isFull ? 'WAITLIST AVAILABLE' : 'REGISTRATION OPEN';
+      popupStatusPill.style.background = isFull ? 'rgba(251,191,36,0.9)' : 'rgba(16,185,129,0.9)';
+    }
+    if (popupDateTime) {
+      popupDateTime.textContent = `${evDate} • ${upcomingEv.start_time ? upcomingEv.start_time.substring(0, 5) : '10:00 AM'}`;
+    }
+    if (popupVenue) {
+      popupVenue.textContent = upcomingEv.venue || 'Campus Auditorium';
+    }
+    if (popupSlots) {
+      popupSlots.textContent = isFull ? 'WAITLIST' : `${remaining} SLOTS LEFT`;
+      popupSlots.style.color = isFull ? '#fbbf24' : '#38bdf8';
+    }
+    if (popupActionBtn) {
+      popupActionBtn.href = `event.html?id=${encodeURIComponent(upcomingEv.id)}`;
+      popupActionBtn.textContent = isFull ? 'Join Waitlist →' : 'Register Entry Pass →';
+    }
+
+    hasShownUpcomingPopup = true;
+    setTimeout(() => {
+      popupModal.style.display = 'flex';
+      popupModal.classList.add('active');
+    }, 700);
   };
 
   // Live Cross-Tab Synchronization
@@ -2190,7 +2341,7 @@ document.addEventListener('DOMContentLoaded', () => {
           console.log('[Quantum Coders] Live event update received from admin:', action || type);
           let targetDate = null;
           if (event && (event.date || event.event_date)) {
-            const evDate = event.date || event.event_date;
+            const evDate = extractDateString(event.date || event.event_date);
             const [y, m] = evDate.split('-').map(Number);
             if (y && m) {
               targetDate = new Date(y, m - 1, 1);
@@ -2203,9 +2354,30 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.addEventListener('storage', (e) => {
-    if (e.key === 'qc_events_catalog' || e.key === 'qc_supabase_url') {
-      loadEventsData();
+    if (e.key === 'qc_events_catalog' || e.key === 'qc_events' || e.key === 'qc_supabase_url') {
+      let targetDate = null;
+      try {
+        if (e.newValue) {
+          const arr = JSON.parse(e.newValue);
+          if (Array.isArray(arr) && arr.length > 0) {
+            const firstEv = arr[0];
+            const d = extractDateString(firstEv.date || firstEv.event_date);
+            const [y, m] = d.split('-').map(Number);
+            if (y && m) targetDate = new Date(y, m - 1, 1);
+          }
+        }
+      } catch (err) {}
+      loadEventsData(targetDate);
     }
+  });
+
+  window.addEventListener('qc_events_updated', (e) => {
+    let targetDate = null;
+    if (e.detail && e.detail.date) {
+      const [y, m] = extractDateString(e.detail.date).split('-').map(Number);
+      if (y && m) targetDate = new Date(y, m - 1, 1);
+    }
+    loadEventsData(targetDate);
   });
 
   window.addEventListener('qc_supabase_connected', () => {

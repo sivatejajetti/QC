@@ -4,7 +4,12 @@
  * Uses process.env.SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY securely on the server.
  */
 
-const { createClient } = require('@supabase/supabase-js');
+let createClient = null;
+try {
+  createClient = require('@supabase/supabase-js').createClient;
+} catch (e) {
+  console.warn('[Quantum Coders] @supabase/supabase-js package not installed locally, using fallback store.');
+}
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://your-project.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || 'your-key';
@@ -13,6 +18,7 @@ let supabaseServerClient = null;
 
 const isSupabaseConfigured = () => {
   return (
+    createClient !== null &&
     process.env.SUPABASE_URL &&
     !process.env.SUPABASE_URL.includes('your-project') &&
     (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY)
@@ -20,7 +26,7 @@ const isSupabaseConfigured = () => {
 };
 
 const getSupabaseAdmin = () => {
-  if (!isSupabaseConfigured()) {
+  if (!isSupabaseConfigured() || !createClient) {
     return null;
   }
   if (!supabaseServerClient) {

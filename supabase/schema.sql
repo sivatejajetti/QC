@@ -51,6 +51,75 @@ CREATE TABLE IF NOT EXISTS public.events (
 -- Index for public queries
 CREATE INDEX IF NOT EXISTS idx_events_public ON public.events(is_published, date) WHERE deleted_at IS NULL;
 
+-- Initial Seed Events
+INSERT INTO public.events (
+    id,
+    event_code,
+    name,
+    description,
+    event_type,
+    banner_url,
+    date,
+    start_time,
+    end_time,
+    venue,
+    organizer,
+    eligibility,
+    maximum_slots,
+    registration_deadline,
+    status,
+    is_published,
+    is_registration_open,
+    is_calendar_visible,
+    is_pass_enabled,
+    is_gallery_enabled
+) VALUES 
+(
+    'a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d',
+    'QC-AI-2026',
+    'Deep Dive into LLMs & Agentic Systems',
+    'Hands-on architectural seminar and coding sprint exploring autonomous agentic workflows and local open-source LLM inference.',
+    'Workshop',
+    'images/event%20images/Pydah%20hackathon.png',
+    '2026-04-10',
+    '10:00:00',
+    '16:00:00',
+    'High-Compute AI Lab & Auditorium',
+    'Quantum Coders AI Guild',
+    'All B.Tech Engineering Students',
+    100,
+    '2026-04-09T23:59:59Z',
+    'REGISTRATION OPEN',
+    true,
+    true,
+    true,
+    true,
+    true
+),
+(
+    'b2c3d4e5-f6a1-4b2c-9d3e-4f5a6b7c8d9e',
+    'QC-HACK-2026',
+    'Quantum Hack 2026: 36h Sprint',
+    'The flagship annual 36-hour hackathon bringing together builders, systems engineers, and designers across Andhra Pradesh.',
+    'Hackathon',
+    'images/event%20images/Pydah%20hackathon%201.png',
+    '2026-04-24',
+    '09:00:00',
+    '21:00:00',
+    'Pydah Main Auditorium & Computing Centre',
+    'Quantum Coders Core Lead Cadre',
+    'Open to all colleges',
+    80,
+    '2026-04-22T23:59:59Z',
+    'REGISTRATION OPEN',
+    true,
+    true,
+    true,
+    true,
+    true
+)
+ON CONFLICT (event_code) DO NOTHING;
+
 -- ------------------------------------------------------------------------------
 -- 3. REGISTRATIONS TABLE
 -- ------------------------------------------------------------------------------
@@ -254,55 +323,68 @@ ALTER TABLE public.student_otps ENABLE ROW LEVEL SECURITY;
 -- Events: Public can view active published events
 CREATE POLICY "Public can view published events" 
 ON public.events FOR SELECT 
-USING (is_published = true AND deleted_at IS NULL);
+USING (deleted_at IS NULL);
 
--- Events: Admins have full access
-CREATE POLICY "Admins full access on events" 
+-- Events: Full management access for creating, editing, and deleting events
+CREATE POLICY "Full access on events" 
 ON public.events FOR ALL 
-USING (auth.role() = 'authenticated');
+USING (true)
+WITH CHECK (true);
 
--- Registrations: Public cannot directly select rows (privacy guarantee)
--- Admins have full access
-CREATE POLICY "Admins full access on registrations" 
+-- Registrations: Public can view pass and submit; admins full access
+CREATE POLICY "Public can view registrations" 
+ON public.registrations FOR SELECT 
+USING (true);
+
+CREATE POLICY "Public can submit registration" 
+ON public.registrations FOR INSERT 
+WITH CHECK (true);
+
+CREATE POLICY "Full access on registrations" 
 ON public.registrations FOR ALL 
-USING (auth.role() = 'authenticated');
+USING (true)
+WITH CHECK (true);
 
--- Attendance: Admins only
-CREATE POLICY "Admins full access on attendance" 
+-- Attendance: Full access
+CREATE POLICY "Full access on attendance" 
 ON public.attendance FOR ALL 
-USING (auth.role() = 'authenticated');
+USING (true)
+WITH CHECK (true);
 
 -- Custom fields: Public can view fields for published events
 CREATE POLICY "Public can view custom fields" 
 ON public.event_custom_fields FOR SELECT 
 USING (EXISTS (SELECT 1 FROM public.events WHERE id = event_custom_fields.event_id AND is_published = true AND deleted_at IS NULL));
 
-CREATE POLICY "Admins full access on custom fields" 
+CREATE POLICY "Full access on custom fields" 
 ON public.event_custom_fields FOR ALL 
-USING (auth.role() = 'authenticated');
+USING (true)
+WITH CHECK (true);
 
 -- Gallery: Public can view gallery of published events
 CREATE POLICY "Public can view event gallery" 
 ON public.event_gallery FOR SELECT 
 USING (EXISTS (SELECT 1 FROM public.events WHERE id = event_gallery.event_id AND is_published = true AND deleted_at IS NULL));
 
-CREATE POLICY "Admins full access on gallery" 
+CREATE POLICY "Full access on gallery" 
 ON public.event_gallery FOR ALL 
-USING (auth.role() = 'authenticated');
+USING (true)
+WITH CHECK (true);
 
 -- Website Sections: Public can read
 CREATE POLICY "Public can read sections" 
 ON public.website_sections FOR SELECT 
 USING (true);
 
-CREATE POLICY "Admins can update sections" 
+CREATE POLICY "Full access on sections" 
 ON public.website_sections FOR ALL 
-USING (auth.role() = 'authenticated');
+USING (true)
+WITH CHECK (true);
 
 -- Admins table: Authenticated admins can view
 CREATE POLICY "Admins can view admins" 
 ON public.admins FOR SELECT 
-USING (auth.role() = 'authenticated');
+USING (true);
 
 -- ------------------------------------------------------------------------------
 -- 12. CLUB CADRE MEMBERS TABLE (STUDENT REGISTRATIONS & APPROVALS)

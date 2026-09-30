@@ -1,0 +1,13 @@
+{
+  "name": "quantum-coders-platform",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Quantum Coders official website, admin portal, event management, and cadre registry system.",
+  "scripts": {
+    "start": "serve .",
+    "test": "node test_events_flow.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1"
+  }
+}

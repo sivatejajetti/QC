@@ -828,6 +828,54 @@ const initAdmin = () => {
       }
 
       saveEvents(events);
+
+      // Also bridge and mirror into the operational event catalog & Supabase
+      try {
+        const coverUrl = (currentEditingMedia && currentEditingMedia[0] && currentEditingMedia[0].url) || 'images/event%20images/Pydah%20hackathon.png';
+        const catalogEvents = getEventsFromStorage() || [];
+        const existingCatIdx = catalogEvents.findIndex(ce => String(ce.id) === String(id));
+        const catalogEntry = normalizeEvent({
+          id,
+          name: title,
+          title,
+          category,
+          event_type: category.charAt(0).toUpperCase() + category.slice(1),
+          date: date || new Date().toISOString().split('T')[0],
+          event_date: date || new Date().toISOString().split('T')[0],
+          venue: location || 'Campus Auditorium',
+          description,
+          banner_url: coverUrl,
+          cover_image: coverUrl,
+          maximum_slots: 100,
+          status: 'PUBLISHED',
+          is_published: true,
+          is_calendar_visible: true,
+          is_registration_open: true
+        });
+
+        if (existingCatIdx >= 0) {
+          catalogEvents[existingCatIdx] = catalogEntry;
+        } else {
+          catalogEvents.unshift(catalogEntry);
+        }
+        saveEventsToStorage(catalogEvents);
+
+        // Sync with API & Supabase
+        if (window.QC_SUPABASE && window.QC_SUPABASE.upsertEvent) {
+          window.QC_SUPABASE.upsertEvent(catalogEntry);
+        }
+
+        if (typeof BroadcastChannel !== 'undefined') {
+          const bc = new BroadcastChannel('qc_events_channel');
+          bc.postMessage({
+            action: 'EVENT_UPDATED',
+            type: 'QC_EVENT_UPDATE',
+            event: catalogEntry,
+            timestamp: Date.now()
+          });
+        }
+      } catch (err) {}
+
       closeModal();
       renderEvents();
     });
@@ -2120,12 +2168,18 @@ const initAdmin = () => {
       }
     }
 
-    // 3. Fallback to Local Storage ONLY if remote fetch returned 0 events
-    if (eventsList.length === 0) {
-      const stored = getEventsFromStorage();
-      if (stored && stored.length > 0) {
-        eventsList = stored;
-      }
+    // 3. Merge with Local Storage so newly created/edited events are never wiped out
+    const stored = getEventsFromStorage();
+    if (stored && stored.length > 0) {
+      const existingIds = new Set(eventsList.map(e => String(e.id || e.event_code || '')));
+      stored.forEach(storedEv => {
+        if (!storedEv || storedEv.deleted_at) return;
+        const k = String(storedEv.id || storedEv.event_code || '');
+        if (!existingIds.has(k)) {
+          eventsList.push(storedEv);
+          existingIds.add(k);
+        }
+      });
     }
 
     // 4. Default Seed Catalog if completely empty
@@ -2706,10 +2760,13 @@ const initAdmin = () => {
         });
       };
 
+      const isNewEvent = !eventId;
       const resolvedId = eventId || generateUuid();
 
       const normPayload = normalizeEvent({
         id: resolvedId,
+        _isNew: isNewEvent,
+        is_new_event: isNewEvent,
         name: title,
         title,
         slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
@@ -2718,8 +2775,8 @@ const initAdmin = () => {
         badge: badge || `${category.toUpperCase()} // 2026`,
         date: eventDate,
         event_date: eventDate,
-        start_time: startTime,
-        end_time: endTime || '18:00:00',
+        start_time: startTime.length === 5 ? `${startTime}:00` : startTime,
+        end_time: (endTime && endTime.length === 5) ? `${endTime}:00` : (endTime || '18:00:00'),
         venue,
         maximum_slots: capacity,
         max_capacity: capacity,
@@ -2727,9 +2784,9 @@ const initAdmin = () => {
         banner_url: coverImage || 'images/event%20images/Pydah%20hackathon.png',
         cover_image: coverImage || 'images/event%20images/Pydah%20hackathon.png',
         status,
-        is_published: status === 'PUBLISHED' || status === 'REGISTRATION OPEN',
+        is_published: status !== 'DRAFT',
         is_calendar_visible: true,
-        is_registration_open: status === 'PUBLISHED' || status === 'REGISTRATION OPEN',
+        is_registration_open: status !== 'DRAFT' && status !== 'REGISTRATION CLOSED',
         registration_deadline: new Date(eventDate + 'T23:59:59Z').toISOString(),
         custom_fields: editingCustomFields
       });
@@ -2739,6 +2796,8 @@ const initAdmin = () => {
         try {
           const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(normPayload.id);
           const dbObj = {
+            _isNew: isNewEvent,
+            is_new_event: isNewEvent,
             ...(isUuid ? { id: normPayload.id } : {}),
             event_code: (normPayload.slug || normPayload.id || `QC-${Date.now()}`).toUpperCase().substring(0, 50),
             name: normPayload.name,
@@ -2771,7 +2830,7 @@ const initAdmin = () => {
       // 2. Call Vercel API endpoint
       try {
         const res = await fetch('/api/events', {
-          method: eventId ? 'PUT' : 'POST',
+          method: isNewEvent ? 'POST' : 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(normPayload)
         });
@@ -2788,7 +2847,7 @@ const initAdmin = () => {
       // 3. Save to shared localStorage (guarantees Home page sees it immediately!)
       const allEvents = getEventsFromStorage() || DEFAULT_EVENTS_CATALOG.map(normalizeEvent);
       if (eventId) {
-        const idx = allEvents.findIndex(e => e.id === eventId);
+        const idx = allEvents.findIndex(e => String(e.id) === String(eventId));
         if (idx !== -1) allEvents[idx] = normPayload;
         else allEvents.unshift(normPayload);
       } else {
@@ -2810,7 +2869,7 @@ const initAdmin = () => {
         }
       } catch (e) {}
 
-      showToast(eventId ? 'Event updated and published across website!' : 'Event created and published across website!', 'success');
+      showToast(isNewEvent ? 'Event created and published across website!' : 'Event updated and published across website!', 'success');
       closeEventCrudModal();
       renderAdminEventsGrid(adminEventsCache);
       loadDashboardStats();
@@ -4090,6 +4149,13 @@ CREATE POLICY "Allow full access on website_sections" ON public.website_sections
           );
           // Reload events from Supabase if ok
           if (testRes.ok) {
+            const client = window.QC_SUPABASE.getClient();
+            if (client) {
+              const { count, error } = await client.from('events').select('*', { count: 'exact', head: true }).is('deleted_at', null);
+              if (!error && (count === 0 || count === null)) {
+                await pushAllEventsToSupabase();
+              }
+            }
             await fetchEventsData();
             renderAdminEventsGrid(adminEventsCache);
             loadDashboardStats();
@@ -4100,6 +4166,71 @@ CREATE POLICY "Allow full access on website_sections" ON public.website_sections
         }
       }
     });
+  }
+
+  const btnPushEventsSupabase = document.getElementById('btn-push-events-supabase');
+
+  const pushAllEventsToSupabase = async () => {
+    if (!window.QC_SUPABASE || !window.QC_SUPABASE.isConfigured()) {
+      showToast('Supabase is not configured yet. Please enter your Project URL and Anon Key above and click "Connect & Save".', 'error');
+      return { success: false };
+    }
+
+    const client = window.QC_SUPABASE.getClient();
+    if (!client) return { success: false };
+
+    if (btnPushEventsSupabase) {
+      btnPushEventsSupabase.disabled = true;
+      btnPushEventsSupabase.textContent = 'Pushing Events...';
+    }
+
+    const eventsToPush = getEventsFromStorage() || DEFAULT_EVENTS_CATALOG.map(normalizeEvent);
+    let pushedCount = 0;
+
+    for (const ev of eventsToPush) {
+      if (!ev || ev.deleted_at) continue;
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(ev.id);
+      const dbRow = {
+        ...(isUuid ? { id: ev.id } : {}),
+        event_code: (ev.slug || ev.event_code || ev.id || `QC-${Date.now()}`).toUpperCase().substring(0, 50),
+        name: ev.name || ev.title || 'Quantum Coders Sprint',
+        description: ev.description || 'Quantum Coders Technical Event',
+        event_type: mapEventType(ev.event_type || ev.category),
+        banner_url: ev.banner_url || ev.cover_image || 'images/event%20images/Pydah%20hackathon.png',
+        date: ev.date || ev.event_date || '2026-04-10',
+        start_time: ev.start_time ? (ev.start_time.length === 5 ? `${ev.start_time}:00` : ev.start_time) : '10:00:00',
+        end_time: ev.end_time ? (ev.end_time.length === 5 ? `${ev.end_time}:00` : ev.end_time) : '18:00:00',
+        venue: ev.venue || 'Campus Auditorium',
+        maximum_slots: ev.maximum_slots || ev.max_capacity || 100,
+        registration_deadline: ev.registration_deadline || new Date((ev.date || '2026-04-10') + 'T23:59:59Z').toISOString(),
+        status: ev.status || (ev.is_published ? 'REGISTRATION OPEN' : 'DRAFT'),
+        is_published: ev.is_published !== false,
+        is_calendar_visible: ev.is_calendar_visible !== false,
+        is_registration_open: ev.is_registration_open !== false,
+        is_pass_enabled: true,
+        is_gallery_enabled: true
+      };
+
+      try {
+        const { data, error } = await client.from('events').upsert([dbRow], { onConflict: 'event_code' }).select();
+        if (!error) pushedCount++;
+        else console.warn('Supabase push error for row:', error.message);
+      } catch (err) {
+        console.warn('Supabase push exception:', err);
+      }
+    }
+
+    if (btnPushEventsSupabase) {
+      btnPushEventsSupabase.disabled = false;
+      btnPushEventsSupabase.textContent = '⚡ Push Events to Supabase Table Now';
+    }
+
+    showToast(`Successfully pushed ${pushedCount} events to Supabase 'events' table!`, 'success');
+    return { success: true, count: pushedCount };
+  };
+
+  if (btnPushEventsSupabase) {
+    btnPushEventsSupabase.addEventListener('click', pushAllEventsToSupabase);
   }
 
   if (btnTestSupabaseCfg) {
@@ -4120,6 +4251,15 @@ CREATE POLICY "Allow full access on website_sections" ON public.website_sections
           : (testRes.isMissingSchema ? 'Supabase connected! Tables not found. Click "Copy SQL Migration Script" below.' : testRes.message),
         testRes.ok ? 'success' : (testRes.isMissingSchema ? 'info' : 'error')
       );
+      if (testRes.ok) {
+        const client = window.QC_SUPABASE.getClient();
+        if (client) {
+          const { count } = await client.from('events').select('*', { count: 'exact', head: true }).is('deleted_at', null);
+          if (count === 0) {
+            await pushAllEventsToSupabase();
+          }
+        }
+      }
     });
   }
 
