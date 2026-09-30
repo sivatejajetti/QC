@@ -179,7 +179,8 @@ const initAdmin = () => {
   // ---------------------------------------------------------------------------
   // 2. Default Seed Events (Rich Multi-Media Data)
   // ---------------------------------------------------------------------------
-  
+  const DEFAULT_EVENTS = [];
+
   // ---------------------------------------------------------------------------
   // 3. Storage Helpers
   // ---------------------------------------------------------------------------
@@ -187,14 +188,13 @@ const initAdmin = () => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_EVENTS));
-        return DEFAULT_EVENTS;
+        return [];
       }
       const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_EVENTS;
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       console.warn('Error reading events from localStorage:', e);
-      return DEFAULT_EVENTS;
+      return [];
     }
   };
 
@@ -284,6 +284,7 @@ const initAdmin = () => {
   // 6. Render Events Grid
   // ---------------------------------------------------------------------------
   const renderEvents = () => {
+    if (!eventsGrid) return;
     const events = getEvents();
     updateCounters(events);
 
@@ -516,6 +517,7 @@ const initAdmin = () => {
     currentEditingMedia = [];
     renderMediaList();
 
+    eventModal.removeAttribute('aria-hidden');
     eventModal.classList.add('active');
   };
 
@@ -540,11 +542,20 @@ const initAdmin = () => {
     currentEditingMedia = event.media ? JSON.parse(JSON.stringify(event.media)) : [];
     renderMediaList();
 
+    eventModal.removeAttribute('aria-hidden');
     eventModal.classList.add('active');
   };
 
   const closeModal = () => {
-    eventModal.classList.remove('active');
+    if (eventModal) {
+      if (eventModal.contains(document.activeElement)) {
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+          document.activeElement.blur();
+        }
+      }
+      eventModal.classList.remove('active');
+      eventModal.setAttribute('aria-hidden', 'true');
+    }
   };
 
   if (eventModalClose) eventModalClose.addEventListener('click', closeModal);
@@ -688,9 +699,9 @@ const initAdmin = () => {
 
   if (btnResetDefaults) {
     btnResetDefaults.addEventListener('click', () => {
-      if (confirm('Reset event gallery to default curated multi-media events? This will restore the original demo events.')) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_EVENTS));
-        showToast('Gallery reset to default seed events.');
+      if (confirm('Clear local events cache and reload from live database?')) {
+        localStorage.removeItem(STORAGE_KEY);
+        showToast('Local events cache cleared.');
         renderEvents();
       }
     });
@@ -702,11 +713,20 @@ const initAdmin = () => {
   const openJsonModal = (isExport = true) => {
     const events = getEvents();
     jsonTextarea.value = JSON.stringify(events, null, 2);
+    jsonModal.removeAttribute('aria-hidden');
     jsonModal.classList.add('active');
   };
 
   const closeJsonModal = () => {
-    jsonModal.classList.remove('active');
+    if (jsonModal) {
+      if (jsonModal.contains(document.activeElement)) {
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+          document.activeElement.blur();
+        }
+      }
+      jsonModal.classList.remove('active');
+      jsonModal.setAttribute('aria-hidden', 'true');
+    }
   };
 
   if (btnExportJson) {
@@ -1578,12 +1598,21 @@ const initAdmin = () => {
       }
     }
 
+    studentCardModal.removeAttribute('aria-hidden');
     studentCardModal.classList.add('active');
   };
   window.openStudentCardModal = openStudentCardModal;
 
   const closeStudentCardModal = () => {
-    if (studentCardModal) studentCardModal.classList.remove('active');
+    if (studentCardModal) {
+      if (studentCardModal.contains(document.activeElement)) {
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+          document.activeElement.blur();
+        }
+      }
+      studentCardModal.classList.remove('active');
+      studentCardModal.setAttribute('aria-hidden', 'true');
+    }
   };
 
   if (studentCardModalClose) studentCardModalClose.addEventListener('click', closeStudentCardModal);
@@ -1609,11 +1638,22 @@ const initAdmin = () => {
 
   const openManualStudentModal = () => {
     if (manualStudentForm) manualStudentForm.reset();
-    if (manualStudentModal) manualStudentModal.classList.add('active');
+    if (manualStudentModal) {
+      manualStudentModal.removeAttribute('aria-hidden');
+      manualStudentModal.classList.add('active');
+    }
   };
 
   const closeManualStudentModal = () => {
-    if (manualStudentModal) manualStudentModal.classList.remove('active');
+    if (manualStudentModal) {
+      if (manualStudentModal.contains(document.activeElement)) {
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+          document.activeElement.blur();
+        }
+      }
+      manualStudentModal.classList.remove('active');
+      manualStudentModal.setAttribute('aria-hidden', 'true');
+    }
   };
 
   if (btnManualAddStudent) btnManualAddStudent.addEventListener('click', openManualStudentModal);
@@ -2294,6 +2334,7 @@ const initAdmin = () => {
 
     editingCustomFields = [];
     renderCustomFieldsBuilder();
+    eventCrudModal.removeAttribute('aria-hidden');
     eventCrudModal.classList.add('active');
     eventCrudModal.style.display = 'flex';
   };
@@ -2342,6 +2383,7 @@ const initAdmin = () => {
       : [];
     renderCustomFieldsBuilder();
 
+    eventCrudModal.removeAttribute('aria-hidden');
     eventCrudModal.classList.add('active');
     eventCrudModal.style.display = 'flex';
   };
@@ -2349,8 +2391,14 @@ const initAdmin = () => {
 
   const closeEventCrudModal = () => {
     if (eventCrudModal) {
+      if (eventCrudModal.contains(document.activeElement)) {
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+          document.activeElement.blur();
+        }
+      }
       eventCrudModal.classList.remove('active');
       eventCrudModal.style.display = 'none';
+      eventCrudModal.setAttribute('aria-hidden', 'true');
     }
   };
 
@@ -2977,6 +3025,7 @@ const initAdmin = () => {
       }
     }, 60);
 
+    adminPassModal.removeAttribute('aria-hidden');
     adminPassModal.classList.add('active');
     adminPassModal.style.display = 'flex';
   };
@@ -2984,8 +3033,14 @@ const initAdmin = () => {
 
   const closeAdminPassModal = () => {
     if (adminPassModal) {
+      if (adminPassModal.contains(document.activeElement)) {
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+          document.activeElement.blur();
+        }
+      }
       adminPassModal.classList.remove('active');
       adminPassModal.style.display = 'none';
+      adminPassModal.setAttribute('aria-hidden', 'true');
     }
   };
 

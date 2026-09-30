@@ -28,10 +28,17 @@
   };
 
   let supabaseClient = null;
+  let activeUrl = null;
+  let activeKey = null;
 
   const initSupabase = () => {
     const url = getSavedUrl();
     const key = getSavedAnonKey();
+
+    // Reuse existing client instance if already connected with same credentials
+    if (supabaseClient && activeUrl === url && activeKey === key) {
+      return true;
+    }
 
     if (window.supabase && typeof window.supabase.createClient === 'function') {
       try {
@@ -44,14 +51,20 @@
           !key.includes('your-key')
         ) {
           supabaseClient = window.supabase.createClient(url, key);
+          activeUrl = url;
+          activeKey = key;
           console.log('[Quantum Coders] Online Supabase client connected to:', url);
           return true;
         } else {
           supabaseClient = null;
+          activeUrl = null;
+          activeKey = null;
         }
       } catch (err) {
         console.warn('[Quantum Coders] Supabase initialization failed:', err);
         supabaseClient = null;
+        activeUrl = null;
+        activeKey = null;
       }
     }
     return false;
