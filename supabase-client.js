@@ -8,12 +8,14 @@
 (function () {
   const STORAGE_URL_KEY = 'qc_supabase_url';
   const STORAGE_ANON_KEY = 'qc_supabase_anon_key';
+  const PROD_SUPABASE_URL = 'https://vcmqqdrujmzpalfqtmfu.supabase.co';
+  const PROD_SUPABASE_ANON_KEY = 'sb_publishable_W7h47aHX8yNO4W086M_3-A_zgReVwfG';
 
   const getSavedUrl = () => {
     return (
       (window.QC_CONFIG && window.QC_CONFIG.SUPABASE_URL) ||
       localStorage.getItem(STORAGE_URL_KEY) ||
-      ''
+      PROD_SUPABASE_URL
     );
   };
 
@@ -21,7 +23,7 @@
     return (
       (window.QC_CONFIG && window.QC_CONFIG.SUPABASE_ANON_KEY) ||
       localStorage.getItem(STORAGE_ANON_KEY) ||
-      ''
+      PROD_SUPABASE_ANON_KEY
     );
   };
 

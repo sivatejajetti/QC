@@ -1729,56 +1729,7 @@ const initAdmin = () => {
   // ---------------------------------------------------------------------------
   const EVENTS_STORAGE_KEY = 'qc_events_catalog';
 
-  const DEFAULT_EVENTS_CATALOG = [
-    {
-      id: 'evt-001',
-      name: 'Deep Dive into LLMs & Agentic Systems',
-      title: 'Deep Dive into LLMs & Agentic Systems',
-      event_type: 'Workshop',
-      category: 'workshop',
-      badge: 'WORKSHOP // AI GUILD',
-      banner_url: 'images/event%20images/Pydah%20hackathon.png',
-      cover_image: 'images/event%20images/Pydah%20hackathon.png',
-      date: '2026-04-10',
-      event_date: '2026-04-10',
-      start_time: '10:00:00',
-      end_time: '16:00:00',
-      venue: 'High-Compute AI Lab & Auditorium',
-      maximum_slots: 100,
-      max_capacity: 100,
-      confirmed_count: 73,
-      waitlist_count: 5,
-      is_published: true,
-      is_calendar_visible: true,
-      is_registration_open: true,
-      status: 'PUBLISHED',
-      description: 'Hands-on architectural seminar and coding sprint exploring autonomous agentic workflows and local open-source LLM inference.'
-    },
-    {
-      id: 'evt-002',
-      name: 'Quantum Hack 2026: 36h Sprint',
-      title: 'Quantum Hack 2026: 36h Sprint',
-      event_type: 'Hackathon',
-      category: 'hackathon',
-      badge: 'HACKATHON // FLAGSHIP',
-      banner_url: 'images/event%20images/Pydah%20hackathon%201.png',
-      cover_image: 'images/event%20images/Pydah%20hackathon%201.png',
-      date: '2026-04-24',
-      event_date: '2026-04-24',
-      start_time: '09:00:00',
-      end_time: '21:00:00',
-      venue: 'Pydah Main Auditorium & Computing Centre',
-      maximum_slots: 80,
-      max_capacity: 80,
-      confirmed_count: 52,
-      waitlist_count: 12,
-      is_published: true,
-      is_calendar_visible: true,
-      is_registration_open: true,
-      status: 'PUBLISHED',
-      description: 'The flagship annual 36-hour hackathon bringing together builders, systems engineers, and designers across Andhra Pradesh.'
-    }
-  ];
+  const DEFAULT_EVENTS_CATALOG = [];
 
   const normalizeEvent = (ev) => {
     if (!ev) return null;
@@ -2665,13 +2616,19 @@ const initAdmin = () => {
       try {
         const client = window.QC_SUPABASE.getClient();
         if (client) {
-          let q = client.from('registrations').select('*, events (name, date, venue)').order('registered_at', { ascending: false });
+          let q = client.from('registrations').select('*').order('registered_at', { ascending: false });
           if (activePassEventId && activePassEventId !== 'all') {
             q = q.eq('event_id', activePassEventId);
           }
           const { data, error } = await q;
-          if (!error && Array.isArray(data) && data.length > 0) {
-            passes = data;
+          if (!error && Array.isArray(data)) {
+            passes = data.map(reg => {
+              const matchedEv = events.find(ev => String(ev.id) === String(reg.event_id) || String(ev.event_code) === String(reg.event_id));
+              return {
+                ...reg,
+                events: matchedEv || reg.events || { name: 'Quantum Event', date: '', venue: '' }
+              };
+            });
           }
         }
       } catch (err) {
@@ -2679,7 +2636,7 @@ const initAdmin = () => {
       }
     }
 
-    // 2. Try Serverless /api/register endpoint
+    // 2. Try Serverless /api/register endpoint if Supabase direct returned empty
     if (passes.length === 0) {
       try {
         const regUrl = activePassEventId === 'all' ? '/api/register' : `/api/register?event_id=${encodeURIComponent(activePassEventId)}`;
@@ -2687,28 +2644,16 @@ const initAdmin = () => {
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
-            passes = data;
+            passes = data.map(reg => {
+              const matchedEv = events.find(ev => String(ev.id) === String(reg.event_id) || String(ev.event_code) === String(reg.event_id));
+              return {
+                ...reg,
+                events: matchedEv || reg.events || { name: 'Quantum Event', date: '', venue: '' }
+              };
+            });
           }
         }
       } catch (err) {}
-    }
-
-    // 3. Fallback to Local storage catalog ONLY if offline and remote returned 0 records
-    if (passes.length === 0) {
-      try {
-        const storedCatalog = localStorage.getItem('qc_registrations_catalog');
-        if (storedCatalog) {
-          const parsed = JSON.parse(storedCatalog);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            passes = parsed;
-          }
-        }
-      } catch (e) {}
-    }
-
-    // 4. Default Seed Registrations if empty
-    if (passes.length === 0) {
-      passes = DEFAULT_EVENT_PASSES_SEED;
     }
 
     adminRegistrationsCache = passes;

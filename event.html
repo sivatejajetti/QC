@@ -567,15 +567,15 @@
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
         <div>
           <h2 style="font-family: var(--font-display); font-size: 1.5rem; margin: 0; color: #fff;">FIND OR CANCEL PASS</h2>
-          <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray);">PHONE &amp; OTP VERIFICATION</span>
+          <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray);">INSTANT PASS RETRIEVAL</span>
         </div>
         <button type="button" class="modal-close-btn" id="find-pass-modal-close" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">&times;</button>
       </div>
 
-      <!-- Step 1: Request OTP -->
+      <!-- Step 1: Phone Lookup (Direct, No OTP) -->
       <div id="otp-step-phone">
         <p style="font-size: 0.88rem; color: var(--color-gray); margin-bottom: 1.25rem;">
-          Enter the mobile number you used during registration to securely retrieve or cancel your passes.
+          Enter the mobile number you used during registration to retrieve or cancel your passes.
         </p>
         <div class="form-group-full">
           <label for="find-phone-input" class="form-label">REGISTERED MOBILE NUMBER</label>
@@ -584,37 +584,23 @@
         <div id="find-phone-error" style="display: none; color: #f87171; font-family: var(--font-mono); font-size: 0.78rem; margin-top: 0.5rem;"></div>
         <div style="margin-top: 1.5rem;">
           <button type="button" class="btn-brutalist btn-primary" id="btn-send-find-otp" style="width: 100%; justify-content: center;">
-            SEND 6-DIGIT VERIFICATION CODE →
+            FIND MY PASSES →
           </button>
         </div>
       </div>
 
-      <!-- Step 2: Verify OTP -->
-      <div id="otp-step-verify" style="display: none;">
-        <p style="font-size: 0.88rem; color: var(--color-gray); margin-bottom: 1.25rem;">
-          Enter the 6-digit verification code sent to <strong id="otp-phone-display" style="color: #fff;"></strong>.
-        </p>
-        <div id="dev-otp-pill" style="display: none; background: rgba(59,130,246,0.15); border: 1px solid #3b82f6; color: #60a5fa; padding: 0.5rem; font-family: var(--font-mono); font-size: 0.78rem; margin-bottom: 1rem; border-radius: 4px;"></div>
-        <div class="form-group-full">
-          <label for="find-otp-input" class="form-label">ENTER 6-DIGIT CODE</label>
-          <input type="text" id="find-otp-input" class="editorial-input" placeholder="e.g. 123456" maxlength="6" style="letter-spacing: 0.3em; font-size: 1.2rem; text-align: center;">
-        </div>
-        <div id="find-otp-error" style="display: none; color: #f87171; font-family: var(--font-mono); font-size: 0.78rem; margin-top: 0.5rem;"></div>
-        <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
-          <button type="button" class="btn-brutalist btn-secondary btn-sm" id="btn-otp-back">← Back</button>
-          <button type="button" class="btn-brutalist btn-primary" id="btn-verify-find-otp" style="flex: 1; justify-content: center;">
-            VERIFY &amp; ACCESS PASSES →
-          </button>
-        </div>
-      </div>
-
-      <!-- Step 3: Passes Result View -->
+      <!-- Step 2: Passes Result View -->
       <div id="otp-step-results" style="display: none;">
-        <h4 style="font-family: var(--font-heading); font-size: 1.1rem; color: #fff; margin-bottom: 0.75rem;">YOUR ACTIVE PASSES</h4>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h4 style="font-family: var(--font-heading); font-size: 1.1rem; color: #fff; margin: 0;">YOUR ACTIVE PASSES</h4>
+          <button type="button" class="btn-brutalist btn-secondary btn-sm" id="btn-back-to-phone" style="font-size: 0.75rem; padding: 4px 8px;">← Search Other</button>
+        </div>
         <div id="student-passes-list" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem;">
           <!-- Injected via JS -->
         </div>
       </div>
+    </div>
+  </div>
     </div>
   </div>
 
@@ -655,46 +641,7 @@
         setTimeout(() => t.classList.remove('active'), 3500);
       };
 
-      const DEFAULT_FALLBACK_EVENTS = [
-        {
-          id: 'evt-001',
-          event_code: 'QC-AI-2026',
-          name: 'Deep Dive into LLMs & Agentic Systems',
-          title: 'Deep Dive into LLMs & Agentic Systems',
-          event_type: 'Workshop',
-          banner_url: 'images/event%20images/Pydah%20hackathon.png',
-          date: '2026-04-10',
-          event_date: '2026-04-10',
-          start_time: '10:00:00',
-          end_time: '16:00:00',
-          venue: 'High-Compute AI Lab & Auditorium',
-          maximum_slots: 100,
-          confirmed_count: 73,
-          is_published: true,
-          is_calendar_visible: true,
-          is_registration_open: true,
-          description: 'Hands-on architectural seminar and coding sprint exploring autonomous agentic workflows and local open-source LLM inference.'
-        },
-        {
-          id: 'evt-002',
-          event_code: 'QC-HACK-2026',
-          name: 'Quantum Hack 2026: 36h Sprint',
-          title: 'Quantum Hack 2026: 36h Sprint',
-          event_type: 'Hackathon',
-          banner_url: 'images/event%20images/Pydah%20hackathon%201.png',
-          date: '2026-04-24',
-          event_date: '2026-04-24',
-          start_time: '09:00:00',
-          end_time: '21:00:00',
-          venue: 'Pydah Main Auditorium & Computing Centre',
-          maximum_slots: 80,
-          confirmed_count: 52,
-          is_published: true,
-          is_calendar_visible: true,
-          is_registration_open: true,
-          description: 'The flagship annual 36-hour hackathon bringing together builders, systems engineers, and designers across Andhra Pradesh.'
-        }
-      ];
+      const DEFAULT_FALLBACK_EVENTS = [];
 
       const findEventLocally = async (targetId) => {
         // Direct Supabase query
@@ -708,10 +655,7 @@
             }
           } catch (e) {}
         }
-        // Fallback to default catalog
-        if (!targetId) return DEFAULT_FALLBACK_EVENTS[0];
-        const fbMatch = DEFAULT_FALLBACK_EVENTS.find(e => String(e.id) === String(targetId) || e.event_code === targetId);
-        return fbMatch || DEFAULT_FALLBACK_EVENTS[0];
+        return null;
       };
 
       if (!eventId) {
@@ -1066,7 +1010,7 @@
 
       let activeSearchPhone = '';
 
-      // Send OTP
+      // Direct Pass Lookup (No OTP)
       document.getElementById('btn-send-find-otp').addEventListener('click', async () => {
         const phone = document.getElementById('find-phone-input').value.trim();
         const err = document.getElementById('find-phone-error');
@@ -1081,88 +1025,80 @@
         activeSearchPhone = phone;
         const btn = document.getElementById('btn-send-find-otp');
         btn.disabled = true;
-        btn.textContent = 'SENDING OTP...';
+        btn.textContent = 'LOOKING UP ACTIVE PASSES...';
 
         try {
-          const res = await fetch('/api/otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'send', phone, purpose: 'RETRIEVE_PASS' })
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
+          let passes = [];
+          const clean = phone.replace(/[^0-9+]/g, '').trim();
+
+          // 1. Try Direct Supabase Query
+          if (window.QC_SUPABASE && window.QC_SUPABASE.isConfigured()) {
+            try {
+              const client = window.QC_SUPABASE.getClient();
+              if (client) {
+                const { data, error } = await client
+                  .from('registrations')
+                  .select('*, events (*)')
+                  .eq('phone', clean)
+                  .neq('status', 'CANCELLED');
+                if (!error && Array.isArray(data) && data.length > 0) {
+                  passes = data.map(p => ({
+                    registration_id: p.registration_id,
+                    name: p.name,
+                    section: p.section,
+                    year: p.year,
+                    status: p.status,
+                    verification_hash: p.verification_hash,
+                    event: p.events,
+                    qr_payload: JSON.stringify({ rid: p.registration_id, eid: p.event_id, hash: p.verification_hash })
+                  }));
+                }
+              }
+            } catch (sbE) {}
+          }
+
+          // 2. Query Serverless API
+          if (passes.length === 0) {
+            try {
+              const res = await fetch('/api/otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'get_passes', phone: clean })
+              });
+              if (res.ok) {
+                const data = await res.json();
+                if (data && Array.isArray(data.passes)) {
+                  passes = data.passes;
+                }
+              }
+            } catch (apiE) {}
+          }
 
           document.getElementById('otp-step-phone').style.display = 'none';
-          document.getElementById('otp-step-verify').style.display = 'block';
-          document.getElementById('otp-phone-display').textContent = phone;
-
-          if (data.dev_preview_code) {
-            const devPill = document.getElementById('dev-otp-pill');
-            devPill.textContent = `Dev/Testing Verification Code: ${data.dev_preview_code}`;
-            devPill.style.display = 'block';
-          }
-          showToast('OTP sent successfully!');
-        } catch (e) {
-          err.textContent = e.message;
-          err.style.display = 'block';
-        } finally {
-          btn.disabled = false;
-          btn.textContent = 'SEND 6-DIGIT VERIFICATION CODE →';
-        }
-      });
-
-      // Verify OTP and List Passes
-      document.getElementById('btn-verify-find-otp').addEventListener('click', async () => {
-        const otp = document.getElementById('find-otp-input').value.trim();
-        const err = document.getElementById('find-otp-error');
-        err.style.display = 'none';
-
-        if (otp.length < 4) {
-          err.textContent = 'Please enter the verification code.';
-          err.style.display = 'block';
-          return;
-        }
-
-        const btn = document.getElementById('btn-verify-find-otp');
-        btn.disabled = true;
-        btn.textContent = 'VERIFYING...';
-
-        try {
-          const res = await fetch('/api/otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'verify',
-              phone: activeSearchPhone,
-              otp,
-              purpose: 'RETRIEVE_PASS'
-            })
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Verification failed');
-
-          document.getElementById('otp-step-verify').style.display = 'none';
           document.getElementById('otp-step-results').style.display = 'block';
-          renderRetrievedPasses(data.passes || []);
+          renderRetrievedPasses(passes);
         } catch (e) {
-          err.textContent = e.message;
+          err.textContent = e.message || 'Error looking up passes.';
           err.style.display = 'block';
         } finally {
           btn.disabled = false;
-          btn.textContent = 'VERIFY & ACCESS PASSES →';
+          btn.textContent = 'FIND MY PASSES →';
         }
       });
 
-      document.getElementById('btn-otp-back').addEventListener('click', () => {
-        document.getElementById('otp-step-verify').style.display = 'none';
-        document.getElementById('otp-step-phone').style.display = 'block';
-      });
+      const btnBackPhone = document.getElementById('btn-back-to-phone');
+      if (btnBackPhone) {
+        btnBackPhone.addEventListener('click', () => {
+          document.getElementById('otp-step-results').style.display = 'none';
+          document.getElementById('otp-step-phone').style.display = 'block';
+        });
+      }
 
       function renderRetrievedPasses(passes) {
         const list = document.getElementById('student-passes-list');
         list.innerHTML = '';
         if (passes.length === 0) {
-          list.innerHTML = '<p style="color: var(--color-gray); font-size: 0.88rem;">No active passes found for this phone number.</p>';
+          list.innerHTML = '<p style="color: var(--color-gray); font-size: 0.88rem; padding: 1rem; text-align: center;">No active passes found for this phone number.</p>';
           return;
         }
 
@@ -1171,7 +1107,7 @@
           item.style.cssText = 'background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 1rem; text-align: left;';
           item.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;">
-              <strong style="color: #fff; font-size: 1rem;">${p.event ? p.event.name : 'Event'}</strong>
+              <strong style="color: #fff; font-size: 1rem;">${p.event ? (p.event.name || p.event.title) : 'Quantum Coders Event'}</strong>
               <span style="font-family: var(--font-mono); font-size: 0.72rem; color: ${p.status === 'CONFIRMED' ? '#34d399' : '#fbbf24'}; font-weight: 700;">${p.status}</span>
             </div>
             <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-gray); margin-bottom: 0.75rem;">
@@ -1204,30 +1140,40 @@
       };
 
       window.cancelRegistrationPrompt = async (rid) => {
-        if (!confirm(`Are you sure you want to cancel pass ${rid}? Your pass will immediately become invalid, and if confirmed, your slot will be transferred to the first waitlisted student.`)) {
+        if (!confirm(`Are you sure you want to cancel pass ${rid}? This pass will immediately be invalidated.`)) {
           return;
         }
 
-        const otp = prompt('Enter the 6-digit OTP code to confirm cancellation (or press OK to verify):');
-        if (!otp) return;
-
         try {
-          const res = await fetch('/api/otp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'verify',
-              phone: activeSearchPhone,
-              otp,
-              purpose: 'CANCEL_REGISTRATION',
-              registration_id: rid
-            })
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Cancellation failed');
+          // Direct Supabase cancellation
+          if (window.QC_SUPABASE && window.QC_SUPABASE.isConfigured()) {
+            try {
+              const client = window.QC_SUPABASE.getClient();
+              if (client) {
+                await client.from('registrations').update({
+                  status: 'CANCELLED',
+                  cancelled_at: new Date().toISOString()
+                }).eq('registration_id', rid);
+              }
+            } catch (sbE) {}
+          }
+
+          // Direct API cancellation (No OTP)
+          try {
+            await fetch('/api/otp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'cancel',
+                phone: activeSearchPhone,
+                registration_id: rid
+              })
+            });
+          } catch (apiE) {}
+
           showToast(`Pass ${rid} cancelled successfully.`, 'success');
           findModal.classList.remove('active');
-          location.reload();
+          setTimeout(() => location.reload(), 800);
         } catch (e) {
           alert(`Cancellation error: ${e.message}`);
         }

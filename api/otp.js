@@ -42,6 +42,93 @@ module.exports = async function handler(req, res) {
 
   try {
     // -------------------------------------------------------------------------
+    // ACTION: DIRECT PASS RETRIEVAL (NO OTP REQUIRED)
+    // -------------------------------------------------------------------------
+    if (action === 'get_passes' || action === 'find') {
+      let passes = [];
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('registrations')
+          .select(`
+            id,
+            registration_id,
+            name,
+            section,
+            phone,
+            email,
+            year,
+            status,
+            verification_hash,
+            registered_at,
+            events (
+              id,
+              name,
+              event_type,
+              date,
+              start_time,
+              end_time,
+              venue,
+              status
+            )
+          `)
+          .eq('phone', cleanPhone)
+          .neq('status', 'CANCELLED');
+
+        if (!error && Array.isArray(data)) {
+          passes = data;
+        }
+      } else {
+        passes = (FALLBACK_STORE.registrations || [])
+          .filter((r) => r.phone === cleanPhone && r.status !== 'CANCELLED')
+          .map((r) => {
+            const ev = (FALLBACK_STORE.events || []).find((e) => e.id === r.event_id) || {};
+            return { ...r, events: ev };
+          });
+      }
+
+      return res.status(200).json({
+        success: true,
+        passes: passes.map((p) => ({
+          registration_id: p.registration_id,
+          name: p.name,
+          section: p.section,
+          year: p.year,
+          status: p.status,
+          verification_hash: p.verification_hash,
+          event: p.events,
+          qr_payload: JSON.stringify({
+            rid: p.registration_id,
+            eid: (p.events && p.events.id) || p.event_id,
+            hash: p.verification_hash
+          })
+        }))
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // ACTION: DIRECT CANCELLATION (NO OTP REQUIRED)
+    // -------------------------------------------------------------------------
+    if (action === 'cancel' || (action === 'direct_cancel')) {
+      if (!registration_id) {
+        return res.status(400).json({ error: 'Missing registration ID to cancel.' });
+      }
+
+      if (supabase) {
+        let q = supabase.from('registrations').update({
+          status: 'CANCELLED',
+          cancelled_at: new Date().toISOString()
+        }).eq('registration_id', registration_id);
+        if (cleanPhone) q = q.eq('phone', cleanPhone);
+        const { error } = await q;
+        if (error) throw error;
+      }
+      return res.status(200).json({
+        success: true,
+        message: `Registration ${registration_id} cancelled.`
+      });
+    }
+
+    // -------------------------------------------------------------------------
     // ACTION: SEND OTP
     // -------------------------------------------------------------------------
     if (action === 'send') {
