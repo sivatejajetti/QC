@@ -2100,59 +2100,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Tier 3: Always check shared local storage catalog and merge any newly added/edited events
-    try {
-      const stored = localStorage.getItem('qc_events_catalog');
-      if (stored) {
-        const parsedStored = JSON.parse(stored);
-        if (Array.isArray(parsedStored) && parsedStored.length > 0) {
-          const existingIds = new Set(loaded.map((e) => String(e.id || e.event_code || '')));
-          parsedStored.forEach((localEv) => {
-            if (!localEv || localEv.deleted_at) return;
-            const k = String(localEv.id || localEv.event_code || '');
-            if (!existingIds.has(k)) {
-              loaded.push(localEv);
-              existingIds.add(k);
-            }
-          });
-        }
-      }
-    } catch (e) {}
 
-    // Tier 4: Also check qc_events (Gallery moments console) in case event was created there
-    try {
-      const galleryEventsStored = localStorage.getItem('qc_events');
-      if (galleryEventsStored) {
-        const parsedGallery = JSON.parse(galleryEventsStored);
-        if (Array.isArray(parsedGallery) && parsedGallery.length > 0) {
-          const existingIds = new Set(loaded.map((e) => String(e.id || e.event_code || '')));
-          parsedGallery.forEach((galEv) => {
-            if (!galEv || !galEv.title) return;
-            const k = String(galEv.id || '');
-            if (!existingIds.has(k)) {
-              loaded.push({
-                id: galEv.id,
-                name: galEv.title,
-                title: galEv.title,
-                date: galEv.date || new Date().toISOString().split('T')[0],
-                event_date: galEv.date,
-                venue: galEv.location || 'Campus Auditorium',
-                description: galEv.description || '',
-                banner_url: (galEv.media && galEv.media[0] && galEv.media[0].url) || 'images/event%20images/Pydah%20hackathon.png',
-                cover_image: (galEv.media && galEv.media[0] && galEv.media[0].url) || 'images/event%20images/Pydah%20hackathon.png',
-                category: galEv.category || 'Workshop',
-                event_type: galEv.category || 'Workshop',
-                maximum_slots: 100,
-                is_published: true,
-                is_calendar_visible: true,
-                status: 'PUBLISHED'
-              });
-              existingIds.add(k);
-            }
-          });
-        }
-      }
-    } catch (e) {}
 
     // Tier 5: Fallback to seed events if catalog is completely empty
     if (!loaded.length) {

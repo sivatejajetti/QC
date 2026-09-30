@@ -961,26 +961,6 @@
                 }
               }
 
-              // Save to localStorage registrations
-              try {
-                const regs = JSON.parse(localStorage.getItem('qc_registrations_catalog') || '[]');
-                regs.unshift(newReg);
-                localStorage.setItem('qc_registrations_catalog', JSON.stringify(regs));
-              } catch (e) {}
-
-              // Update event counts in localStorage
-              if (!isWaitlist) {
-                try {
-                  currentEvent.confirmed_count = (currentEvent.confirmed_count || 0) + 1;
-                  const allEvs = JSON.parse(localStorage.getItem('qc_events_catalog') || '[]');
-                  const idx = allEvs.findIndex(e => String(e.id) === String(currentEvent.id));
-                  if (idx !== -1) {
-                    allEvs[idx].confirmed_count = currentEvent.confirmed_count;
-                    localStorage.setItem('qc_events_catalog', JSON.stringify(allEvs));
-                  }
-                } catch (e) {}
-              }
-
               const qrPayload = `${window.location.origin}/verify?rid=${rid}&hash=hash_${rid}_${cleanPhone.slice(-4)}`;
               result = {
                 status,
