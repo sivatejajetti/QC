@@ -708,19 +708,6 @@
             }
           } catch (e) {}
         }
-        // Direct localStorage query
-        try {
-          const raw = localStorage.getItem('qc_events_catalog');
-          if (raw) {
-            const list = JSON.parse(raw);
-            if (Array.isArray(list) && list.length > 0) {
-              if (!targetId) return list[0];
-              const match = list.find(e => String(e.id) === String(targetId) || e.slug === targetId || e.event_code === targetId);
-              if (match) return match;
-            }
-          }
-        } catch (e) {}
-
         // Fallback to default catalog
         if (!targetId) return DEFAULT_FALLBACK_EVENTS[0];
         const fbMatch = DEFAULT_FALLBACK_EVENTS.find(e => String(e.id) === String(targetId) || e.event_code === targetId);

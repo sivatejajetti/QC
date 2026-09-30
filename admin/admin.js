@@ -922,27 +922,12 @@ const initAdmin = () => {
       } catch (err) {}
     }
 
-    // 3. Fallback to LocalStorage ONLY if remote is completely offline
-    if (list.length === 0) {
-      try {
-        const stored = localStorage.getItem(REG_STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) list = parsed;
-        }
-      } catch (e) {}
-    }
-
     // 4. Default Seed Registrations if empty
     if (list.length === 0) {
       list = DEFAULT_REGISTRATIONS;
     }
 
     adminClubMembersCache = list;
-    try {
-      localStorage.setItem(REG_STORAGE_KEY, JSON.stringify(list));
-    } catch (e) {}
-
     renderRegistrations();
     return list;
   };
@@ -1892,29 +1877,14 @@ const initAdmin = () => {
     }
 
     // 3. Merge with Local Storage so newly created/edited events are never wiped out
-    const stored = getEventsFromStorage();
-    if (stored && stored.length > 0) {
-      const existingIds = new Set(eventsList.map(e => String(e.id || e.event_code || '')));
-      stored.forEach(storedEv => {
-        if (!storedEv || storedEv.deleted_at) return;
-        const k = String(storedEv.id || storedEv.event_code || '');
-        if (!existingIds.has(k)) {
-          eventsList.push(storedEv);
-          existingIds.add(k);
-        }
-      });
-    }
+    // 3. Filter out deleted
+    eventsList = eventsList.filter(e => e && !e.deleted_at);
 
-    // 4. Filter out any events registered in deleted ID set
-    const deletedSet = getDeletedEventIds();
-    eventsList = eventsList.filter(e => e && !e.deleted_at && !deletedSet.has(String(e.id)) && !deletedSet.has(String(e.event_code)));
-
-    // 5. Default Seed Catalog if completely empty
+    // 4. Default Seed Catalog if completely empty
     if (eventsList.length === 0) {
-      eventsList = DEFAULT_EVENTS_CATALOG.map(normalizeEvent).filter(e => !deletedSet.has(String(e.id)) && !deletedSet.has(String(e.event_code)));
+      eventsList = DEFAULT_EVENTS_CATALOG.map(normalizeEvent).filter(e => e && !e.deleted_at);
     }
 
-    saveEventsToStorage(eventsList);
     adminEventsCache = eventsList;
     return eventsList;
   };
@@ -2634,20 +2604,8 @@ const initAdmin = () => {
       await fetch(`/api/events?id=${encodeURIComponent(eventId)}`, { method: 'DELETE' });
     } catch (err) {}
 
-    // 3. Save to persistent deleted list in localStorage
-    try {
-      const deletedList = Array.from(getDeletedEventIds());
-      if (!deletedList.includes(String(eventId))) deletedList.push(String(eventId));
-      const targetEv = (adminEventsCache || []).find(e => String(e.id) === String(eventId));
-      if (targetEv && targetEv.event_code && !deletedList.includes(String(targetEv.event_code))) {
-        deletedList.push(String(targetEv.event_code));
-      }
-      localStorage.setItem('qc_deleted_event_ids', JSON.stringify(deletedList));
-    } catch (e) {}
-
-    // 4. Update localStorage and in-memory cache
-    const allEvents = (getEventsFromStorage() || adminEventsCache || []).filter(e => String(e.id) !== String(eventId) && String(e.event_code) !== String(eventId));
-    saveEventsToStorage(allEvents);
+    // Update in-memory cache
+    const allEvents = (adminEventsCache || []).filter(e => String(e.id) !== String(eventId) && String(e.event_code) !== String(eventId));
     adminEventsCache = allEvents;
 
     // 5. Broadcast removal

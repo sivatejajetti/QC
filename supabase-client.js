@@ -164,62 +164,6 @@
       } catch (e) {}
     }
 
-    // Merge with any freshly added/edited events in localStorage
-    try {
-      const stored = localStorage.getItem('qc_events_catalog');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const ids = new Set(list.map(e => String(e.id || e.event_code)));
-          parsed.forEach((localEv) => {
-            if (localEv && !localEv.deleted_at) {
-              const k = String(localEv.id || localEv.event_code);
-              if (!ids.has(k)) {
-                list.push(localEv);
-                ids.add(k);
-              }
-            }
-          });
-        }
-      }
-    } catch (e) {}
-
-    // Also merge with qc_events (Gallery moments)
-    try {
-      const storedGal = localStorage.getItem('qc_events');
-      if (storedGal) {
-        const parsedGal = JSON.parse(storedGal);
-        if (Array.isArray(parsedGal) && parsedGal.length > 0) {
-          const ids = new Set(list.map(e => String(e.id || e.event_code)));
-          parsedGal.forEach((galEv) => {
-            if (galEv && galEv.title) {
-              const k = String(galEv.id || '');
-              if (!ids.has(k)) {
-                list.push({
-                  id: galEv.id,
-                  name: galEv.title,
-                  title: galEv.title,
-                  date: galEv.date || new Date().toISOString().split('T')[0],
-                  event_date: galEv.date,
-                  venue: galEv.location || 'Campus Auditorium',
-                  description: galEv.description || '',
-                  banner_url: (galEv.media && galEv.media[0] && galEv.media[0].url) || 'images/event%20images/Pydah%20hackathon.png',
-                  cover_image: (galEv.media && galEv.media[0] && galEv.media[0].url) || 'images/event%20images/Pydah%20hackathon.png',
-                  category: galEv.category || 'Workshop',
-                  event_type: galEv.category || 'Workshop',
-                  maximum_slots: 100,
-                  is_published: true,
-                  is_calendar_visible: true,
-                  status: 'PUBLISHED'
-                });
-                ids.add(k);
-              }
-            }
-          });
-        }
-      }
-    } catch (e) {}
-
     return list;
   };
 
