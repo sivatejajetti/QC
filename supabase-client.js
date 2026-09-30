@@ -310,6 +310,121 @@
     return null;
   };
 
+  // Helper to submit event pass registration directly to Supabase
+  const submitEventRegistration = async (regPayload, eventPayload = null) => {
+    if (!supabaseClient) {
+      return { success: false, message: 'Supabase client is not connected.' };
+    }
+
+    try {
+      const rawEventId = regPayload.event_id || (eventPayload && eventPayload.id);
+      let targetEventUuid = null;
+
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(rawEventId);
+
+      if (isUuid) {
+        const { data: supaEv } = await supabaseClient
+          .from('events')
+          .select('id')
+          .eq('id', rawEventId)
+          .maybeSingle();
+
+        if (supaEv && supaEv.id) {
+          targetEventUuid = supaEv.id;
+        }
+      }
+
+      if (!targetEventUuid && (rawEventId || (eventPayload && eventPayload.event_code))) {
+        const codeQuery = (eventPayload && eventPayload.event_code) || rawEventId;
+        const { data: evByCode } = await supabaseClient
+          .from('events')
+          .select('id')
+          .eq('event_code', String(codeQuery).toUpperCase())
+          .maybeSingle();
+
+        if (evByCode && evByCode.id) {
+          targetEventUuid = evByCode.id;
+        }
+      }
+
+      if (!targetEventUuid && eventPayload) {
+        const dbEventRow = {
+          event_code: (eventPayload.event_code || eventPayload.slug || eventPayload.id || `QC-${Date.now()}`).toUpperCase().substring(0, 50),
+          name: eventPayload.name || eventPayload.title || 'Quantum Coders Sprint',
+          description: eventPayload.description || 'Quantum Coders Technical Event',
+          event_type: eventPayload.event_type || eventPayload.category || 'Workshop',
+          banner_url: eventPayload.banner_url || eventPayload.cover_image || 'images/event%20images/Pydah%20hackathon.png',
+          date: eventPayload.date || eventPayload.event_date || '2026-04-10',
+          start_time: eventPayload.start_time || '10:00:00',
+          end_time: eventPayload.end_time || '18:00:00',
+          venue: eventPayload.venue || 'Campus Auditorium',
+          organizer: 'Quantum Coders',
+          maximum_slots: eventPayload.maximum_slots || eventPayload.max_capacity || 100,
+          registration_deadline: eventPayload.registration_deadline || new Date('2026-12-31T23:59:59Z').toISOString(),
+          status: 'PUBLISHED',
+          is_published: true,
+          is_registration_open: true,
+          is_calendar_visible: true,
+          is_pass_enabled: true,
+          is_gallery_enabled: true
+        };
+
+        const { data: createdEv, error: evInsertErr } = await supabaseClient
+          .from('events')
+          .upsert([dbEventRow], { onConflict: 'event_code' })
+          .select('id')
+          .single();
+
+        if (!evInsertErr && createdEv) {
+          targetEventUuid = createdEv.id;
+        }
+      }
+
+      if (!targetEventUuid) {
+        const { data: anyEv } = await supabaseClient.from('events').select('id').limit(1);
+        if (anyEv && anyEv.length > 0) {
+          targetEventUuid = anyEv[0].id;
+        }
+      }
+
+      if (!targetEventUuid) {
+        return { success: false, message: 'Could not resolve event UUID in Supabase events table.' };
+      }
+
+      const cleanPhone = (regPayload.phone || '').replace(/[^0-9+]/g, '').trim();
+      const dbRegistrationRow = {
+        registration_id: regPayload.registration_id || `QC${Math.floor(100 + Math.random() * 900)}`,
+        event_id: targetEventUuid,
+        name: (regPayload.name || '').trim().toUpperCase(),
+        section: (regPayload.section || '').trim().toUpperCase(),
+        phone: cleanPhone,
+        email: (regPayload.email || '').trim().toLowerCase(),
+        year: (regPayload.year || '').trim(),
+        status: regPayload.status || 'CONFIRMED',
+        registration_type: regPayload.registration_type || 'STANDARD',
+        custom_responses: regPayload.custom_responses || {},
+        verification_hash: regPayload.verification_hash || `hash_${regPayload.registration_id}_${cleanPhone.slice(-4)}`
+      };
+
+      const { data: insertedReg, error: regErr } = await supabaseClient
+        .from('registrations')
+        .insert([dbRegistrationRow])
+        .select()
+        .single();
+
+      if (regErr) {
+        console.warn('[Quantum Coders] Supabase registration insert error:', regErr.message);
+        return { success: false, error: regErr, message: regErr.message };
+      }
+
+      console.log('[Quantum Coders] Saved registration to Supabase public.registrations table:', insertedReg);
+      return { success: true, registration: insertedReg };
+    } catch (err) {
+      console.warn('[Quantum Coders] Supabase registration exception:', err.message);
+      return { success: false, error: err, message: err.message };
+    }
+  };
+
   const QC_SUPABASE = {
     getClient: () => supabaseClient,
     isConfigured: () => Boolean(supabaseClient),
@@ -322,7 +437,8 @@
     getEvents,
     upsertEvent,
     getStudents,
-    submitStudentRegistration
+    submitStudentRegistration,
+    submitEventRegistration
   };
 
   window.QC_SUPABASE = QC_SUPABASE;

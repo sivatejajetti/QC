@@ -948,16 +948,13 @@
               };
 
               // Try Supabase direct insertion
-              if (window.QC_SUPABASE && window.QC_SUPABASE.isConfigured()) {
+              if (window.QC_SUPABASE && window.QC_SUPABASE.isConfigured() && typeof window.QC_SUPABASE.submitEventRegistration === 'function') {
                 try {
-                  const sb = window.QC_SUPABASE.getClient();
-                  if (sb && isUuid) {
-                    const { error: sbInsertErr } = await sb.from('registrations').insert([newReg]);
-                    if (sbInsertErr) {
-                      console.warn('[Quantum Coders] Supabase direct insert warning:', sbInsertErr.message);
-                    } else {
-                      console.log('[Quantum Coders] Direct registration saved to Supabase PostgreSQL!');
-                    }
+                  const sbRes = await window.QC_SUPABASE.submitEventRegistration(newReg, currentEvent);
+                  if (sbRes && sbRes.success) {
+                    console.log('[Quantum Coders] Pass registration successfully saved to Supabase public.registrations!');
+                  } else if (sbRes && sbRes.message) {
+                    console.warn('[Quantum Coders] Supabase registration save notice:', sbRes.message);
                   }
                 } catch (sbErr) {
                   console.warn('[Quantum Coders] Supabase direct registration insert exception:', sbErr);

@@ -3253,6 +3253,37 @@ const initAdmin = () => {
     loadDashboardStats();
   };
 
+  const btnPushPassesSupabase = document.getElementById('btn-push-passes-supabase');
+  if (btnPushPassesSupabase) {
+    btnPushPassesSupabase.addEventListener('click', async () => {
+      if (!window.QC_SUPABASE || !window.QC_SUPABASE.isConfigured()) {
+        showToast('Supabase is not connected. Enter Project URL & Anon Key and click "Connect & Save".', 'error');
+        return;
+      }
+
+      btnPushPassesSupabase.disabled = true;
+      btnPushPassesSupabase.textContent = 'Pushing Passes...';
+
+      let pushed = 0;
+      try {
+        const localRegs = JSON.parse(localStorage.getItem('qc_registrations_catalog') || '[]');
+        const localEvents = JSON.parse(localStorage.getItem('qc_events_catalog') || '[]');
+        for (const r of localRegs) {
+          const evMatch = localEvents.find(e => String(e.id) === String(r.event_id)) || { id: r.event_id, title: 'Quantum Coders Sprint' };
+          const res = await window.QC_SUPABASE.submitEventRegistration(r, evMatch);
+          if (res && res.success) pushed++;
+        }
+      } catch (err) {
+        console.warn('Push passes exception:', err);
+      }
+
+      btnPushPassesSupabase.disabled = false;
+      btnPushPassesSupabase.textContent = '⚡ Push Local Passes to Supabase';
+      showToast(`Pushed ${pushed} passes to Supabase 'registrations' table!`, 'success');
+      loadEventPasses();
+    });
+  }
+
   // CSV Exporters
   if (btnExportPassesCsv) {
     btnExportPassesCsv.addEventListener('click', () => {
