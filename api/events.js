@@ -24,57 +24,67 @@ module.exports = async function handler(req, res) {
     if (req.method === 'GET') {
       const { id, admin } = req.query;
 
-      // 1. Single Event by ID
+      // 1. Single Event by ID or Event Code
       if (id) {
         if (supabase) {
-          const { data: event, error } = await supabase
-            .from('events')
-            .select('*')
-            .eq('id', id)
-            .is('deleted_at', null)
-            .single();
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+          let q = supabase.from('events').select('*').is('deleted_at', null);
+          if (isUuid) {
+            q = q.eq('id', id);
+          } else {
+            q = q.eq('event_code', id);
+          }
+
+          const { data: event, error } = await q.maybeSingle();
 
           if (error || !event) {
-            return res.status(404).json({ error: 'Event not found' });
+            // Check fallback store
+            const fallbackEv = FALLBACK_STORE.events.find((e) => (e.id === id || e.event_code === id) && !e.deleted_at);
+            if (!fallbackEv) {
+              return res.status(404).json({ error: 'Event not found' });
+            }
+            return res.status(200).json(normalizeEventResponse(fallbackEv));
           }
 
           // Count registrations
           const { count: confirmedCount } = await supabase
             .from('registrations')
             .select('*', { count: 'exact', head: true })
-            .eq('event_id', id)
+            .eq('event_id', event.id)
             .eq('status', 'CONFIRMED');
 
           const { count: waitlistCount } = await supabase
             .from('registrations')
             .select('*', { count: 'exact', head: true })
-            .eq('event_id', id)
+            .eq('event_id', event.id)
             .eq('status', 'WAITLIST');
 
           // Fetch custom fields
           const { data: customFields } = await supabase
             .from('event_custom_fields')
             .select('*')
-            .eq('event_id', id)
+            .eq('event_id', event.id)
             .order('display_order', { ascending: true });
 
           // Fetch event gallery
           const { data: gallery } = await supabase
             .from('event_gallery')
             .select('*')
-            .eq('event_id', id)
+            .eq('event_id', event.id)
             .order('display_order', { ascending: true });
 
           const now = new Date();
           const deadline = new Date(event.registration_deadline);
-          const isFull = (confirmedCount || 0) >= event.maximum_slots;
+          const maxSlots = event.maximum_slots || 100;
+          const conf = confirmedCount || 0;
+          const isFull = conf >= maxSlots;
           const isDeadlinePassed = now > deadline;
 
           return res.status(200).json({
-            ...event,
-            confirmed_count: confirmedCount || 0,
+            ...normalizeEventResponse(event),
+            confirmed_count: conf,
             waitlist_count: waitlistCount || 0,
-            remaining_slots: Math.max(0, event.maximum_slots - (confirmedCount || 0)),
+            remaining_slots: Math.max(0, maxSlots - conf),
             is_full: isFull,
             is_deadline_passed: isDeadlinePassed,
             custom_fields: customFields || [],
@@ -82,19 +92,20 @@ module.exports = async function handler(req, res) {
           });
         } else {
           // Fallback Store Single Event
-          const event = FALLBACK_STORE.events.find((e) => e.id === id && !e.deleted_at);
+          const event = FALLBACK_STORE.events.find((e) => (e.id === id || e.event_code === id) && !e.deleted_at);
           if (!event) {
             return res.status(404).json({ error: 'Event not found' });
           }
-          const confirmedCount = FALLBACK_STORE.registrations.filter((r) => r.event_id === id && r.status === 'CONFIRMED').length;
-          const waitlistCount = FALLBACK_STORE.registrations.filter((r) => r.event_id === id && r.status === 'WAITLIST').length;
+          const confirmedCount = FALLBACK_STORE.registrations.filter((r) => r.event_id === event.id && r.status === 'CONFIRMED').length;
+          const waitlistCount = FALLBACK_STORE.registrations.filter((r) => r.event_id === event.id && r.status === 'WAITLIST').length;
+          const maxSlots = event.maximum_slots || event.max_capacity || 100;
 
           return res.status(200).json({
-            ...event,
+            ...normalizeEventResponse(event),
             confirmed_count: confirmedCount,
             waitlist_count: waitlistCount,
-            remaining_slots: Math.max(0, event.maximum_slots - confirmedCount),
-            is_full: confirmedCount >= event.maximum_slots,
+            remaining_slots: Math.max(0, maxSlots - confirmedCount),
+            is_full: confirmedCount >= maxSlots,
             is_deadline_passed: new Date() > new Date(event.registration_deadline),
             custom_fields: [],
             gallery: []
@@ -130,20 +141,15 @@ module.exports = async function handler(req, res) {
                 .eq('event_id', ev.id)
                 .eq('status', 'WAITLIST');
 
+              const maxSlots = ev.maximum_slots || ev.max_capacity || 100;
+              const conf = confirmedCount || 0;
+
               return {
-                ...ev,
-                name: ev.name || ev.title,
-                title: ev.name || ev.title,
-                date: ev.date || ev.event_date,
-                event_date: ev.date || ev.event_date,
-                max_capacity: ev.maximum_slots || ev.max_capacity,
-                maximum_slots: ev.maximum_slots || ev.max_capacity,
-                cover_image: ev.banner_url || ev.cover_image,
-                banner_url: ev.banner_url || ev.cover_image,
-                confirmed_count: confirmedCount || 0,
+                ...normalizeEventResponse(ev),
+                confirmed_count: conf,
                 waitlist_count: waitlistCount || 0,
-                remaining_slots: Math.max(0, (ev.maximum_slots || ev.max_capacity || 100) - (confirmedCount || 0)),
-                is_full: (confirmedCount || 0) >= (ev.maximum_slots || ev.max_capacity || 100),
+                remaining_slots: Math.max(0, maxSlots - conf),
+                is_full: conf >= maxSlots,
                 is_deadline_passed: new Date() > new Date(ev.registration_deadline)
               };
             })
@@ -154,32 +160,23 @@ module.exports = async function handler(req, res) {
       }
 
       // Fallback Store List
-        const list = FALLBACK_STORE.events
-          .filter((e) => !e.deleted_at && (admin || e.is_published))
-          .map((ev) => {
-            const confirmedCount = FALLBACK_STORE.registrations.filter((r) => r.event_id === ev.id && r.status === 'CONFIRMED').length;
-            const waitlistCount = FALLBACK_STORE.registrations.filter((r) => r.event_id === ev.id && r.status === 'WAITLIST').length;
-            const maxSlots = ev.maximum_slots || ev.max_capacity || 100;
-            return {
-              ...ev,
-              name: ev.name || ev.title,
-              title: ev.name || ev.title,
-              date: ev.date || ev.event_date,
-              event_date: ev.date || ev.event_date,
-              max_capacity: maxSlots,
-              maximum_slots: maxSlots,
-              cover_image: ev.banner_url || ev.cover_image,
-              banner_url: ev.banner_url || ev.cover_image,
-              confirmed_count: confirmedCount,
-              waitlist_count: waitlistCount,
-              remaining_slots: Math.max(0, maxSlots - confirmedCount),
-              is_full: confirmedCount >= maxSlots,
-              is_deadline_passed: new Date() > new Date(ev.registration_deadline)
-            };
-          });
+      const list = FALLBACK_STORE.events
+        .filter((e) => !e.deleted_at && (admin || e.is_published))
+        .map((ev) => {
+          const confirmedCount = FALLBACK_STORE.registrations.filter((r) => r.event_id === ev.id && r.status === 'CONFIRMED').length;
+          const waitlistCount = FALLBACK_STORE.registrations.filter((r) => r.event_id === ev.id && r.status === 'WAITLIST').length;
+          const maxSlots = ev.maximum_slots || ev.max_capacity || 100;
+          return {
+            ...normalizeEventResponse(ev),
+            confirmed_count: confirmedCount,
+            waitlist_count: waitlistCount,
+            remaining_slots: Math.max(0, maxSlots - confirmedCount),
+            is_full: confirmedCount >= maxSlots,
+            is_deadline_passed: new Date() > new Date(ev.registration_deadline)
+          };
+        });
 
-        return res.status(200).json(list);
-      }
+      return res.status(200).json(list);
     }
 
     // -------------------------------------------------------------------------
@@ -213,21 +210,16 @@ module.exports = async function handler(req, res) {
       const newEvent = {
         event_code,
         name,
-        title: name,
         description,
         event_type,
-        category: event_type.toLowerCase(),
         banner_url,
-        cover_image: banner_url,
         date,
-        event_date: date,
         start_time,
         end_time,
         venue,
         organizer,
         eligibility,
         maximum_slots,
-        max_capacity: maximum_slots,
         registration_deadline: payload.registration_deadline || `${date}T23:59:59Z`,
         status: status || (is_published ? (is_registration_open ? 'REGISTRATION OPEN' : 'PUBLISHED') : 'DRAFT'),
         is_published,
@@ -240,32 +232,7 @@ module.exports = async function handler(req, res) {
       };
 
       if (supabase) {
-        // Strip virtual fields before Postgres insert
-        const dbPayload = {
-          event_code: newEvent.event_code,
-          name: newEvent.name,
-          description: newEvent.description,
-          event_type: newEvent.event_type,
-          banner_url: newEvent.banner_url,
-          date: newEvent.date,
-          start_time: newEvent.start_time,
-          end_time: newEvent.end_time,
-          venue: newEvent.venue,
-          organizer: newEvent.organizer,
-          eligibility: newEvent.eligibility,
-          maximum_slots: newEvent.maximum_slots,
-          registration_deadline: newEvent.registration_deadline,
-          status: newEvent.status,
-          is_published: newEvent.is_published,
-          is_registration_open: newEvent.is_registration_open,
-          is_calendar_visible: newEvent.is_calendar_visible,
-          is_pass_enabled: newEvent.is_pass_enabled,
-          is_gallery_enabled: newEvent.is_gallery_enabled,
-          created_at: newEvent.created_at,
-          updated_at: newEvent.updated_at
-        };
-
-        const { data, error } = await supabase.from('events').insert([dbPayload]).select().single();
+        const { data, error } = await supabase.from('events').insert([newEvent]).select().single();
         if (error) throw error;
 
         // Insert custom fields if any
@@ -281,11 +248,11 @@ module.exports = async function handler(req, res) {
           await supabase.from('event_custom_fields').insert(fieldsToInsert);
         }
 
-        return res.status(201).json({ ...data, title: data.name, event_date: data.date, max_capacity: data.maximum_slots });
+        return res.status(201).json(normalizeEventResponse(data));
       } else {
         newEvent.id = `evt-${Date.now()}`;
         FALLBACK_STORE.events.unshift(newEvent);
-        return res.status(201).json(newEvent);
+        return res.status(201).json(normalizeEventResponse(newEvent));
       }
     }
 
@@ -304,14 +271,28 @@ module.exports = async function handler(req, res) {
       let hasRegistrations = false;
       let existingEvent = null;
 
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+
       if (supabase) {
-        const { data: ev } = await supabase.from('events').select('*').eq('id', id).single();
+        let q = supabase.from('events').select('*');
+        if (isUuid) q = q.eq('id', id);
+        else q = q.eq('event_code', id);
+
+        const { data: ev } = await q.maybeSingle();
         existingEvent = ev;
-        const { count } = await supabase.from('registrations').select('*', { count: 'exact', head: true }).eq('event_id', id);
-        hasRegistrations = (count || 0) > 0;
+
+        if (existingEvent) {
+          const { count } = await supabase
+            .from('registrations')
+            .select('*', { count: 'exact', head: true })
+            .eq('event_id', existingEvent.id);
+          hasRegistrations = (count || 0) > 0;
+        }
       } else {
-        existingEvent = FALLBACK_STORE.events.find((e) => e.id === id);
-        hasRegistrations = FALLBACK_STORE.registrations.some((r) => r.event_id === id);
+        existingEvent = FALLBACK_STORE.events.find((e) => e.id === id || e.event_code === id);
+        if (existingEvent) {
+          hasRegistrations = FALLBACK_STORE.registrations.some((r) => r.event_id === existingEvent.id);
+        }
       }
 
       if (!existingEvent) {
@@ -319,11 +300,16 @@ module.exports = async function handler(req, res) {
       }
 
       // Detect critical modifications
+      const targetDate = updates.date || updates.event_date;
+      const targetStartTime = updates.start_time;
+      const targetVenue = updates.venue;
+      const targetSlots = updates.maximum_slots || updates.max_capacity;
+
       const criticalChanged =
-        (updates.date && updates.date !== existingEvent.date) ||
-        (updates.start_time && updates.start_time !== existingEvent.start_time) ||
-        (updates.venue && updates.venue !== existingEvent.venue) ||
-        (updates.maximum_slots && parseInt(updates.maximum_slots, 10) !== existingEvent.maximum_slots);
+        (targetDate && targetDate !== existingEvent.date) ||
+        (targetStartTime && targetStartTime !== existingEvent.start_time) ||
+        (targetVenue && targetVenue !== existingEvent.venue) ||
+        (targetSlots && parseInt(targetSlots, 10) !== existingEvent.maximum_slots);
 
       if (hasRegistrations && criticalChanged && !confirmed_warning) {
         return res.status(409).json({
@@ -333,15 +319,45 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      updates.updated_at = new Date().toISOString();
+      // Sanitize fields to match database schema columns only
+      const dbUpdates = {};
+      if (updates.name !== undefined || updates.title !== undefined) {
+        dbUpdates.name = updates.name || updates.title;
+      }
+      if (updates.description !== undefined) dbUpdates.description = updates.description;
+      if (updates.event_type !== undefined || updates.category !== undefined) {
+        dbUpdates.event_type = updates.event_type || (updates.category.charAt(0).toUpperCase() + updates.category.slice(1));
+      }
+      if (updates.banner_url !== undefined || updates.cover_image !== undefined) {
+        dbUpdates.banner_url = updates.banner_url || updates.cover_image;
+      }
+      if (updates.date !== undefined || updates.event_date !== undefined) {
+        dbUpdates.date = updates.date || updates.event_date;
+      }
+      if (updates.start_time !== undefined) dbUpdates.start_time = updates.start_time;
+      if (updates.end_time !== undefined) dbUpdates.end_time = updates.end_time;
+      if (updates.venue !== undefined) dbUpdates.venue = updates.venue;
+      if (updates.organizer !== undefined) dbUpdates.organizer = updates.organizer;
+      if (updates.eligibility !== undefined) dbUpdates.eligibility = updates.eligibility;
+      if (updates.maximum_slots !== undefined || updates.max_capacity !== undefined) {
+        dbUpdates.maximum_slots = parseInt(updates.maximum_slots || updates.max_capacity, 10) || 100;
+      }
+      if (updates.registration_deadline !== undefined) dbUpdates.registration_deadline = updates.registration_deadline;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.is_published !== undefined) dbUpdates.is_published = Boolean(updates.is_published);
+      if (updates.is_registration_open !== undefined) dbUpdates.is_registration_open = Boolean(updates.is_registration_open);
+      if (updates.is_calendar_visible !== undefined) dbUpdates.is_calendar_visible = Boolean(updates.is_calendar_visible);
+      if (updates.is_pass_enabled !== undefined) dbUpdates.is_pass_enabled = Boolean(updates.is_pass_enabled);
+      if (updates.is_gallery_enabled !== undefined) dbUpdates.is_gallery_enabled = Boolean(updates.is_gallery_enabled);
+      dbUpdates.updated_at = new Date().toISOString();
 
-      if (supabase) {
-        const { data, error } = await supabase.from('events').update(updates).eq('id', id).select().single();
+      if (supabase && isUuid) {
+        const { data, error } = await supabase.from('events').update(dbUpdates).eq('id', existingEvent.id).select().single();
         if (error) throw error;
-        return res.status(200).json(data);
+        return res.status(200).json(normalizeEventResponse(data));
       } else {
-        Object.assign(existingEvent, updates);
-        return res.status(200).json(existingEvent);
+        Object.assign(existingEvent, dbUpdates);
+        return res.status(200).json(normalizeEventResponse(existingEvent));
       }
     }
 
@@ -355,13 +371,14 @@ module.exports = async function handler(req, res) {
       }
 
       const deleted_at = new Date().toISOString();
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
 
-      if (supabase) {
+      if (supabase && isUuid) {
         const { error } = await supabase.from('events').update({ deleted_at, status: 'CANCELLED' }).eq('id', id);
         if (error) throw error;
         return res.status(200).json({ success: true, message: 'Event soft deleted.' });
       } else {
-        const ev = FALLBACK_STORE.events.find((e) => e.id === id);
+        const ev = FALLBACK_STORE.events.find((e) => e.id === id || e.event_code === id);
         if (ev) {
           ev.deleted_at = deleted_at;
           ev.status = 'CANCELLED';
@@ -373,6 +390,48 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   } catch (err) {
     console.error('Events API Error:', err);
-    return res.status(500).json({ error: 'Failed to process event operation.' });
+    return res.status(500).json({ error: 'Failed to process event operation.', details: err.message });
   }
 };
+
+// Normalize event fields so frontend and admin console receive identical properties
+function normalizeEventResponse(ev) {
+  if (!ev) return null;
+  const name = ev.name || ev.title || 'Untitled Event';
+  const date = ev.date || ev.event_date || '';
+  const maxSlots = ev.maximum_slots || ev.max_capacity || 100;
+  const banner = ev.banner_url || ev.cover_image || 'images/event%20images/Pydah%20hackathon.png';
+  const event_type = ev.event_type || (ev.category ? (ev.category.charAt(0).toUpperCase() + ev.category.slice(1)) : 'Workshop');
+
+  return {
+    ...ev,
+    id: ev.id,
+    event_code: ev.event_code,
+    name,
+    title: name,
+    description: ev.description || '',
+    event_type,
+    category: event_type.toLowerCase(),
+    banner_url: banner,
+    cover_image: banner,
+    date,
+    event_date: date,
+    start_time: ev.start_time || '10:00:00',
+    end_time: ev.end_time || '18:00:00',
+    venue: ev.venue || 'Campus Auditorium',
+    organizer: ev.organizer || 'Quantum Coders',
+    eligibility: ev.eligibility || 'Open to all students',
+    maximum_slots: maxSlots,
+    max_capacity: maxSlots,
+    registration_deadline: ev.registration_deadline,
+    status: ev.status || (ev.is_published ? 'PUBLISHED' : 'DRAFT'),
+    is_published: ev.is_published !== false,
+    is_registration_open: ev.is_registration_open !== false,
+    is_calendar_visible: ev.is_calendar_visible !== false,
+    is_pass_enabled: ev.is_pass_enabled !== false,
+    is_gallery_enabled: ev.is_gallery_enabled !== false,
+    created_at: ev.created_at,
+    updated_at: ev.updated_at,
+    deleted_at: ev.deleted_at || null
+  };
+}
