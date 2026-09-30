@@ -3073,6 +3073,9 @@ const initAdmin = () => {
             <button type="button" class="btn-brutalist btn-secondary btn-sm btn-view-pass" data-reg-id="${item.registration_id}" style="padding: 0.35rem 0.65rem; font-size: 0.72rem;">
               🎫 Pass
             </button>
+            <button type="button" class="btn-brutalist btn-danger btn-sm btn-delete-pass" data-id="${item.id || item.registration_id}" style="padding: 0.35rem 0.65rem; font-size: 0.72rem; margin-left: 0.25rem;" title="Delete Pass Record">
+              🗑️
+            </button>
           </td>
         </tr>
       `;
@@ -3086,6 +3089,54 @@ const initAdmin = () => {
     eventPassesTbody.querySelectorAll('.btn-view-pass').forEach(btn => {
       btn.addEventListener('click', () => openAdminPassModal(btn.dataset.regId));
     });
+
+    eventPassesTbody.querySelectorAll('.btn-delete-pass').forEach(btn => {
+      btn.addEventListener('click', () => deleteEventPass(btn.dataset.id));
+    });
+  };
+
+  // Permanently Delete Registration Pass
+  const deleteEventPass = async (regId) => {
+    const item = adminRegistrationsCache.find(r => String(r.id) === String(regId) || String(r.registration_id) === String(regId));
+    if (!item) return;
+
+    if (!confirm(`Are you sure you want to permanently delete pass ${item.registration_id} (${item.full_name || item.name})?`)) return;
+
+    // 1. Delete from Supabase public.registrations
+    if (window.QC_SUPABASE && window.QC_SUPABASE.isConfigured()) {
+      try {
+        const client = window.QC_SUPABASE.getClient();
+        if (client) {
+          await client.from('registrations').delete().or(`id.eq.${item.id},registration_id.eq.${item.registration_id}`);
+        }
+      } catch (err) {
+        console.warn('Supabase delete registration error:', err);
+      }
+    }
+
+    // 2. Delete via API /api/register
+    try {
+      await fetch(`/api/register?id=${encodeURIComponent(item.id || item.registration_id)}`, { method: 'DELETE' });
+    } catch (e) {}
+
+    // 3. Delete from LocalStorage
+    try {
+      const storedCatalog = localStorage.getItem('qc_registrations_catalog');
+      if (storedCatalog) {
+        let parsed = JSON.parse(storedCatalog);
+        if (Array.isArray(parsed)) {
+          parsed = parsed.filter(r => String(r.id) !== String(item.id) && String(r.registration_id) !== String(item.registration_id));
+          localStorage.setItem('qc_registrations_catalog', JSON.stringify(parsed));
+        }
+      }
+    } catch (e) {}
+
+    // 4. Update in-memory cache
+    adminRegistrationsCache = adminRegistrationsCache.filter(r => String(r.id) !== String(item.id) && String(r.registration_id) !== String(item.registration_id));
+
+    showToast(`Deleted registration pass ${item.registration_id}.`, 'success');
+    renderEventPassesTable();
+    loadDashboardStats();
   };
 
   // Promote Waitlist pass to Confirmed
