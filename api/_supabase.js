@@ -4,6 +4,11 @@
  * Uses process.env.SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY securely on the server.
  */
 
+// Provide WebSocket polyfill if missing in Node runtime (e.g. Node 20 on Vercel without experimental flag)
+if (typeof globalThis.WebSocket === 'undefined') {
+  globalThis.WebSocket = class {};
+}
+
 let createClient = null;
 try {
   createClient = require('@supabase/supabase-js').createClient;

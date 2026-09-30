@@ -2626,6 +2626,9 @@ const initAdmin = () => {
               const matchedEv = events.find(ev => String(ev.id) === String(reg.event_id) || String(ev.event_code) === String(reg.event_id));
               return {
                 ...reg,
+                full_name: reg.full_name || reg.name || 'Student',
+                name: reg.name || reg.full_name || 'Student',
+                event_title: matchedEv ? (matchedEv.title || matchedEv.name) : (reg.event_title || 'Quantum Event'),
                 events: matchedEv || reg.events || { name: 'Quantum Event', date: '', venue: '' }
               };
             });
@@ -2648,6 +2651,9 @@ const initAdmin = () => {
               const matchedEv = events.find(ev => String(ev.id) === String(reg.event_id) || String(ev.event_code) === String(reg.event_id));
               return {
                 ...reg,
+                full_name: reg.full_name || reg.name || 'Student',
+                name: reg.name || reg.full_name || 'Student',
+                event_title: matchedEv ? (matchedEv.title || matchedEv.name) : (reg.event_title || 'Quantum Event'),
                 events: matchedEv || reg.events || { name: 'Quantum Event', date: '', venue: '' }
               };
             });
@@ -3112,19 +3118,49 @@ const initAdmin = () => {
       scanStatusChip.style.color = '#F59E0B';
     }
 
-    let payload = { admin_confirmed: adminConfirmed };
-    // Check if JSON payload
+    let rawQuery = String(queryPayload || '').trim();
+    let extractedRid = null;
+    let extractedPhone = null;
+
+    // 1. Try parsing JSON if payload is a JSON string
     try {
-      const parsed = JSON.parse(queryPayload);
-      payload = { ...payload, ...parsed };
+      const parsed = JSON.parse(rawQuery);
+      extractedRid = parsed.rid || parsed.reg_id || parsed.registration_id || parsed.id;
+      extractedPhone = parsed.phone;
     } catch {
-      // String ID or Phone
-      if (queryPayload.length === 10 && /^\d+$/.test(queryPayload)) {
-        payload.phone = queryPayload;
-      } else {
-        payload.registration_id = queryPayload.trim();
+      // 2. Check if URL (e.g., https://.../verify?rid=QCAIT194 or ?rid=QCAIT194)
+      if (rawQuery.includes('?') || rawQuery.includes('/') || rawQuery.startsWith('http')) {
+        try {
+          const urlStr = rawQuery.startsWith('http') ? rawQuery : `https://qc.internal/${rawQuery.replace(/^\/?/, '')}`;
+          const u = new URL(urlStr);
+          extractedRid = u.searchParams.get('rid') || u.searchParams.get('id') || u.searchParams.get('reg_id') || u.searchParams.get('registration_id');
+          extractedPhone = u.searchParams.get('phone');
+        } catch (e) {
+          const match = rawQuery.match(/[?&](?:rid|reg_id|registration_id|id)=([a-zA-Z0-9_-]+)/i);
+          if (match) extractedRid = match[1];
+        }
+      }
+
+      // 3. Check if phone number
+      if (!extractedRid && !extractedPhone) {
+        const digits = rawQuery.replace(/\D/g, '');
+        if (digits.length === 10 || (digits.length > 10 && rawQuery.startsWith('+'))) {
+          extractedPhone = rawQuery;
+        } else {
+          extractedRid = rawQuery;
+        }
       }
     }
+
+    const payload = {
+      qr_payload: rawQuery,
+      query: rawQuery,
+      registration_id: extractedRid ? extractedRid.trim().toUpperCase() : undefined,
+      phone: extractedPhone ? extractedPhone.trim() : undefined,
+      admin_confirmed: adminConfirmed,
+      confirmed_by_admin: adminConfirmed,
+      override_duplicate: adminConfirmed
+    };
 
     try {
       const res = await fetch('/api/verify-pass', {
@@ -3135,13 +3171,19 @@ const initAdmin = () => {
       const data = await res.json();
       displayScanVerificationResult(data, queryPayload);
     } catch (err) {
-      console.warn('Verification API offline, running client fallback check:', err);
+      console.warn('Verification API offline or failed, running client fallback check:', err);
       clientFallbackVerify(queryPayload, adminConfirmed);
     }
   };
 
   const displayScanVerificationResult = (data, originalQuery) => {
     if (!scanResultBody) return;
+
+    const studentName = (data.registration && (data.registration.full_name || data.registration.name)) || 'Attendee';
+    const regId = (data.registration && (data.registration.registration_id || data.registration.id)) || 'QC-PASS';
+    const phone = (data.registration && data.registration.phone) || '';
+    const eventTitle = (data.event && (data.event.title || data.event.name)) || 'Quantum Event';
+    const slotNumber = (data.registration && (data.registration.slot_number || 1)) || 1;
 
     if (data.duplicate_checkin) {
       // DUPLICATE DETECTED
@@ -3150,24 +3192,28 @@ const initAdmin = () => {
         scanStatusChip.style.color = '#EF4444';
       }
 
+      const checkInTimeStr = data.existing_checkin && data.existing_checkin.checked_in_at
+        ? new Date(data.existing_checkin.checked_in_at).toLocaleTimeString()
+        : 'Earlier Today';
+
       scanResultBody.innerHTML = `
         <div class="duplicate-alert-banner">
           <div style="font-family: var(--font-heading); font-size: 1.2rem; color: #EF4444; margin-bottom: 0.35rem;">
             ⚠️ DUPLICATE CHECK-IN DETECTED!
           </div>
           <div style="font-family: var(--font-mono); font-size: 0.8rem; color: #FCA5A5; line-height: 1.5;">
-            Attendee <strong>${escapeHtml(data.registration.full_name)}</strong> was ALREADY checked in at 
-            <strong>${data.existing_checkin.checked_in_at ? new Date(data.existing_checkin.checked_in_at).toLocaleTimeString() : 'Earlier'}</strong>!
+            Attendee <strong>${escapeHtml(studentName)}</strong> was ALREADY checked in at 
+            <strong>${checkInTimeStr}</strong>!
           </div>
         </div>
 
         <div style="padding: 1rem; background: #141419; border: 1px solid var(--border-medium); border-radius: 2px;">
-          <div style="font-family: var(--font-heading); font-size: 1.15rem; color: #FFFFFF;">${escapeHtml(data.registration.full_name)}</div>
+          <div style="font-family: var(--font-heading); font-size: 1.15rem; color: #FFFFFF;">${escapeHtml(studentName)}</div>
           <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-gray); margin: 0.25rem 0;">
-            ${escapeHtml(data.registration.registration_id)} • ${escapeHtml(data.registration.phone)}
+            ${escapeHtml(regId)} • ${escapeHtml(phone)}
           </div>
           <div style="font-family: var(--font-mono); font-size: 0.75rem; color: #9CA3AF;">
-            Event: ${escapeHtml(data.event.title)} (Slot #${data.registration.slot_number || 1})
+            Event: ${escapeHtml(eventTitle)} (Slot #${slotNumber})
           </div>
         </div>
       `;
@@ -3185,8 +3231,8 @@ const initAdmin = () => {
       }
 
       recordSessionCheckin({
-        name: data.registration.full_name,
-        event: data.event.title,
+        name: studentName,
+        event: eventTitle,
         time: new Date().toLocaleTimeString(),
         isDuplicate: true
       });
@@ -3212,13 +3258,13 @@ const initAdmin = () => {
         </div>
 
         <div style="padding: 1.25rem; background: #141419; border: 1px solid var(--border-medium); border-radius: 2px;">
-          <div style="font-family: var(--font-heading); font-size: 1.3rem; color: #FFFFFF;">${escapeHtml(data.registration.full_name)}</div>
+          <div style="font-family: var(--font-heading); font-size: 1.3rem; color: #FFFFFF;">${escapeHtml(studentName)}</div>
           <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-blue); margin: 0.3rem 0;">
-            PASS: ${escapeHtml(data.registration.registration_id)} • SLOT #${data.registration.slot_number || 1}
+            PASS: ${escapeHtml(regId)} • SLOT #${slotNumber}
           </div>
           <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-gray);">
-            ${escapeHtml(data.event.title)}<br>
-            Phone: ${escapeHtml(data.registration.phone)}
+            ${escapeHtml(eventTitle)}<br>
+            Phone: ${escapeHtml(phone)}
           </div>
         </div>
       `;
@@ -3226,11 +3272,18 @@ const initAdmin = () => {
       if (scanResultFooter) scanResultFooter.style.display = 'none';
 
       recordSessionCheckin({
-        name: data.registration.full_name,
-        event: data.event.title,
+        name: studentName,
+        event: eventTitle,
         time: new Date().toLocaleTimeString(),
         isDuplicate: false
       });
+
+      // Mark present in local cache if present
+      if (Array.isArray(adminRegistrationsCache)) {
+        const item = adminRegistrationsCache.find(r => r.registration_id === regId || r.phone === phone);
+        if (item) item.is_present = true;
+      }
+
       loadDashboardStats();
       return;
     }
@@ -3245,34 +3298,156 @@ const initAdmin = () => {
       <div style="padding: 1.25rem; background: rgba(239, 68, 68, 0.12); border: 1.5px solid #EF4444; border-radius: 4px; text-align: center;">
         <div style="font-size: 2.5rem; margin-bottom: 0.35rem;">🚫</div>
         <div style="font-family: var(--font-heading); font-size: 1.2rem; color: #EF4444; margin-bottom: 0.4rem;">
-          ${escapeHtml(data.message || 'Pass verification rejected')}
+          ${escapeHtml(data.message || data.error || 'Pass verification rejected')}
         </div>
         <p style="font-family: var(--font-mono); font-size: 0.78rem; color: #FCA5A5;">
-          ${data.status === 'WAITLIST' ? 'Attendee is currently on the waitlist. Promote to Confirmed slot before check-in.' : 'Please inspect registration status in the Passes tab.'}
+          ${data.status === 'WAITLIST' ? 'Attendee is currently on the waitlist. Promote to Confirmed slot before check-in.' : (data.error || 'Please inspect registration status in the Passes tab.')}
         </p>
       </div>
     `;
     if (scanResultFooter) scanResultFooter.style.display = 'none';
   };
 
-  // Client Fallback Check
-  const clientFallbackVerify = (query, adminConfirmed) => {
+  // Client Fallback Check (Direct Supabase query & in-memory cache)
+  const clientFallbackVerify = async (query, adminConfirmed) => {
+    let raw = String(query || '').trim();
+    let targetRid = null;
+    let targetPhone = null;
+
+    try {
+      const parsed = JSON.parse(raw);
+      targetRid = parsed.rid || parsed.reg_id || parsed.registration_id || parsed.id;
+      targetPhone = parsed.phone;
+    } catch {
+      if (raw.includes('?') || raw.includes('/') || raw.startsWith('http')) {
+        try {
+          const urlStr = raw.startsWith('http') ? raw : `https://qc.internal/${raw.replace(/^\/?/, '')}`;
+          const u = new URL(urlStr);
+          targetRid = u.searchParams.get('rid') || u.searchParams.get('id') || u.searchParams.get('reg_id') || u.searchParams.get('registration_id');
+          targetPhone = u.searchParams.get('phone');
+        } catch (e) {
+          const m = raw.match(/[?&](?:rid|reg_id|registration_id|id)=([a-zA-Z0-9_-]+)/i);
+          if (m) targetRid = m[1];
+        }
+      }
+
+      if (!targetRid && !targetPhone) {
+        const digits = raw.replace(/\D/g, '');
+        if (digits.length === 10 || (digits.length > 10 && raw.startsWith('+'))) {
+          targetPhone = raw;
+        } else {
+          targetRid = raw;
+        }
+      }
+    }
+
+    if (targetRid) targetRid = targetRid.trim().toUpperCase();
+    if (targetPhone) targetPhone = targetPhone.replace(/[^0-9+]/g, '');
+
+    let reg = null;
+
+    // 1. Direct Supabase query if configured
+    if (window.QC_SUPABASE && window.QC_SUPABASE.isConfigured()) {
+      try {
+        const client = window.QC_SUPABASE.getClient();
+        if (client) {
+          if (targetRid) {
+            const { data } = await client.from('registrations').select('*, events (*)').ilike('registration_id', targetRid).maybeSingle();
+            if (data) reg = data;
+          }
+          if (!reg && targetPhone) {
+            const raw10 = targetPhone.slice(-10);
+            const { data } = await client.from('registrations').select('*, events (*)').or(`phone.eq.${targetPhone},phone.eq.+91${raw10},phone.eq.${raw10}`).limit(1);
+            if (data && data[0]) reg = data[0];
+          }
+
+          if (reg) {
+            if (reg.status === 'CANCELLED') {
+              displayScanVerificationResult({ success: false, status: 'CANCELLED', message: `This pass has been CANCELLED (${reg.name})` }, query);
+              return;
+            }
+            if (reg.status === 'WAITLIST') {
+              displayScanVerificationResult({ success: false, status: 'WAITLIST', message: 'Attendee is currently on the waitlist.' }, query);
+              return;
+            }
+
+            const { data: att } = await client.from('attendance').select('*').eq('registration_id', reg.registration_id).eq('event_id', reg.event_id).maybeSingle();
+
+            if (att && !adminConfirmed) {
+              displayScanVerificationResult({
+                duplicate_checkin: true,
+                registration: {
+                  full_name: reg.name,
+                  name: reg.name,
+                  registration_id: reg.registration_id,
+                  phone: reg.phone,
+                  slot_number: 1
+                },
+                event: { title: reg.events?.name || 'Quantum Event' },
+                existing_checkin: { checked_in_at: att.check_in_time || att.created_at }
+              }, query);
+              return;
+            }
+
+            const checkInRecord = {
+              event_id: reg.event_id,
+              registration_id: reg.registration_id,
+              student_name: reg.name,
+              check_in_time: new Date().toISOString(),
+              status: 'PRESENT',
+              checked_in_by: adminConfirmed ? 'Admin Scanner (Direct Re-Admit)' : 'Admin QR Scanner (Direct)'
+            };
+
+            if (att) {
+              await client.from('attendance').update({ check_in_time: checkInRecord.check_in_time, checked_in_by: checkInRecord.checked_in_by }).eq('id', att.id);
+            } else {
+              await client.from('attendance').insert([checkInRecord]);
+            }
+
+            displayScanVerificationResult({
+              success: true,
+              registration: {
+                full_name: reg.name,
+                name: reg.name,
+                registration_id: reg.registration_id,
+                phone: reg.phone,
+                slot_number: 1
+              },
+              event: { title: reg.events?.name || 'Quantum Event' }
+            }, query);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Direct Supabase check error, falling back to local cache:', err);
+      }
+    }
+
+    // 2. In-memory cache fallback
     const list = adminRegistrationsCache || [];
-    const q = query.trim().toUpperCase();
-    const reg = list.find(r => r.registration_id === q || r.phone === q);
+    reg = list.find(r => 
+      (targetRid && (String(r.registration_id).toUpperCase() === targetRid || String(r.id) === targetRid)) ||
+      (targetPhone && r.phone && r.phone.includes(targetPhone.slice(-10)))
+    );
 
     if (!reg) {
-      displayScanVerificationResult({ success: false, message: 'Registration record not found.' }, query);
+      displayScanVerificationResult({ success: false, message: 'Registration record not found in cadre registry.' }, query);
       return;
     }
 
-    // Check if already checked in locally
-    const existing = sessionCheckins.find(c => c.name === reg.full_name && !c.isDuplicate);
+    const regName = reg.full_name || reg.name || 'Student';
+    const existing = sessionCheckins.find(c => c.name === regName && !c.isDuplicate);
     if (existing && !adminConfirmed) {
       displayScanVerificationResult({
         duplicate_checkin: true,
-        registration: reg,
-        event: { title: reg.event_title || 'Sprint' },
+        registration: {
+          full_name: regName,
+          name: regName,
+          registration_id: reg.registration_id,
+          phone: reg.phone,
+          slot_number: 1
+        },
+        event: { title: reg.event_title || reg.events?.name || 'Sprint' },
         existing_checkin: { checked_in_at: Date.now() - 60000 }
       }, query);
       return;
@@ -3280,8 +3455,14 @@ const initAdmin = () => {
 
     displayScanVerificationResult({
       success: true,
-      registration: reg,
-      event: { title: reg.event_title || 'Sprint' }
+      registration: {
+        full_name: regName,
+        name: regName,
+        registration_id: reg.registration_id,
+        phone: reg.phone,
+        slot_number: 1
+      },
+      event: { title: reg.event_title || reg.events?.name || 'Sprint' }
     }, query);
   };
 
@@ -3328,6 +3509,36 @@ const initAdmin = () => {
       attendanceEventSelect.innerHTML = `<option value="all">-- All Events (${events.length}) --</option>` +
         events.map(ev => `<option value="${ev.id}">${escapeHtml(ev.title)}</option>`).join('');
       if (cur && cur !== 'all') attendanceEventSelect.value = cur;
+    }
+
+    // Live sync attendance status from Supabase
+    try {
+      let attRecords = [];
+      if (window.QC_SUPABASE && window.QC_SUPABASE.isConfigured()) {
+        const client = window.QC_SUPABASE.getClient();
+        if (client) {
+          const { data } = await client.from('attendance').select('*');
+          if (Array.isArray(data)) attRecords = data;
+        }
+      }
+      if (attRecords.length === 0) {
+        const res = await fetch('/api/verify-pass?list=true');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) attRecords = data;
+        }
+      }
+
+      if (attRecords.length > 0 && Array.isArray(adminRegistrationsCache)) {
+        const attSet = new Set(attRecords.map(a => a.registration_id));
+        adminRegistrationsCache.forEach(r => {
+          if (attSet.has(r.registration_id)) {
+            r.is_present = true;
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('Attendance sync notice:', e);
     }
 
     renderAttendanceTable();
@@ -3426,7 +3637,7 @@ const initAdmin = () => {
             ${isPresent ? 'QR_SCANNER' : '—'}
           </td>
           <td style="text-align: right;">
-            <button type="button" class="btn-brutalist btn-secondary btn-sm btn-toggle-presence" data-name="${escapeHtml(item.full_name)}" style="padding: 0.35rem 0.65rem; font-size: 0.72rem;">
+            <button type="button" class="btn-brutalist btn-secondary btn-sm btn-toggle-presence" data-name="${escapeHtml(item.full_name)}" data-rid="${escapeHtml(item.registration_id)}" style="padding: 0.35rem 0.65rem; font-size: 0.72rem;">
               ${isPresent ? 'Mark Absent' : '✓ Mark Present'}
             </button>
           </td>
@@ -3435,17 +3646,46 @@ const initAdmin = () => {
     }).join('');
 
     attendanceTbody.querySelectorAll('.btn-toggle-presence').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const name = btn.dataset.name;
-        if (checkedInNames.has(name)) {
+        const rid = btn.dataset.rid;
+        const regItem = (adminRegistrationsCache || []).find(r => r.registration_id === rid || r.full_name === name);
+
+        if (checkedInNames.has(name) || (regItem && regItem.is_present)) {
           sessionCheckins = sessionCheckins.filter(s => s.name !== name);
+          if (regItem) regItem.is_present = false;
+          // Delete from Supabase attendance
+          if (window.QC_SUPABASE && window.QC_SUPABASE.isConfigured() && rid) {
+            try {
+              const client = window.QC_SUPABASE.getClient();
+              if (client) await client.from('attendance').delete().eq('registration_id', rid);
+            } catch (e) {}
+          }
+          showToast(`Marked ${name} as Absent.`, 'info');
         } else {
           sessionCheckins.unshift({
             name,
-            event: 'Manual Entry',
+            event: regItem?.event_title || 'Manual Entry',
             time: new Date().toLocaleTimeString(),
             isDuplicate: false
           });
+          if (regItem) regItem.is_present = true;
+          // Insert into Supabase attendance
+          if (window.QC_SUPABASE && window.QC_SUPABASE.isConfigured() && regItem) {
+            try {
+              const client = window.QC_SUPABASE.getClient();
+              if (client) {
+                await client.from('attendance').insert([{
+                  event_id: regItem.event_id,
+                  registration_id: regItem.registration_id,
+                  student_name: regItem.name || regItem.full_name,
+                  status: 'PRESENT',
+                  checked_in_by: 'Admin Attendance Register (Manual)'
+                }]);
+              }
+            } catch (e) {}
+          }
+          showToast(`✓ Marked ${name} as Present!`, 'success');
         }
         renderAttendanceTable();
         loadDashboardStats();
