@@ -23,6 +23,8 @@
     { "source": "/admin/admin.js", "destination": "/admin/admin.js" },
     { "source": "/admin", "destination": "/admin/index.html" },
     { "source": "/admin/", "destination": "/admin/index.html" },
+    { "source": "/event", "destination": "/event.html" },
+    { "source": "/event/:id", "destination": "/event.html" },
     { "source": "/team/:id", "destination": "/team/:id/index.html" }
   ]
 }

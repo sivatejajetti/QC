@@ -1,0 +1,1250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EVENT DETAILS & REGISTRATION // Quantum Coders</title>
+  <meta name="description" content="Official Event Registration and Digital Pass Portal for Quantum Coders, Pydah College of Engineering.">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+
+  <!-- Google Fonts Preconnect & Styles -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;700&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
+
+  <!-- QR Code Engine (Client-Side Rendering) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+  <!-- Master Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    /* Dedicated Event Page Specific Extensions */
+    .event-hero-banner-wrap {
+      width: 100%;
+      height: 380px;
+      position: relative;
+      border: 1.5px solid var(--border-medium);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+      background: #0A0A0E;
+    }
+
+    .event-hero-banner-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: brightness(0.85) contrast(1.1);
+    }
+
+    .event-hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(5, 5, 8, 0.95) 100%);
+      display: flex;
+      align-items: flex-end;
+      padding: 2rem;
+    }
+
+    .event-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin: 2rem 0;
+    }
+
+    .event-meta-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-subtle);
+      padding: 1.25rem;
+      border-radius: 6px;
+    }
+
+    .event-meta-label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      color: var(--color-gray);
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+    }
+
+    .event-meta-value {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--color-white);
+    }
+
+    /* Capacity Status Bar */
+    .event-capacity-card {
+      background: rgba(13, 14, 20, 0.95);
+      border: 1.5px solid var(--color-blue);
+      border-radius: 8px;
+      padding: 1.5rem 2rem;
+      margin: 2rem 0;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+
+    .capacity-metric-block {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+    }
+
+    .capacity-num-large {
+      font-family: var(--font-display);
+      font-size: 2.6rem;
+      line-height: 1;
+      color: var(--color-white);
+    }
+
+    .capacity-num-total {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      color: var(--color-gray);
+    }
+
+    .capacity-progress-wrap {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .capacity-bar-track {
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 0.5rem;
+    }
+
+    .capacity-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-blue), var(--color-orange));
+      transition: width 0.4s ease;
+    }
+
+    /* Event Pass Brutalist Object */
+    .event-pass-wrapper {
+      max-width: 580px;
+      margin: 2.5rem auto;
+      perspective: 1200px;
+    }
+
+    .event-pass-card {
+      background: #0E0F14;
+      border: 2px solid var(--border-bold);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(59, 130, 246, 0.2);
+      position: relative;
+    }
+
+    .pass-tear-header {
+      background: #F3F4F6;
+      color: #050505;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px dashed #000;
+      position: relative;
+    }
+
+    .pass-tear-header::before,
+    .pass-tear-header::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      width: 20px;
+      height: 20px;
+      background: #0E0F14;
+      border-radius: 50%;
+    }
+
+    .pass-tear-header::before { left: -10px; }
+    .pass-tear-header::after { right: -10px; }
+
+    .pass-body {
+      padding: 2rem 1.75rem;
+    }
+
+    .pass-qr-box {
+      background: #FFFFFF;
+      padding: 1rem;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+      margin: 1.25rem 0;
+    }
+
+    .pass-field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      text-align: left;
+      margin: 1.5rem 0;
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 1rem 0;
+    }
+
+    .pass-f-label {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      color: var(--color-gray);
+      text-transform: uppercase;
+    }
+
+    .pass-f-val {
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--color-white);
+      margin-top: 0.2rem;
+    }
+
+    /* Print media styles */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      .event-pass-wrapper, .event-pass-wrapper * {
+        visibility: visible;
+      }
+      .event-pass-wrapper {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+      }
+      .pass-actions-strip {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="halftone-bg">
+  <div class="film-grain" aria-hidden="true"></div>
+
+  <!-- Custom Cursor Engine Elements -->
+  <div class="cursor-dot" id="cursor-dot" aria-hidden="true"></div>
+  <div class="cursor-ring" id="cursor-ring" aria-hidden="true">
+    <span class="cursor-text" id="cursor-text">EXPLORE</span>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header" id="site-header">
+    <div class="container nav-container">
+      <a href="index.html" class="brand-link" aria-label="Quantum Coders Home" data-cursor="HOME">
+        <img src="assets/logo.png" alt="Quantum Coders Logo" class="brand-logo-img">
+        <div class="brand-text-block">
+          <span class="brand-title">QUANTUM CODERS</span>
+          <span class="brand-subtitle">// PYDAH COLLEGE OF ENGINEERING</span>
+        </div>
+        <div class="brand-divider" aria-hidden="true"></div>
+        <div class="brand-college-pill" title="Pydah College of Engineering">
+          <img src="images/Pydah%20Logo.png" alt="Pydah College of Engineering" class="brand-college-logo">
+        </div>
+      </a>
+
+      <nav class="desktop-nav" aria-label="Primary Navigation">
+        <a href="index.html#home" class="nav-link" data-cursor="GO">Home</a>
+        <a href="index.html#calendar" class="nav-link" data-cursor="GO">Calendar</a>
+        <a href="index.html#gallery" class="nav-link" data-cursor="GO">Gallery</a>
+        <a href="index.html#team" class="nav-link" data-cursor="GO">Core Team</a>
+        <button type="button" class="btn-brutalist btn-secondary btn-sm" id="btn-open-find-pass">
+          🔍 Find My Pass
+        </button>
+      </nav>
+
+      <div class="nav-mobile-actions">
+        <button class="menu-trigger" id="menu-trigger" aria-label="Toggle Navigation Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Nav Overlay -->
+  <div class="mobile-nav-overlay" id="mobile-nav-overlay" aria-hidden="true">
+    <div class="mobile-nav-top-row">
+      <div class="mobile-overlay-pydah-pill">
+        <img src="images/Pydah%20Logo.png" alt="Pydah College of Engineering" class="mobile-overlay-pydah-logo">
+      </div>
+      <button class="mobile-nav-close-btn" id="mobile-nav-close">✕</button>
+    </div>
+    <ul class="mobile-nav-list">
+      <li><a href="index.html#home" class="mobile-nav-link"><span class="nav-num">01</span> Home</a></li>
+      <li><a href="index.html#calendar" class="mobile-nav-link"><span class="nav-num">02</span> Calendar</a></li>
+      <li><a href="index.html#gallery" class="mobile-nav-link"><span class="nav-num">03</span> Gallery</a></li>
+      <li><a href="index.html#team" class="mobile-nav-link"><span class="nav-num">04</span> Core Team</a></li>
+    </ul>
+  </div>
+
+  <main style="padding-top: 6.5rem; min-height: 85vh;">
+    <!-- Loading Skeleton View -->
+    <div class="container" id="event-loading-view" style="padding: 4rem 1rem; text-align: center;">
+      <div class="loading-spinner" style="margin: 0 auto 1.5rem; width: 44px; height: 44px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--color-blue); border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+      <div style="font-family: var(--font-mono); font-size: 0.9rem; letter-spacing: 0.15em; color: var(--color-gray);">
+        LOADING CADRE EVENT ARCHIVE...
+      </div>
+    </div>
+
+    <!-- Error State View -->
+    <div class="container" id="event-error-view" style="display: none; padding: 4rem 1rem; text-align: center;">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+      <h2 style="font-family: var(--font-display); font-size: 2rem; margin-bottom: 0.75rem;">EVENT NOT FOUND</h2>
+      <p style="color: var(--color-gray); margin-bottom: 1.5rem;" id="event-error-msg">
+        The requested Quantum Coders event does not exist, has completed, or was removed.
+      </p>
+      <a href="index.html#calendar" class="btn-brutalist btn-primary">
+        ← Return to Event Calendar
+      </a>
+    </div>
+
+    <!-- Active Event Presentation -->
+    <div class="container" id="event-content-view" style="display: none;">
+      <!-- Hero Banner Wrap -->
+      <div class="event-hero-banner-wrap">
+        <img src="images/event%20images/Pydah%20hackathon.png" alt="Event Banner" id="ev-banner-img" class="event-hero-banner-img">
+        <div class="event-hero-overlay">
+          <div>
+            <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem;">
+              <span class="section-tag" id="ev-type-badge" style="background: var(--color-blue); color: #fff; margin: 0;">WORKSHOP</span>
+              <span class="section-tag" id="ev-status-badge" style="background: rgba(16,185,129,0.2); color: #34d399; border-color: #10b981; margin: 0;">REGISTRATION OPEN</span>
+            </div>
+            <h1 class="section-title-huge" id="ev-title" style="font-size: clamp(2rem, 4vw, 3.4rem); margin: 0;">EVENT TITLE</h1>
+          </div>
+        </div>
+      </div>
+
+      <!-- Capacity & Live Metric Strip (Public aggregates only — zero student PII) -->
+      <div class="event-capacity-card" id="ev-capacity-card">
+        <div class="capacity-metric-block">
+          <span class="capacity-num-large" id="ev-confirmed-count">0</span>
+          <span class="capacity-num-total" id="ev-total-slots">/ 100 SLOTS</span>
+        </div>
+
+        <div class="capacity-progress-wrap">
+          <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray);">
+            <span id="ev-remaining-slots-label">27 Slots Remaining</span>
+            <span id="ev-waitlist-label" style="display: none; color: #fbbf24;">Waitlist Active</span>
+          </div>
+          <div class="capacity-bar-track">
+            <div class="capacity-bar-fill" id="ev-capacity-bar" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <div>
+          <button type="button" class="btn-brutalist btn-primary" id="btn-jump-to-register">
+            Register Now ↓
+          </button>
+        </div>
+      </div>
+
+      <!-- Metadata Grid -->
+      <div class="event-meta-grid">
+        <div class="event-meta-item">
+          <div class="event-meta-label">📅 Date &amp; Day</div>
+          <div class="event-meta-value" id="ev-date">APRIL 10, 2026</div>
+        </div>
+        <div class="event-meta-item">
+          <div class="event-meta-label">⏰ Timing Schedule</div>
+          <div class="event-meta-value" id="ev-time">10:00 AM — 04:00 PM</div>
+        </div>
+        <div class="event-meta-item">
+          <div class="event-meta-label">📍 Venue Location</div>
+          <div class="event-meta-value" id="ev-venue">Pydah Main Auditorium</div>
+        </div>
+        <div class="event-meta-item">
+          <div class="event-meta-label">🎓 Eligibility</div>
+          <div class="event-meta-value" id="ev-eligibility">All Engineering Branches</div>
+        </div>
+        <div class="event-meta-item">
+          <div class="event-meta-label">⚡ Organizer Guild</div>
+          <div class="event-meta-value" id="ev-organizer">Quantum Coders Lead Cadre</div>
+        </div>
+        <div class="event-meta-item">
+          <div class="event-meta-label">⏳ Registration Deadline</div>
+          <div class="event-meta-value" id="ev-deadline" style="color: #fbbf24;">APRIL 09, 2026</div>
+        </div>
+      </div>
+
+      <!-- Event Description -->
+      <div style="background: rgba(255, 255, 255, 0.02); border: 1.5px solid var(--border-subtle); border-radius: 8px; padding: 2.2rem; margin: 2rem 0;">
+        <h3 style="font-family: var(--font-heading); font-size: 1.35rem; margin-bottom: 1rem; color: #fff;">
+          EVENT OVERVIEW &amp; TECHNICAL HIGHLIGHTS
+        </h3>
+        <p style="font-size: 0.95rem; line-height: 1.7; color: var(--color-gray); white-space: pre-line;" id="ev-description">
+          Event detailed description goes here...
+        </p>
+      </div>
+
+      <!-- Attached Event Gallery (if enabled) -->
+      <div id="ev-gallery-section" style="display: none; margin: 3rem 0;">
+        <div class="section-header" style="text-align: left; margin-bottom: 1.5rem;">
+          <div class="section-tag">ARCHIVE // MEDIA</div>
+          <h2 style="font-family: var(--font-display); font-size: 2rem; color: #fff;">EVENT GALLERY &amp; HIGHLIGHTS</h2>
+        </div>
+        <div class="gallery-collage-grid" id="ev-gallery-grid">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           REGISTRATION SECTION / CONTAINER
+           ===================================================================== -->
+      <section id="register-section" style="margin: 4rem 0;">
+        <div class="section-header" style="text-align: left; margin-bottom: 1.5rem;">
+          <div class="section-tag">CADRE INTAKE // REGISTRATION</div>
+          <h2 class="section-title-huge" style="font-size: 2.4rem;">
+            SECURE YOUR <span class="outline-text">EVENT PASS</span>
+          </h2>
+          <p class="section-subtitle" style="margin: 0;">
+            Fill in your authentic academic credentials. Passes are generated automatically upon confirmation.
+          </p>
+        </div>
+
+        <!-- Registration Form Box -->
+        <div id="registration-form-box" style="background: #0E0F14; border: 1.5px solid var(--border-medium); border-radius: 8px; padding: 2.5rem 2rem; max-width: 760px;">
+          <!-- Waitlist Alert Banner if full -->
+          <div id="waitlist-notice-banner" style="display: none; background: rgba(251, 191, 36, 0.12); border: 1px solid #fbbf24; border-radius: 6px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-family: var(--font-mono); font-size: 0.82rem; color: #fbbf24;">
+            ⚠️ <strong>CAPACITY REACHED:</strong> Maximum event slots are currently filled. New registrations will be placed on the priority <strong>WAITLIST</strong>. If a confirmed participant cancels, you will automatically be promoted and receive an active pass!
+          </div>
+
+          <!-- Deadline Passed Notice -->
+          <div id="deadline-closed-banner" style="display: none; background: rgba(239, 68, 68, 0.12); border: 1px solid #ef4444; border-radius: 6px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-family: var(--font-mono); font-size: 0.82rem; color: #f87171;">
+            ⛔ <strong>REGISTRATION CLOSED:</strong> The registration deadline for this event has passed. New registrations are no longer accepted.
+          </div>
+
+          <form id="event-reg-form">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+              <div class="form-group-full">
+                <label for="reg-name" class="form-label">FULL NAME *</label>
+                <input type="text" id="reg-name" class="editorial-input" placeholder="e.g. SIVATEJA JETTI" required autocomplete="name">
+              </div>
+              <div class="form-group-full">
+                <label for="reg-section" class="form-label">SECTION / ROLL NO. *</label>
+                <input type="text" id="reg-section" class="editorial-input" placeholder="e.g. CSE-A / 22A91A05XX" required>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 1.25rem;">
+              <div class="form-group-full">
+                <label for="reg-phone" class="form-label">PHONE NUMBER (FOR OTP &amp; PASS) *</label>
+                <input type="tel" id="reg-phone" class="editorial-input" placeholder="e.g. 9876543210" required autocomplete="tel">
+              </div>
+              <div class="form-group-full">
+                <label for="reg-email" class="form-label">COLLEGE / PERSONAL EMAIL *</label>
+                <input type="email" id="reg-email" class="editorial-input" placeholder="e.g. student@pydah.edu.in" required autocomplete="email">
+              </div>
+            </div>
+
+            <div class="form-group-full" style="margin-top: 1.25rem;">
+              <label for="reg-year" class="form-label">ACADEMIC YEAR *</label>
+              <select id="reg-year" class="editorial-select" required>
+                <option value="" disabled selected>Select Year of Study</option>
+                <option value="1st Year">1st Year (Freshman)</option>
+                <option value="2nd Year">2nd Year (Sophomore)</option>
+                <option value="3rd Year">3rd Year (Junior)</option>
+                <option value="4th Year">4th Year (Senior)</option>
+              </select>
+            </div>
+
+            <!-- Dynamic Custom Fields Container -->
+            <div id="dynamic-custom-fields-container" style="margin-top: 1.25rem;"></div>
+
+            <div id="reg-error-msg" style="display: none; color: #f87171; font-family: var(--font-mono); font-size: 0.8rem; margin-top: 1rem; padding: 0.75rem; background: rgba(239,68,68,0.1); border-left: 3px solid #ef4444;"></div>
+
+            <div style="margin-top: 2rem;">
+              <button type="submit" class="btn-brutalist btn-primary" id="btn-submit-registration" style="width: 100%; justify-content: center; padding: 1rem;">
+                CONFIRM &amp; GENERATE PASS →
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- =====================================================================
+             GENERATED PASS DISPLAY VIEW (Appears after successful registration)
+             ===================================================================== -->
+        <div id="pass-success-view" style="display: none; text-align: center;">
+          <div style="display: inline-block; background: rgba(16,185,129,0.15); border: 1px solid #10b981; color: #34d399; padding: 0.5rem 1.25rem; border-radius: 999px; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700; margin-bottom: 1rem;" id="pass-status-pill">
+            ✓ REGISTRATION CONFIRMED
+          </div>
+          <h2 style="font-family: var(--font-display); font-size: 2.2rem; color: #fff; margin-bottom: 0.5rem;">
+            OFFICIAL CADRE EVENT PASS
+          </h2>
+          <p style="color: var(--color-gray); max-width: 480px; margin: 0 auto 2rem; font-size: 0.88rem;">
+            Save this digital pass on your phone or print it. Present the verified QR code at the registration desk on event day for instant check-in.
+          </p>
+
+          <!-- Pass Object Card -->
+          <div class="event-pass-wrapper">
+            <div class="event-pass-card" id="digital-event-pass">
+              <div class="pass-tear-header">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                  <img src="assets/logo.png" alt="Logo" style="height: 24px;">
+                  <strong style="font-family: var(--font-display); letter-spacing: 0.05em; font-size: 1.1rem;">QUANTUM CODERS</strong>
+                </div>
+                <span style="font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; color: #1e3a8a; letter-spacing: 0.1em;" id="pass-display-type">
+                  EVENT ENTRY PASS
+                </span>
+              </div>
+
+              <div class="pass-body">
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-gray); letter-spacing: 0.16em;" id="pass-display-event-name">
+                  AI WORKSHOP 2026
+                </div>
+                <div style="font-family: var(--font-heading); font-size: 1.6rem; font-weight: 700; color: #fff; margin: 0.35rem 0;" id="pass-display-student-name">
+                  STUDENT NAME
+                </div>
+
+                <!-- QR Box -->
+                <div class="pass-qr-box" id="pass-qr-container">
+                  <!-- Injected via qrcode.js -->
+                </div>
+
+                <div style="font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; color: var(--color-blue); letter-spacing: 0.15em;" id="pass-display-rid">
+                  QCAIW101
+                </div>
+
+                <div class="pass-field-grid">
+                  <div>
+                    <div class="pass-f-label">SECTION / YEAR</div>
+                    <div class="pass-f-val" id="pass-display-sec-year">CSE-A • 3RD YEAR</div>
+                  </div>
+                  <div>
+                    <div class="pass-f-label">VENUE</div>
+                    <div class="pass-f-val" id="pass-display-venue">MAIN AUDITORIUM</div>
+                  </div>
+                  <div>
+                    <div class="pass-f-label">EVENT DATE</div>
+                    <div class="pass-f-val" id="pass-display-date">10 APR 2026</div>
+                  </div>
+                  <div>
+                    <div class="pass-f-label">TIME</div>
+                    <div class="pass-f-val" id="pass-display-time">10:00 AM</div>
+                  </div>
+                </div>
+
+                <div style="font-family: var(--font-mono); font-size: 0.65rem; color: rgba(255,255,255,0.4); letter-spacing: 0.1em;">
+                  OFFICIAL ENTRY TOKEN // PYDAH COLLEGE OF ENGINEERING
+                </div>
+              </div>
+            </div>
+
+            <!-- Pass Actions -->
+            <div class="pass-actions-strip" style="display: flex; gap: 0.75rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap;">
+              <button type="button" class="btn-brutalist btn-secondary btn-sm" onclick="window.print()">
+                🖨️ Print Pass
+              </button>
+              <button type="button" class="btn-brutalist btn-primary btn-sm" id="btn-new-reg-another">
+                + Register Another Student
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- =========================================================================
+       FIND MY PASS / CANCEL REGISTRATION MODAL
+       ========================================================================= -->
+  <div class="admin-modal-backdrop" id="find-pass-modal" aria-hidden="true" role="dialog">
+    <div class="admin-modal-box" style="max-width: 520px; background: #0c0c10; border: 1.5px solid var(--border-medium); padding: 2rem;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
+        <div>
+          <h2 style="font-family: var(--font-display); font-size: 1.5rem; margin: 0; color: #fff;">FIND OR CANCEL PASS</h2>
+          <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray);">PHONE &amp; OTP VERIFICATION</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="find-pass-modal-close" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+
+      <!-- Step 1: Request OTP -->
+      <div id="otp-step-phone">
+        <p style="font-size: 0.88rem; color: var(--color-gray); margin-bottom: 1.25rem;">
+          Enter the mobile number you used during registration to securely retrieve or cancel your passes.
+        </p>
+        <div class="form-group-full">
+          <label for="find-phone-input" class="form-label">REGISTERED MOBILE NUMBER</label>
+          <input type="tel" id="find-phone-input" class="editorial-input" placeholder="e.g. 9876543210" required>
+        </div>
+        <div id="find-phone-error" style="display: none; color: #f87171; font-family: var(--font-mono); font-size: 0.78rem; margin-top: 0.5rem;"></div>
+        <div style="margin-top: 1.5rem;">
+          <button type="button" class="btn-brutalist btn-primary" id="btn-send-find-otp" style="width: 100%; justify-content: center;">
+            SEND 6-DIGIT VERIFICATION CODE →
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 2: Verify OTP -->
+      <div id="otp-step-verify" style="display: none;">
+        <p style="font-size: 0.88rem; color: var(--color-gray); margin-bottom: 1.25rem;">
+          Enter the 6-digit verification code sent to <strong id="otp-phone-display" style="color: #fff;"></strong>.
+        </p>
+        <div id="dev-otp-pill" style="display: none; background: rgba(59,130,246,0.15); border: 1px solid #3b82f6; color: #60a5fa; padding: 0.5rem; font-family: var(--font-mono); font-size: 0.78rem; margin-bottom: 1rem; border-radius: 4px;"></div>
+        <div class="form-group-full">
+          <label for="find-otp-input" class="form-label">ENTER 6-DIGIT CODE</label>
+          <input type="text" id="find-otp-input" class="editorial-input" placeholder="e.g. 123456" maxlength="6" style="letter-spacing: 0.3em; font-size: 1.2rem; text-align: center;">
+        </div>
+        <div id="find-otp-error" style="display: none; color: #f87171; font-family: var(--font-mono); font-size: 0.78rem; margin-top: 0.5rem;"></div>
+        <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
+          <button type="button" class="btn-brutalist btn-secondary btn-sm" id="btn-otp-back">← Back</button>
+          <button type="button" class="btn-brutalist btn-primary" id="btn-verify-find-otp" style="flex: 1; justify-content: center;">
+            VERIFY &amp; ACCESS PASSES →
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Passes Result View -->
+      <div id="otp-step-results" style="display: none;">
+        <h4 style="font-family: var(--font-heading); font-size: 1.1rem; color: #fff; margin-bottom: 0.75rem;">YOUR ACTIVE PASSES</h4>
+        <div id="student-passes-list" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem;">
+          <!-- Injected via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Bar -->
+  <div class="toast-notice" id="toast-notice" role="status" aria-live="polite"></div>
+
+  <!-- Supabase Integration -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+
+  <!-- Page Logic -->
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      let eventId = urlParams.get('id');
+
+      // Support path routing e.g. /event/evt-001
+      if (!eventId) {
+        const parts = window.location.pathname.split('/');
+        const lastPart = parts[parts.length - 1];
+        if (lastPart && lastPart !== 'event' && lastPart !== 'event.html') {
+          eventId = lastPart;
+        }
+      }
+
+      const loadingView = document.getElementById('event-loading-view');
+      const errorView = document.getElementById('event-error-view');
+      const contentView = document.getElementById('event-content-view');
+      const errorMsg = document.getElementById('event-error-msg');
+
+      let currentEvent = null;
+
+      const showToast = (msg, type = 'success') => {
+        const t = document.getElementById('toast-notice');
+        if (!t) return;
+        t.textContent = msg;
+        t.className = `toast-notice active toast-${type}`;
+        setTimeout(() => t.classList.remove('active'), 3500);
+      };
+
+      const findEventLocally = async (targetId) => {
+        // Direct Supabase query
+        if (window.QC_SUPABASE && window.QC_SUPABASE.isConfigured()) {
+          try {
+            const sbEvents = await window.QC_SUPABASE.getEvents();
+            if (Array.isArray(sbEvents) && sbEvents.length > 0) {
+              if (!targetId) return sbEvents[0];
+              const match = sbEvents.find(e => String(e.id) === String(targetId) || e.slug === targetId || e.event_code === targetId);
+              if (match) return match;
+            }
+          } catch (e) {}
+        }
+        // Direct localStorage query
+        try {
+          const raw = localStorage.getItem('qc_events_catalog');
+          if (raw) {
+            const list = JSON.parse(raw);
+            if (Array.isArray(list) && list.length > 0) {
+              if (!targetId) return list[0];
+              const match = list.find(e => String(e.id) === String(targetId) || e.slug === targetId || e.event_code === targetId);
+              if (match) return match;
+            }
+          }
+        } catch (e) {}
+        return null;
+      };
+
+      if (!eventId) {
+        // Fetch first available published event if none specified
+        try {
+          const res = await fetch('/api/events');
+          if (res.ok) {
+            const events = await res.json();
+            if (Array.isArray(events) && events.length > 0) {
+              eventId = events[0].id;
+            }
+          }
+        } catch (e) {}
+
+        if (!eventId) {
+          const firstLocal = await findEventLocally(null);
+          if (firstLocal) eventId = firstLocal.id;
+        }
+      }
+
+      if (!eventId) {
+        loadingView.style.display = 'none';
+        errorView.style.display = 'block';
+        return;
+      }
+
+      // Fetch Event Details (API -> Supabase -> LocalStorage fallback)
+      try {
+        let fetchedEv = null;
+        try {
+          const res = await fetch(`/api/events?id=${encodeURIComponent(eventId)}`);
+          if (res.ok) {
+            fetchedEv = await res.json();
+          }
+        } catch (apiErr) {}
+
+        if (!fetchedEv) {
+          fetchedEv = await findEventLocally(eventId);
+        }
+
+        if (!fetchedEv) {
+          throw new Error('Event not found or offline.');
+        }
+
+        // Normalize
+        currentEvent = {
+          ...fetchedEv,
+          id: fetchedEv.id,
+          name: fetchedEv.name || fetchedEv.title || 'Quantum Coders Sprint',
+          title: fetchedEv.name || fetchedEv.title || 'Quantum Coders Sprint',
+          description: fetchedEv.description || 'Hands-on technical sprint session.',
+          event_type: fetchedEv.event_type || fetchedEv.category || 'WORKSHOP',
+          banner_url: fetchedEv.banner_url || fetchedEv.cover_image || 'images/event%20images/Pydah%20hackathon.png',
+          date: fetchedEv.date || fetchedEv.event_date || new Date().toISOString().split('T')[0],
+          start_time: fetchedEv.start_time || '10:00:00',
+          end_time: fetchedEv.end_time || '18:00:00',
+          maximum_slots: parseInt(fetchedEv.maximum_slots || fetchedEv.max_capacity || 100, 10),
+          confirmed_count: parseInt(fetchedEv.confirmed_count || 0, 10),
+          venue: fetchedEv.venue || 'Auditorium',
+          organizer: fetchedEv.organizer || 'Quantum Coders',
+          eligibility: fetchedEv.eligibility || 'Open to all students',
+          registration_deadline: fetchedEv.registration_deadline || new Date().toISOString()
+        };
+
+        renderEventDetails(currentEvent);
+        loadingView.style.display = 'none';
+        contentView.style.display = 'block';
+      } catch (err) {
+        loadingView.style.display = 'none';
+        errorView.style.display = 'block';
+        errorMsg.textContent = err.message;
+      }
+
+      function renderEventDetails(ev) {
+        document.title = `${ev.name} // Quantum Coders Event`;
+        if (ev.banner_url) {
+          document.getElementById('ev-banner-img').src = ev.banner_url;
+        }
+        document.getElementById('ev-type-badge').textContent = (ev.event_type || 'WORKSHOP').toUpperCase();
+        document.getElementById('ev-title').textContent = ev.name;
+        document.getElementById('ev-description').textContent = ev.description;
+
+        document.getElementById('ev-date').textContent = ev.date;
+        document.getElementById('ev-time').textContent = `${ev.start_time} — ${ev.end_time}`;
+        document.getElementById('ev-venue').textContent = ev.venue;
+        document.getElementById('ev-eligibility').textContent = ev.eligibility || 'All Students';
+        document.getElementById('ev-organizer').textContent = ev.organizer || 'Quantum Coders';
+        document.getElementById('ev-deadline').textContent = new Date(ev.registration_deadline).toLocaleDateString(undefined, {
+          year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+
+        // Capacity
+        document.getElementById('ev-confirmed-count').textContent = ev.confirmed_count || 0;
+        document.getElementById('ev-total-slots').textContent = `/ ${ev.maximum_slots} SLOTS`;
+
+        const pct = Math.min(100, Math.round(((ev.confirmed_count || 0) / ev.maximum_slots) * 100));
+        document.getElementById('ev-capacity-bar').style.width = `${pct}%`;
+
+        const remaining = Math.max(0, ev.maximum_slots - (ev.confirmed_count || 0));
+        document.getElementById('ev-remaining-slots-label').textContent = `${remaining} Slots Remaining`;
+
+        const statusBadge = document.getElementById('ev-status-badge');
+        const regFormBox = document.getElementById('registration-form-box');
+        const waitlistBanner = document.getElementById('waitlist-notice-banner');
+        const deadlineBanner = document.getElementById('deadline-closed-banner');
+        const submitBtn = document.getElementById('btn-submit-registration');
+
+        if (ev.is_deadline_passed) {
+          statusBadge.textContent = 'REGISTRATION CLOSED';
+          statusBadge.style.background = 'rgba(239,68,68,0.2)';
+          statusBadge.style.color = '#f87171';
+          statusBadge.style.borderColor = '#ef4444';
+          deadlineBanner.style.display = 'block';
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'REGISTRATION CLOSED';
+        } else if (ev.is_full) {
+          statusBadge.textContent = 'WAITLIST AVAILABLE';
+          statusBadge.style.background = 'rgba(251,191,36,0.2)';
+          statusBadge.style.color = '#fbbf24';
+          statusBadge.style.borderColor = '#fbbf24';
+          waitlistBanner.style.display = 'block';
+          document.getElementById('ev-waitlist-label').style.display = 'inline';
+          submitBtn.textContent = 'JOIN PRIORITY WAITLIST →';
+        } else if (!ev.is_registration_open) {
+          statusBadge.textContent = 'REGISTRATION PAUSED';
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'REGISTRATION PAUSED';
+        }
+
+        // Render Dynamic Custom Fields
+        const customContainer = document.getElementById('dynamic-custom-fields-container');
+        customContainer.innerHTML = '';
+        if (Array.isArray(ev.custom_fields) && ev.custom_fields.length > 0) {
+          ev.custom_fields.forEach((f) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'form-group-full';
+            wrap.style.marginTop = '1rem';
+
+            const label = document.createElement('label');
+            label.className = 'form-label';
+            label.textContent = `${f.field_name.toUpperCase()} ${f.is_required ? '*' : ''}`;
+
+            let input;
+            if (f.field_type === 'textarea') {
+              input = document.createElement('textarea');
+              input.className = 'editorial-textarea';
+            } else if (f.field_type === 'select') {
+              input = document.createElement('select');
+              input.className = 'editorial-select';
+              (f.field_options || []).forEach((opt) => {
+                const o = document.createElement('option');
+                o.value = opt;
+                o.textContent = opt;
+                input.appendChild(o);
+              });
+            } else {
+              input = document.createElement('input');
+              input.type = f.field_type === 'number' ? 'number' : (f.field_type === 'url' ? 'url' : 'text');
+              input.className = 'editorial-input';
+            }
+
+            input.id = `custom-f-${f.field_name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            input.setAttribute('data-field-name', f.field_name);
+            if (f.is_required) input.required = true;
+
+            wrap.appendChild(label);
+            wrap.appendChild(input);
+            customContainer.appendChild(wrap);
+          });
+        }
+      }
+
+      // Smooth jump to register
+      const jumpBtn = document.getElementById('btn-jump-to-register');
+      if (jumpBtn) {
+        jumpBtn.addEventListener('click', () => {
+          document.getElementById('register-section').scrollIntoView({ behavior: 'smooth' });
+        });
+      }
+
+      // Registration Form Submission
+      const regForm = document.getElementById('event-reg-form');
+      const regError = document.getElementById('reg-error-msg');
+      const passSuccessView = document.getElementById('pass-success-view');
+
+      if (regForm) {
+        regForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          regError.style.display = 'none';
+
+          const name = document.getElementById('reg-name').value.trim();
+          const section = document.getElementById('reg-section').value.trim();
+          const phone = document.getElementById('reg-phone').value.trim();
+          const email = document.getElementById('reg-email').value.trim();
+          const year = document.getElementById('reg-year').value;
+
+          // Collect Custom Fields
+          const custom_responses = {};
+          const customInputs = document.querySelectorAll('#dynamic-custom-fields-container [data-field-name]');
+          customInputs.forEach((inp) => {
+            custom_responses[inp.getAttribute('data-field-name')] = inp.value.trim();
+          });
+
+          const submitBtn = document.getElementById('btn-submit-registration');
+          const originalBtnText = submitBtn.textContent;
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'TRANSACTING REGISTRATION...';
+
+          try {
+            let result = null;
+            let apiAvailable = true;
+
+            try {
+              const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  event_id: currentEvent.id,
+                  name,
+                  section,
+                  phone,
+                  email,
+                  year,
+                  custom_responses
+                })
+              });
+
+              if (res.ok) {
+                result = await res.json();
+              } else if (res.status === 404 || res.status === 502) {
+                apiAvailable = false;
+              } else {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || 'Registration failed');
+              }
+            } catch (netErr) {
+              if (netErr.message && !netErr.message.includes('fetch')) {
+                throw netErr;
+              }
+              apiAvailable = false;
+            }
+
+            // Client-side / Direct Supabase Fallback when serverless API is offline
+            if (!result && !apiAvailable) {
+              console.info('[Quantum Coders] Processing registration via direct client pipeline.');
+              const cleanPhone = phone.replace(/[^0-9+]/g, '').trim();
+              const rid = `QC${Math.floor(100 + Math.random() * 900)}`;
+              const isWaitlist = (currentEvent.confirmed_count || 0) >= (currentEvent.maximum_slots || 100);
+              const status = isWaitlist ? 'WAITLIST' : 'CONFIRMED';
+              const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(currentEvent.id);
+
+              const newReg = {
+                registration_id: rid,
+                event_id: currentEvent.id,
+                name,
+                section,
+                phone: cleanPhone,
+                email,
+                year,
+                status,
+                attendance_status: 'PENDING',
+                created_at: new Date().toISOString()
+              };
+
+              // Try Supabase direct insertion
+              if (window.QC_SUPABASE && window.QC_SUPABASE.isConfigured() && isUuid) {
+                try {
+                  const sb = window.QC_SUPABASE.getClient();
+                  if (sb) {
+                    await sb.from('registrations').insert([newReg]);
+                  }
+                } catch (sbErr) {
+                  console.warn('[Quantum Coders] Supabase direct registration insert:', sbErr);
+                }
+              }
+
+              // Save to localStorage registrations
+              try {
+                const regs = JSON.parse(localStorage.getItem('qc_registrations_catalog') || '[]');
+                regs.unshift(newReg);
+                localStorage.setItem('qc_registrations_catalog', JSON.stringify(regs));
+              } catch (e) {}
+
+              // Update event counts in localStorage
+              if (!isWaitlist) {
+                try {
+                  currentEvent.confirmed_count = (currentEvent.confirmed_count || 0) + 1;
+                  const allEvs = JSON.parse(localStorage.getItem('qc_events_catalog') || '[]');
+                  const idx = allEvs.findIndex(e => String(e.id) === String(currentEvent.id));
+                  if (idx !== -1) {
+                    allEvs[idx].confirmed_count = currentEvent.confirmed_count;
+                    localStorage.setItem('qc_events_catalog', JSON.stringify(allEvs));
+                  }
+                } catch (e) {}
+              }
+
+              result = {
+                status,
+                registration: newReg,
+                event: currentEvent,
+                verification_url: `${window.location.origin}/verify?rid=${rid}`,
+                pass_token: `token_${rid}_${Date.now()}`
+              };
+            }
+
+            if (!result) {
+              throw new Error('Registration could not be completed. Please try again.');
+            }
+
+            // Success! Render Pass
+            renderEventPass(result);
+            document.getElementById('registration-form-box').style.display = 'none';
+            passSuccessView.style.display = 'block';
+            passSuccessView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            showToast(`Registered successfully as ${result.status}!`);
+          } catch (err) {
+            regError.textContent = err.message;
+            regError.style.display = 'block';
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalBtnText;
+          }
+        });
+      }
+
+      function renderEventPass(data) {
+        const reg = data.registration;
+        const ev = data.event;
+
+        document.getElementById('pass-display-event-name').textContent = ev.name.toUpperCase();
+        document.getElementById('pass-display-student-name').textContent = reg.name.toUpperCase();
+        document.getElementById('pass-display-rid').textContent = reg.registration_id;
+        document.getElementById('pass-display-sec-year').textContent = `${reg.section} • ${reg.year}`.toUpperCase();
+        document.getElementById('pass-display-venue').textContent = ev.venue.toUpperCase();
+        document.getElementById('pass-display-date').textContent = ev.date;
+        document.getElementById('pass-display-time').textContent = ev.start_time;
+
+        const pill = document.getElementById('pass-status-pill');
+        if (data.status === 'WAITLIST') {
+          pill.textContent = '⏳ WAITLIST PRIORITY PASS';
+          pill.style.background = 'rgba(251,191,36,0.15)';
+          pill.style.borderColor = '#fbbf24';
+          pill.style.color = '#fbbf24';
+        } else {
+          pill.textContent = '✓ CONFIRMED ENTRY PASS';
+          pill.style.background = 'rgba(16,185,129,0.15)';
+          pill.style.borderColor = '#10b981';
+          pill.style.color = '#34d399';
+        }
+
+        // Render QR Code
+        const qrContainer = document.getElementById('pass-qr-container');
+        qrContainer.innerHTML = '';
+        if (window.QRCode) {
+          new window.QRCode(qrContainer, {
+            text: data.qr_payload,
+            width: 140,
+            height: 140,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: window.QRCode.CorrectLevel.H
+          });
+        }
+      }
+
+      // Register another student
+      document.getElementById('btn-new-reg-another').addEventListener('click', () => {
+        regForm.reset();
+        passSuccessView.style.display = 'none';
+        document.getElementById('registration-form-box').style.display = 'block';
+      });
+
+      // -----------------------------------------------------------------------
+      // Find My Pass Modal Logic (Phone + OTP)
+      // -----------------------------------------------------------------------
+      const findModal = document.getElementById('find-pass-modal');
+      const openFindBtn = document.getElementById('btn-open-find-pass');
+      const closeFindBtn = document.getElementById('find-pass-modal-close');
+
+      if (openFindBtn) {
+        openFindBtn.addEventListener('click', () => {
+          findModal.classList.add('active');
+          document.getElementById('otp-step-phone').style.display = 'block';
+          document.getElementById('otp-step-verify').style.display = 'none';
+          document.getElementById('otp-step-results').style.display = 'none';
+        });
+      }
+
+      if (closeFindBtn) {
+        closeFindBtn.addEventListener('click', () => {
+          findModal.classList.remove('active');
+        });
+      }
+
+      let activeSearchPhone = '';
+
+      // Send OTP
+      document.getElementById('btn-send-find-otp').addEventListener('click', async () => {
+        const phone = document.getElementById('find-phone-input').value.trim();
+        const err = document.getElementById('find-phone-error');
+        err.style.display = 'none';
+
+        if (phone.length < 10) {
+          err.textContent = 'Please enter a valid 10-digit mobile number.';
+          err.style.display = 'block';
+          return;
+        }
+
+        activeSearchPhone = phone;
+        const btn = document.getElementById('btn-send-find-otp');
+        btn.disabled = true;
+        btn.textContent = 'SENDING OTP...';
+
+        try {
+          const res = await fetch('/api/otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'send', phone, purpose: 'RETRIEVE_PASS' })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
+
+          document.getElementById('otp-step-phone').style.display = 'none';
+          document.getElementById('otp-step-verify').style.display = 'block';
+          document.getElementById('otp-phone-display').textContent = phone;
+
+          if (data.dev_preview_code) {
+            const devPill = document.getElementById('dev-otp-pill');
+            devPill.textContent = `Dev/Testing Verification Code: ${data.dev_preview_code}`;
+            devPill.style.display = 'block';
+          }
+          showToast('OTP sent successfully!');
+        } catch (e) {
+          err.textContent = e.message;
+          err.style.display = 'block';
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'SEND 6-DIGIT VERIFICATION CODE →';
+        }
+      });
+
+      // Verify OTP and List Passes
+      document.getElementById('btn-verify-find-otp').addEventListener('click', async () => {
+        const otp = document.getElementById('find-otp-input').value.trim();
+        const err = document.getElementById('find-otp-error');
+        err.style.display = 'none';
+
+        if (otp.length < 4) {
+          err.textContent = 'Please enter the verification code.';
+          err.style.display = 'block';
+          return;
+        }
+
+        const btn = document.getElementById('btn-verify-find-otp');
+        btn.disabled = true;
+        btn.textContent = 'VERIFYING...';
+
+        try {
+          const res = await fetch('/api/otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'verify',
+              phone: activeSearchPhone,
+              otp,
+              purpose: 'RETRIEVE_PASS'
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Verification failed');
+
+          document.getElementById('otp-step-verify').style.display = 'none';
+          document.getElementById('otp-step-results').style.display = 'block';
+          renderRetrievedPasses(data.passes || []);
+        } catch (e) {
+          err.textContent = e.message;
+          err.style.display = 'block';
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'VERIFY & ACCESS PASSES →';
+        }
+      });
+
+      document.getElementById('btn-otp-back').addEventListener('click', () => {
+        document.getElementById('otp-step-verify').style.display = 'none';
+        document.getElementById('otp-step-phone').style.display = 'block';
+      });
+
+      function renderRetrievedPasses(passes) {
+        const list = document.getElementById('student-passes-list');
+        list.innerHTML = '';
+        if (passes.length === 0) {
+          list.innerHTML = '<p style="color: var(--color-gray); font-size: 0.88rem;">No active passes found for this phone number.</p>';
+          return;
+        }
+
+        passes.forEach((p) => {
+          const item = document.createElement('div');
+          item.style.cssText = 'background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 1rem; text-align: left;';
+          item.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;">
+              <strong style="color: #fff; font-size: 1rem;">${p.event ? p.event.name : 'Event'}</strong>
+              <span style="font-family: var(--font-mono); font-size: 0.72rem; color: ${p.status === 'CONFIRMED' ? '#34d399' : '#fbbf24'}; font-weight: 700;">${p.status}</span>
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-gray); margin-bottom: 0.75rem;">
+              Pass ID: <span style="color: var(--color-blue); font-weight: 700;">${p.registration_id}</span> • ${p.name}
+            </div>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+              <button type="button" class="btn-brutalist btn-secondary btn-sm" onclick='viewSinglePass(${JSON.stringify(p)})'>
+                View Pass
+              </button>
+              <button type="button" class="btn-brutalist btn-outline btn-sm" style="color: #f87171; border-color: #ef4444;" onclick="cancelRegistrationPrompt('${p.registration_id}')">
+                Cancel Registration
+              </button>
+            </div>
+          `;
+          list.appendChild(item);
+        });
+      }
+
+      window.viewSinglePass = (pass) => {
+        findModal.classList.remove('active');
+        renderEventPass({
+          status: pass.status,
+          registration: pass,
+          event: pass.event,
+          qr_payload: pass.qr_payload
+        });
+        document.getElementById('registration-form-box').style.display = 'none';
+        passSuccessView.style.display = 'block';
+        passSuccessView.scrollIntoView({ behavior: 'smooth' });
+      };
+
+      window.cancelRegistrationPrompt = async (rid) => {
+        if (!confirm(`Are you sure you want to cancel pass ${rid}? Your pass will immediately become invalid, and if confirmed, your slot will be transferred to the first waitlisted student.`)) {
+          return;
+        }
+
+        const otp = prompt('Enter the 6-digit OTP code to confirm cancellation (or press OK to verify):');
+        if (!otp) return;
+
+        try {
+          const res = await fetch('/api/otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'verify',
+              phone: activeSearchPhone,
+              otp,
+              purpose: 'CANCEL_REGISTRATION',
+              registration_id: rid
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Cancellation failed');
+          showToast(`Pass ${rid} cancelled successfully.`, 'success');
+          findModal.classList.remove('active');
+          location.reload();
+        } catch (e) {
+          alert(`Cancellation error: ${e.message}`);
+        }
+      };
+    });
+  </script>
+</body>
+</html>

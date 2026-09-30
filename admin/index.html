@@ -46,8 +46,11 @@
       box-sizing: border-box !important;
     }
 
-    .security-gate-backdrop.unlocked {
+    .security-gate-backdrop.unlocked,
+    body.auth-cleared #security-gate {
       display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
     }
 
     .security-gate-box {
@@ -239,6 +242,187 @@
     </div>
   </div>
 
+  <!-- Immediate Zero-Delay Security Gate Controller (Runs before any CDN or external JS) -->
+  <script>
+    (function() {
+      const AUTH_KEY = 'qc_admin_auth';
+      const VALID_KEYS = [
+        'quantum2026', 'quantum', 'pydah2026', 'pydah', 
+        'admin2026', 'admin', 'qc2026', 'qc', 'quantumcoders'
+      ];
+
+      function doUnlock() {
+        sessionStorage.setItem(AUTH_KEY, 'true');
+        sessionStorage.setItem('qc_admin_authenticated', 'true');
+        document.body.classList.add('auth-cleared');
+        const gate = document.getElementById('security-gate');
+        if (gate) {
+          gate.classList.add('unlocked');
+          gate.style.setProperty('display', 'none', 'important');
+        }
+      }
+
+      function doLock() {
+        sessionStorage.removeItem(AUTH_KEY);
+        sessionStorage.removeItem('qc_admin_authenticated');
+        localStorage.removeItem(AUTH_KEY);
+        localStorage.removeItem('qc_admin_authenticated');
+        document.body.classList.remove('auth-cleared');
+        const gate = document.getElementById('security-gate');
+        if (gate) {
+          gate.classList.remove('unlocked');
+          gate.style.removeProperty('display');
+          gate.style.setProperty('display', 'flex', 'important');
+        }
+      }
+
+      // Purge any persistent authorization from previous visits to guarantee the lock popup is shown
+      localStorage.removeItem(AUTH_KEY);
+      localStorage.removeItem('qc_admin_authenticated');
+
+      // Check URL parameter: if lock requested or fresh load, always display lock gate
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('lock') === 'true' || window.location.hash === '#lock' || sessionStorage.getItem(AUTH_KEY) !== 'true') {
+        doLock();
+      } else {
+        doUnlock();
+      }
+
+      // Bind instant submit handler
+      const secForm = document.getElementById('security-form');
+      const passInp = document.getElementById('admin-passcode');
+      const errEl = document.getElementById('security-error');
+
+      if (secForm) {
+        secForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const val = (passInp ? passInp.value : '').trim().toLowerCase();
+          const customKey = (localStorage.getItem('qc_admin_custom_passcode') || '').trim().toLowerCase();
+          
+          if (VALID_KEYS.includes(val) || (customKey && val === customKey)) {
+            doUnlock();
+            if (typeof window.showToast === 'function') {
+              window.showToast('Access Granted. Welcome to Cadre Command.', 'success');
+            }
+          } else {
+            if (errEl) errEl.classList.add('visible');
+            if (passInp) {
+              passInp.value = '';
+              passInp.focus();
+            }
+          }
+          return false;
+        });
+      }
+
+      // Immediate tab switcher delegation so navbar clicks always work immediately
+      const TAB_VIEW_MAP = {
+        'dashboard': 'view-dashboard',
+        'events': 'view-events',
+        'event-reg': 'view-event-registrations',
+        'scanner': 'view-scanner',
+        'attendance': 'view-attendance',
+        'gallery': 'view-gallery',
+        'registrations': 'view-registrations',
+        'settings': 'view-settings'
+      };
+
+      document.addEventListener('click', function(e) {
+        // Tab navigation buttons
+        const tabBtn = e.target.closest('.admin-tab-btn');
+        if (tabBtn) {
+          const tabId = tabBtn.getAttribute('data-tab') || tabBtn.id.replace('tab-', '').replace('-btn', '');
+          if (tabId) {
+            if (typeof window.switchConsoleTab === 'function') {
+              window.switchConsoleTab(tabId);
+              return;
+            }
+            document.querySelectorAll('.admin-tab-btn').forEach(function(b) {
+              const bTab = b.getAttribute('data-tab') || b.id.replace('tab-', '').replace('-btn', '');
+              b.classList.toggle('active', bTab === tabId);
+            });
+            const targetViewId = TAB_VIEW_MAP[tabId];
+            document.querySelectorAll('.admin-view-panel').forEach(function(p) {
+              const isAct = p.id === targetViewId;
+              p.classList.toggle('active', isAct);
+              p.style.display = isAct ? 'block' : 'none';
+            });
+            return;
+          }
+        }
+
+        // Modal triggers: Create Event
+        const createEvtBtn = e.target.closest('#dash-btn-create-event, #btn-create-event-modal');
+        if (createEvtBtn) {
+          e.preventDefault();
+          if (typeof window.openCreateEventModal === 'function') {
+            window.openCreateEventModal();
+          } else {
+            const m = document.getElementById('event-crud-modal');
+            if (m) { m.classList.add('active'); m.style.display = 'flex'; }
+          }
+          return;
+        }
+
+        // Action: Launch Scanner
+        const openScannerBtn = e.target.closest('#dash-btn-open-scanner');
+        if (openScannerBtn) {
+          e.preventDefault();
+          if (typeof window.switchConsoleTab === 'function') {
+            window.switchConsoleTab('scanner');
+          } else {
+            document.querySelectorAll('.admin-tab-btn').forEach(function(b) {
+              b.classList.toggle('active', b.id === 'tab-scanner-btn');
+            });
+            document.querySelectorAll('.admin-view-panel').forEach(function(p) {
+              const isAct = p.id === 'view-scanner';
+              p.classList.toggle('active', isAct);
+              p.style.display = isAct ? 'block' : 'none';
+            });
+          }
+          return;
+        }
+
+        // Modal triggers: Manual Student
+        const manualStudentBtn = e.target.closest('#btn-manual-add-student');
+        if (manualStudentBtn) {
+          e.preventDefault();
+          const m = document.getElementById('manual-student-modal');
+          if (m) { m.classList.add('active'); m.style.display = 'flex'; }
+          return;
+        }
+
+        // Modal triggers: New Gallery Event
+        const newGalleryEvtBtn = e.target.closest('#btn-new-event');
+        if (newGalleryEvtBtn) {
+          e.preventDefault();
+          const m = document.getElementById('event-modal');
+          if (m) { m.classList.add('active'); m.style.display = 'flex'; }
+          return;
+        }
+
+        // Modal close buttons & backdrop click
+        if (e.target.matches('.modal-close-btn') || e.target.closest('.modal-close-btn') || (e.target.id && (e.target.id.endsWith('-modal-cancel') || e.target.id.endsWith('-cancel')))) {
+          const m = e.target.closest('.admin-modal-backdrop');
+          if (m) {
+            m.classList.remove('active');
+            m.style.removeProperty('display');
+          }
+          return;
+        }
+        if (e.target.classList.contains('admin-modal-backdrop')) {
+          e.target.classList.remove('active');
+          e.target.style.removeProperty('display');
+          return;
+        }
+      });
+
+      window.__qcUnlock = doUnlock;
+      window.__qcLock = doLock;
+    })();
+  </script>
+
   <!-- =========================================================================
        00. ADMIN HEADER
        ========================================================================= -->
@@ -258,18 +442,33 @@
 
       <div class="admin-header-actions">
         <!-- Section Navigation Switcher -->
-        <nav class="admin-tab-nav" aria-label="Console Navigation">
-          <button type="button" class="admin-tab-btn active" id="tab-gallery-btn">
-            🖼️ Events Gallery
+        <nav class="admin-tab-nav" aria-label="Console Navigation" id="admin-main-nav">
+          <button type="button" class="admin-tab-btn active" id="tab-dashboard-btn" data-tab="dashboard">
+            📊 Dashboard
           </button>
-          <button type="button" class="admin-tab-btn" id="tab-registrations-btn">
-            🎓 Student Registrations <span class="admin-tab-badge" id="tab-pending-badge">0</span>
+          <button type="button" class="admin-tab-btn" id="tab-events-btn" data-tab="events">
+            📅 Events
+          </button>
+          <button type="button" class="admin-tab-btn" id="tab-event-reg-btn" data-tab="event-reg">
+            🎟️ Passes <span class="admin-tab-badge badge-zero" id="tab-event-reg-badge">0</span>
+          </button>
+          <button type="button" class="admin-tab-btn" id="tab-scanner-btn" data-tab="scanner">
+            🔍 Scanner
+          </button>
+          <button type="button" class="admin-tab-btn" id="tab-attendance-btn" data-tab="attendance">
+            📋 Attendance
+          </button>
+          <button type="button" class="admin-tab-btn" id="tab-gallery-btn" data-tab="gallery">
+            🖼️ Gallery
+          </button>
+          <button type="button" class="admin-tab-btn" id="tab-registrations-btn" data-tab="registrations">
+            🎓 Cadre <span class="admin-tab-badge" id="tab-pending-badge">0</span>
+          </button>
+          <button type="button" class="admin-tab-btn" id="tab-settings-btn" data-tab="settings">
+            ⚙️ Controls
           </button>
         </nav>
 
-        <a href="../index.html?launch=true" class="btn-brutalist btn-primary btn-sm" target="_blank" rel="noopener" style="background: #2563eb; color: #fff;">
-          🚀 Launch Mode
-        </a>
         <button type="button" class="btn-brutalist btn-outline btn-sm" id="btn-lock-console" title="Lock console and require passcode again">
           🔒 Lock
         </button>
@@ -282,9 +481,431 @@
 
   <main>
     <!-- =======================================================================
-         VIEW 1: EVENT GALLERY CONSOLE
+         VIEW 0: DASHBOARD TELEMETRY & COMMAND
          ======================================================================= -->
-    <div class="admin-view-panel active" id="view-gallery">
+    <div class="admin-view-panel active" id="view-dashboard">
+      <section class="dashboard-hero">
+        <div class="container">
+          <div class="hero-head-row">
+            <div>
+              <div class="admin-badge-tag" style="margin-bottom: 0.5rem; display: inline-block;">TELEMETRY // LIVE COMMAND</div>
+              <h1 class="dashboard-title">OPERATIONS <span style="color: var(--color-blue);">COMMAND</span></h1>
+              <p class="dashboard-desc">
+                Real-time metrics, event capacity, gate check-in status, and student admissions for <strong>Quantum Coders Club</strong>.
+              </p>
+            </div>
+            <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+              <button class="btn-brutalist btn-primary" id="dash-btn-create-event">
+                + Create Event
+              </button>
+              <button class="btn-brutalist btn-secondary" id="dash-btn-open-scanner">
+                🔍 Launch Scanner
+              </button>
+              <button class="btn-brutalist btn-secondary" id="dash-btn-export-all">
+                📥 System CSV Report
+              </button>
+            </div>
+          </div>
+
+          <!-- 8 KPI Cards Grid -->
+          <div class="dashboard-stats-grid">
+            <div class="kpi-card" style="border-left: 3px solid var(--color-blue);">
+              <div class="kpi-label">TOTAL EVENTS</div>
+              <div class="kpi-value" id="kpi-total-events">0</div>
+              <div class="kpi-sub">Flagships &amp; workshops</div>
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid #8B5CF6;">
+              <div class="kpi-label">TOTAL REGISTRATIONS</div>
+              <div class="kpi-value" id="kpi-total-regs" style="color: #A78BFA;">0</div>
+              <div class="kpi-sub">Across all events</div>
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid var(--color-green);">
+              <div class="kpi-label">CONFIRMED PASSES</div>
+              <div class="kpi-value" id="kpi-confirmed-passes" style="color: #34D399;">0</div>
+              <div class="kpi-sub">Guaranteed entry slots</div>
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid #F59E0B;">
+              <div class="kpi-label">WAITLIST QUEUE</div>
+              <div class="kpi-value" id="kpi-waitlist-queue" style="color: #FBBF24;">0</div>
+              <div class="kpi-sub">Auto-promoted on cancel</div>
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid #06B6D4;">
+              <div class="kpi-label">GATE CHECK-INS</div>
+              <div class="kpi-value" id="kpi-checkins-count" style="color: #22D3EE;">0</div>
+              <div class="kpi-sub">Present attendees</div>
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid #EC4899;">
+              <div class="kpi-label">ATTENDANCE RATE</div>
+              <div class="kpi-value" id="kpi-attendance-rate" style="color: #F472B6;">0%</div>
+              <div class="kpi-sub">Check-in vs Confirmed</div>
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid var(--color-orange);">
+              <div class="kpi-label">AVAILABLE CAPACITY</div>
+              <div class="kpi-value" id="kpi-open-capacity" style="color: #FB923C;">0</div>
+              <div class="kpi-sub">Remaining seat slots</div>
+            </div>
+            <div class="kpi-card" style="border-left: 3px solid #E2E8F0;">
+              <div class="kpi-label">STUDENT CADRE</div>
+              <div class="kpi-value" id="kpi-cadre-members">0</div>
+              <div class="kpi-sub">General club members</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Dashboard 2-column detail grid -->
+      <section class="container" style="margin-top: 1.5rem; margin-bottom: 4rem;">
+        <div class="dashboard-details-row">
+          <div class="dash-column-left">
+            <div class="panel-section-head">
+              <h2 class="panel-section-title">ACTIVE &amp; UPCOMING SPRINTS</h2>
+              <span class="panel-section-sub">MONITORED EVENT PIPELINE</span>
+            </div>
+            <div id="dash-upcoming-events-list" class="dash-events-stream">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
+
+          <div class="dash-column-right">
+            <div class="panel-section-head">
+              <h2 class="panel-section-title">RECENT ACTIVITY LOG</h2>
+              <span class="panel-section-sub">REAL-TIME REGISTRATIONS &amp; CHECK-INS</span>
+            </div>
+            <div id="dash-activity-log" class="dash-activity-stream">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- =======================================================================
+         VIEW 1: EVENT MANAGEMENT
+         ======================================================================= -->
+    <div class="admin-view-panel" id="view-events">
+      <section class="dashboard-hero">
+        <div class="container">
+          <div class="hero-head-row">
+            <div>
+              <div class="admin-badge-tag" style="margin-bottom: 0.5rem; display: inline-block;">EVENT LIFECYCLE CONTROLLER</div>
+              <h1 class="dashboard-title">EVENT <span style="color: var(--color-blue);">MANAGEMENT</span></h1>
+              <p class="dashboard-desc">
+                Schedule, configure capacity, define custom registration fields, and publish sprints for Quantum Coders.
+              </p>
+            </div>
+            <div>
+              <button class="btn-brutalist btn-primary" id="btn-create-event-modal">
+                + Create New Event
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container" style="margin-top: 1.5rem; margin-bottom: 4rem;">
+        <div class="toolbar-section">
+          <div class="search-filter-wrap">
+            <div class="search-input-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="event-mgmt-search" class="admin-search-input" placeholder="Search events by title, category, venue...">
+            </div>
+            <div class="reg-filter-buttons">
+              <button type="button" class="btn-filter-pill active" data-event-filter="all">All Events</button>
+              <button type="button" class="btn-filter-pill" data-event-filter="PUBLISHED">Published</button>
+              <button type="button" class="btn-filter-pill" data-event-filter="DRAFT">Drafts</button>
+              <button type="button" class="btn-filter-pill" data-event-filter="COMPLETED">Completed</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="events-mgmt-grid" id="events-mgmt-grid">
+          <!-- Dynamically populated event cards with capacity progress bar and action buttons -->
+        </div>
+      </section>
+    </div>
+
+    <!-- =======================================================================
+         VIEW 2: EVENT PASSES & REGISTRATIONS
+         ======================================================================= -->
+    <div class="admin-view-panel" id="view-event-registrations">
+      <section class="dashboard-hero">
+        <div class="container">
+          <div class="hero-head-row">
+            <div>
+              <div class="admin-badge-tag" style="margin-bottom: 0.5rem; display: inline-block;">PASSES &amp; WAITLIST PIPELINE</div>
+              <h1 class="dashboard-title">EVENT <span style="color: var(--color-blue);">PASSES</span></h1>
+              <p class="dashboard-desc">
+                Manage confirmed attendees, waitlist priority queue, cancellations, and download sanitized registration CSV exports.
+              </p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button class="btn-brutalist btn-secondary btn-sm" id="btn-export-passes-csv">
+                📥 Export Filtered CSV
+              </button>
+              <button class="btn-brutalist btn-secondary btn-sm" id="btn-export-waitlist-csv">
+                ⏳ Export Waitlist CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Registration Metrics Summary Strip -->
+          <div class="stats-counter-row" style="margin-top: 1.5rem;">
+            <div class="counter-box" style="border-left-color: var(--color-blue);">
+              <div class="counter-num" id="reg-stat-total">0</div>
+              <div class="counter-label">Total Passes Issued</div>
+            </div>
+            <div class="counter-box" style="border-left-color: var(--color-green);">
+              <div class="counter-num" id="reg-stat-confirmed" style="color: #34D399;">0</div>
+              <div class="counter-label">Confirmed Slots</div>
+            </div>
+            <div class="counter-box" style="border-left-color: #F59E0B;">
+              <div class="counter-num" id="reg-stat-waitlist" style="color: #FBBF24;">0</div>
+              <div class="counter-label">Waitlist Queue</div>
+            </div>
+            <div class="counter-box" style="border-left-color: var(--color-red);">
+              <div class="counter-num" id="reg-stat-cancelled" style="color: #F87171;">0</div>
+              <div class="counter-label">Cancelled Passes</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container" style="margin-top: 1.5rem; margin-bottom: 4rem;">
+        <div class="toolbar-section">
+          <div class="search-filter-wrap">
+            <div style="min-width: 240px;">
+              <select id="event-reg-filter-select" class="admin-select" style="font-weight: 700;">
+                <option value="all">-- All Events --</option>
+              </select>
+            </div>
+            <div class="search-input-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="event-reg-search" class="admin-search-input" placeholder="Search by name, phone, email, Pass ID...">
+            </div>
+            <div class="reg-filter-buttons">
+              <button type="button" class="btn-filter-pill active" data-pass-filter="all">All Passes</button>
+              <button type="button" class="btn-filter-pill pill-approved" data-pass-filter="CONFIRMED">Confirmed</button>
+              <button type="button" class="btn-filter-pill pill-pending" data-pass-filter="WAITLIST">Waitlist</button>
+              <button type="button" class="btn-filter-pill pill-rejected" data-pass-filter="CANCELLED">Cancelled</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive-wrapper" style="overflow-x: auto; background: #0E0E12; border: 1.5px solid var(--border-medium); border-radius: 4px;">
+          <table class="admin-data-table" id="event-passes-table">
+            <thead>
+              <tr>
+                <th>PASS ID</th>
+                <th>ATTENDEE</th>
+                <th>PHONE / EMAIL</th>
+                <th>EVENT</th>
+                <th>STATUS</th>
+                <th>SLOT / QUEUE</th>
+                <th>REGISTERED</th>
+                <th style="text-align: right;">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="event-passes-tbody">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- =======================================================================
+         VIEW 3: QR SCANNER & GATE CHECK-IN
+         ======================================================================= -->
+    <div class="admin-view-panel" id="view-scanner">
+      <section class="dashboard-hero">
+        <div class="container">
+          <div class="hero-head-row">
+            <div>
+              <div class="admin-badge-tag" style="margin-bottom: 0.5rem; display: inline-block;">SECURITY &amp; GATE VALIDATION</div>
+              <h1 class="dashboard-title">QR GATE <span style="color: var(--color-blue);">SCANNER</span></h1>
+              <p class="dashboard-desc">
+                High-speed camera check-in scanner. Detects forged passes, flags duplicate check-ins with timestamps, and records live attendance.
+              </p>
+            </div>
+            <div>
+              <button class="btn-brutalist btn-primary" id="btn-toggle-scanner">
+                📷 Start Camera Scanner
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container" style="margin-top: 1.5rem; margin-bottom: 4rem;">
+        <div class="scanner-layout-grid">
+          <!-- Left: Camera Viewfinder -->
+          <div class="scanner-camera-column">
+            <div class="scanner-viewfinder-card">
+              <div class="viewfinder-header">
+                <span class="live-dot"></span> OPTICAL QR RECEIVER
+                <span id="camera-status-pill" style="margin-left: auto; font-size: 0.7rem; color: var(--color-gray);">CAMERA IDLE</span>
+              </div>
+              <div id="qr-camera-viewport" class="camera-viewport-box">
+                <div class="viewport-placeholder-guide" id="viewport-placeholder">
+                  <div style="font-size: 3rem; margin-bottom: 1rem;">📷</div>
+                  <div style="font-weight: 700; margin-bottom: 0.5rem;">CAMERA STANDBY</div>
+                  <div style="color: var(--color-gray); font-size: 0.8rem; max-width: 300px; margin: 0 auto;">Click "Start Camera Scanner" above to initiate device camera for optical scanning.</div>
+                </div>
+              </div>
+              <div class="viewfinder-footer">
+                <button type="button" class="btn-brutalist btn-secondary btn-sm" id="btn-switch-camera" style="display: none;">
+                  🔄 Switch Camera
+                </button>
+                <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray); margin-left: auto;">
+                  Auto-focus • 1080p stream
+                </span>
+              </div>
+            </div>
+
+            <!-- Manual Entry Fallback -->
+            <div class="manual-checkin-card" style="margin-top: 1.5rem; background: #0E0E12; border: 1.5px solid var(--border-medium); padding: 1.5rem;">
+              <h3 style="font-family: var(--font-heading); font-size: 1.1rem; margin-bottom: 0.5rem;">⌨️ MANUAL ENTRY / PHONE LOOKUP</h3>
+              <p style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-gray); margin-bottom: 1rem;">
+                If QR code cannot be scanned, enter Registration ID (e.g. QCAIW101) or 10-digit Phone:
+              </p>
+              <form id="manual-verify-form" style="display: flex; gap: 0.5rem;">
+                <input type="text" id="manual-verify-input" class="admin-input" placeholder="Registration ID or Phone..." required>
+                <button type="submit" class="btn-brutalist btn-primary" style="white-space: nowrap;">
+                  Verify &amp; Check In →
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Right: Verification Card / Scan Result -->
+          <div class="scanner-result-column">
+            <div class="scan-result-card" id="scan-result-card">
+              <div class="scan-result-header" id="scan-result-header">
+                <span style="font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.15em;">SCAN STATUS</span>
+                <span class="status-badge-chip" id="scan-status-chip">STANDBY</span>
+              </div>
+
+              <div class="scan-result-body" id="scan-result-body">
+                <div class="scan-standby-state">
+                  <div style="font-size: 3rem; margin-bottom: 1rem;">🎫</div>
+                  <h3 style="font-family: var(--font-heading); font-size: 1.3rem; margin-bottom: 0.5rem;">WAITING FOR PASS SCAN</h3>
+                  <p style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-gray);">
+                    Present a digital student pass QR code in front of the lens, or use the manual search form.
+                  </p>
+                </div>
+              </div>
+
+              <div class="scan-result-footer" id="scan-result-footer" style="display: none;">
+                <!-- Dynamically populated action button -->
+              </div>
+            </div>
+
+            <!-- Recent Check-ins Ticker in this session -->
+            <div class="recent-checkins-card" style="margin-top: 1.5rem; background: #0E0E12; border: 1.5px solid var(--border-medium); padding: 1.25rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <h4 style="font-family: var(--font-heading); font-size: 0.95rem; margin: 0;">SESSION CHECK-IN STREAM</h4>
+                <span id="session-checkin-count" style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-green);">0 Verified</span>
+              </div>
+              <div id="session-checkins-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 200px; overflow-y: auto;">
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-gray); text-align: center; padding: 1rem;">
+                  No check-ins in this session yet.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- =======================================================================
+         VIEW 4: ATTENDANCE REGISTER
+         ======================================================================= -->
+    <div class="admin-view-panel" id="view-attendance">
+      <section class="dashboard-hero">
+        <div class="container">
+          <div class="hero-head-row">
+            <div>
+              <div class="admin-badge-tag" style="margin-bottom: 0.5rem; display: inline-block;">ATTENDANCE &amp; PARTICIPATION AUDIT</div>
+              <h1 class="dashboard-title">ATTENDANCE <span style="color: var(--color-blue);">REGISTER</span></h1>
+              <p class="dashboard-desc">
+                Review checked-in participants, verify gate timestamps, manually mark presence, and download audit sheets.
+              </p>
+            </div>
+            <div>
+              <button class="btn-brutalist btn-secondary btn-sm" id="btn-export-attendance-csv">
+                📥 Export Attendance CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Attendance KPI strip -->
+          <div class="stats-counter-row" style="margin-top: 1.5rem;">
+            <div class="counter-box" style="border-left-color: var(--color-blue);">
+              <div class="counter-num" id="att-count-registered">0</div>
+              <div class="counter-label">Total Confirmed</div>
+            </div>
+            <div class="counter-box" style="border-left-color: var(--color-green);">
+              <div class="counter-num" id="att-count-present" style="color: #34D399;">0</div>
+              <div class="counter-label">Present (Checked In)</div>
+            </div>
+            <div class="counter-box" style="border-left-color: var(--color-red);">
+              <div class="counter-num" id="att-count-absent" style="color: #F87171;">0</div>
+              <div class="counter-label">Absent / Pending</div>
+            </div>
+            <div class="counter-box" style="border-left-color: #8B5CF6;">
+              <div class="counter-num" id="att-count-rate" style="color: #A78BFA;">0%</div>
+              <div class="counter-label">Turnout Rate</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container" style="margin-top: 1.5rem; margin-bottom: 4rem;">
+        <div class="toolbar-section">
+          <div class="search-filter-wrap">
+            <div style="min-width: 240px;">
+              <select id="attendance-event-select" class="admin-select" style="font-weight: 700;">
+                <option value="all">-- All Events --</option>
+              </select>
+            </div>
+            <div class="search-input-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="attendance-search-input" class="admin-search-input" placeholder="Search by name, phone, Pass ID...">
+            </div>
+            <div class="reg-filter-buttons">
+              <button type="button" class="btn-filter-pill active" data-att-filter="all">All</button>
+              <button type="button" class="btn-filter-pill pill-approved" data-att-filter="PRESENT">Present</button>
+              <button type="button" class="btn-filter-pill pill-rejected" data-att-filter="ABSENT">Absent</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive-wrapper" style="overflow-x: auto; background: #0E0E12; border: 1.5px solid var(--border-medium); border-radius: 4px;">
+          <table class="admin-data-table" id="attendance-table">
+            <thead>
+              <tr>
+                <th>PASS ID</th>
+                <th>ATTENDEE NAME</th>
+                <th>PHONE</th>
+                <th>EVENT</th>
+                <th>STATUS</th>
+                <th>CHECKED IN AT</th>
+                <th>METHOD</th>
+                <th style="text-align: right;">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="attendance-tbody">
+              <!-- Dynamically populated attendance rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- =======================================================================
+         VIEW 5: EVENT GALLERY CONSOLE (ARCHIVE & MOMENTS)
+         ======================================================================= -->
+    <div class="admin-view-panel" id="view-gallery">
       <section class="dashboard-hero">
         <div class="container">
           <div class="hero-head-row">
@@ -451,6 +1072,125 @@
         <!-- Student Registrations Cards / Table -->
         <div class="registrations-list" id="registrations-list">
           <!-- Injected via admin.js -->
+        </div>
+      </section>
+    </div>
+
+    <!-- =======================================================================
+         VIEW 7: WEBSITE CONTROLS & SECTION TOGGLES
+         ======================================================================= -->
+    <div class="admin-view-panel" id="view-settings">
+      <section class="dashboard-hero">
+        <div class="container">
+          <div class="hero-head-row">
+            <div>
+              <div class="admin-badge-tag" style="margin-bottom: 0.5rem; display: inline-block;">SYSTEM CONTROLS &amp; VISIBILITY</div>
+              <h1 class="dashboard-title">WEBSITE <span style="color: var(--color-blue);">CONTROLS</span></h1>
+              <p class="dashboard-desc">
+                Toggle public website sections in real-time without modifying code. Manage visibility for recruitment, events, and galleries.
+              </p>
+            </div>
+            <div>
+              <button class="btn-brutalist btn-primary" id="btn-save-sections-config">
+                💾 Save Section Visibility
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container" style="margin-top: 1.5rem; margin-bottom: 4rem;">
+        <div class="settings-grid">
+          <!-- Section Toggles Card -->
+          <div class="settings-card">
+            <h3 class="settings-card-title">🌐 PUBLIC WEBSITE SECTIONS TOGGLE</h3>
+            <p class="settings-card-desc">
+              Instantly show or hide specific sections on the main landing page (<code>index.html</code>).
+            </p>
+
+            <div class="section-toggles-list" id="section-toggles-container">
+              <!-- Dynamically populated toggles for:
+                   hero, about, events, calendar, gallery, cadre, team, achievements, contact -->
+            </div>
+          </div>
+
+          <!-- Supabase Live Connection & Credentials Card -->
+          <div class="settings-card" style="border-left: 3px solid #10B981;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <h3 class="settings-card-title" style="margin: 0;">⚡ SUPABASE POSTGRESQL CONNECTION</h3>
+              <span id="supabase-live-badge" style="font-family: var(--font-mono); font-size: 0.72rem; padding: 2px 8px; border-radius: 3px; background: rgba(100,116,139,0.2); color: #94a3b8; border: 1px solid #475569;">
+                DISCONNECTED
+              </span>
+            </div>
+            <p class="settings-card-desc">
+              Connect your live Supabase database for real-time multi-device sync, cloud event persistence, and attendee pass management.
+            </p>
+
+            <form id="form-supabase-config" style="display: flex; flex-direction: column; gap: 0.9rem; margin-top: 1rem;">
+              <div>
+                <label for="cfg-supabase-url" class="admin-form-label" style="font-size: 0.75rem;">SUPABASE PROJECT URL *</label>
+                <input type="url" id="cfg-supabase-url" class="admin-input" placeholder="https://your-project.supabase.co" style="font-size: 0.82rem;" required>
+              </div>
+
+              <div>
+                <label for="cfg-supabase-key" class="admin-form-label" style="font-size: 0.75rem;">SUPABASE ANON (PUBLIC) KEY *</label>
+                <input type="password" id="cfg-supabase-key" class="admin-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." style="font-size: 0.82rem;" required>
+              </div>
+
+              <div id="supabase-test-feedback" style="display: none; padding: 0.6rem 0.8rem; font-family: var(--font-mono); font-size: 0.78rem; border-radius: 4px;"></div>
+
+              <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <button type="submit" class="btn-brutalist btn-primary btn-sm" id="btn-save-supabase-cfg" style="background: #10B981; border-color: #059669; color: #fff;">
+                  ⚡ Connect &amp; Save Credentials
+                </button>
+                <button type="button" class="btn-brutalist btn-secondary btn-sm" id="btn-test-supabase-cfg">
+                  🔍 Test Connection
+                </button>
+                <button type="button" class="btn-brutalist btn-danger btn-sm" id="btn-disconnect-supabase" style="margin-left: auto;">
+                  ✕ Disconnect
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Cloud & Database Status Card -->
+          <div class="settings-card">
+            <h3 class="settings-card-title">⚡ BACKEND &amp; STORAGE STATUS</h3>
+            <p class="settings-card-desc">
+              Connection health check for Supabase PostgreSQL and local storage mirrors.
+            </p>
+
+            <div class="system-status-list">
+              <div class="status-row">
+                <span class="status-label">Database Mode:</span>
+                <span class="status-value-pill" id="sys-db-status">SUPABASE / HYBRID</span>
+              </div>
+              <div class="status-row">
+                <span class="status-label">Vercel Serverless API:</span>
+                <span class="status-value-pill" style="color: #34D399; border-color: #059669;">ONLINE (/api/*)</span>
+              </div>
+              <div class="status-row">
+                <span class="status-label">Live BroadcastChannel:</span>
+                <span class="status-value-pill" id="sys-broadcast-status">ACTIVE</span>
+              </div>
+              <div class="status-row">
+                <span class="status-label">Default Admin Key:</span>
+                <span class="status-value-pill" style="color: #9CA3AF;">quantum2026</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 2rem; padding: 1rem; background: rgba(59, 130, 246, 0.08); border: 1px solid var(--border-medium); border-radius: 4px;">
+              <div style="font-family: var(--font-heading); font-size: 0.95rem; margin-bottom: 0.4rem; color: #60A5FA;">
+                DATABASE SCHEMA MIGRATION
+              </div>
+              <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-gray); margin-bottom: 0.8rem;">
+                Run the SQL script located at <code>supabase/schema.sql</code> in your Supabase SQL Editor to initialize or reset tables and triggers.
+              </p>
+              <button type="button" class="btn-brutalist btn-secondary btn-sm" id="btn-copy-schema-sql">
+                📋 Copy Schema Instructions
+              </button>
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -833,8 +1573,169 @@
     </div>
   </div>
 
+  <!-- =========================================================================
+       NEW: EVENT MANAGEMENT CRUD MODAL
+       ========================================================================= -->
+  <div class="admin-modal-backdrop" id="event-crud-modal" aria-hidden="true" role="dialog" aria-labelledby="crud-modal-title">
+    <div class="admin-modal-box" style="max-width: 820px;">
+      <div class="modal-header-bar">
+        <div>
+          <h2 class="modal-title" id="crud-modal-title">CREATE NEW EVENT</h2>
+          <span class="modal-subtitle">EVENT CAPACITY &amp; REGISTRATION CONTROLLER</span>
+        </div>
+        <button class="modal-close-btn" id="event-crud-modal-close" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body-scroll">
+        <!-- Critical Edit Warning Notice -->
+        <div id="event-edit-warning-box" style="display: none; padding: 1rem 1.25rem; background: rgba(239, 68, 68, 0.12); border: 1.5px solid #EF4444; border-radius: 4px; margin-bottom: 1.25rem;">
+          <div style="font-family: var(--font-heading); font-size: 1rem; color: #EF4444; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem;">
+            ⚠️ CAUTION: CRITICAL DETAILS UPDATE
+          </div>
+          <div style="font-family: var(--font-mono); font-size: 0.78rem; color: #FCA5A5; line-height: 1.5;" id="event-edit-warning-msg">
+            This event currently has active registrations. Changing Date, Venue, or reducing Max Capacity will alter details on existing digital passes.
+          </div>
+        </div>
+
+        <form id="event-crud-form" novalidate>
+          <input type="hidden" id="crud-event-id" value="">
+
+          <div class="form-group-full">
+            <label for="crud-event-title" class="admin-form-label">Event Title *</label>
+            <input type="text" id="crud-event-title" class="admin-input" placeholder="e.g. AI &amp; Web3 Buildathon 2026" required>
+          </div>
+
+          <div class="form-grid-2">
+            <div>
+              <label for="crud-event-category" class="admin-form-label">Category *</label>
+              <select id="crud-event-category" class="admin-select" required>
+                <option value="workshop">WORKSHOP (Technical Bootcamp)</option>
+                <option value="hackathon" selected>HACKATHON (Competitive Sprint)</option>
+                <option value="competition">COMPETITION / CTF</option>
+                <option value="seminar">SEMINAR &amp; TECH TALK</option>
+              </select>
+            </div>
+            <div>
+              <label for="crud-event-badge" class="admin-form-label">Badge Tag (e.g. FLAGSHIP // 36H)</label>
+              <input type="text" id="crud-event-badge" class="admin-input" placeholder="e.g. SPRINT // AI SPECIAL">
+            </div>
+          </div>
+
+          <div class="form-grid-3">
+            <div>
+              <label for="crud-event-date" class="admin-form-label">Event Date *</label>
+              <input type="date" id="crud-event-date" class="admin-input" required>
+            </div>
+            <div>
+              <label for="crud-event-start-time" class="admin-form-label">Start Time *</label>
+              <input type="time" id="crud-event-start-time" class="admin-input" required>
+            </div>
+            <div>
+              <label for="crud-event-end-time" class="admin-form-label">End Time</label>
+              <input type="time" id="crud-event-end-time" class="admin-input">
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div>
+              <label for="crud-event-venue" class="admin-form-label">Venue / Room *</label>
+              <input type="text" id="crud-event-venue" class="admin-input" placeholder="e.g. Seminar Hall 2 / Lab 404" required>
+            </div>
+            <div>
+              <label for="crud-event-capacity" class="admin-form-label">Max Slot Capacity (Guaranteed) *</label>
+              <input type="number" id="crud-event-capacity" class="admin-input" min="1" max="1000" value="100" required>
+            </div>
+          </div>
+
+          <div class="form-group-full">
+            <label for="crud-event-desc" class="admin-form-label">Short Summary Description *</label>
+            <textarea id="crud-event-desc" class="admin-textarea" style="height: 70px;" placeholder="Brief synopsis of what attendees will build, learn, or compete in..." required></textarea>
+          </div>
+
+          <div class="form-grid-2">
+            <div>
+              <label for="crud-event-cover" class="admin-form-label">Cover Image URL / Path</label>
+              <input type="text" id="crud-event-cover" class="admin-input" placeholder="e.g. assets/events/hackathon.jpg or https://...">
+            </div>
+            <div>
+              <label for="crud-event-status" class="admin-form-label">Lifecycle Status *</label>
+              <select id="crud-event-status" class="admin-select" required>
+                <option value="PUBLISHED" selected>PUBLISHED (Live for Registration)</option>
+                <option value="DRAFT">DRAFT (Hidden from Public)</option>
+                <option value="COMPLETED">COMPLETED (Past Event)</option>
+                <option value="CANCELLED">CANCELLED</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Dynamic Custom Registration Fields Section -->
+          <div style="margin-top: 1.5rem; padding: 1.25rem; background: #08080A; border: 1.5px dashed var(--border-medium); border-radius: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <div>
+                <h4 style="font-family: var(--font-heading); font-size: 1rem; color: #FFFFFF; margin: 0;">CUSTOM REGISTRATION QUESTIONS</h4>
+                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray);">Ask dynamic questions during student registration (e.g. T-Shirt size, GitHub link, team name).</div>
+              </div>
+              <button type="button" class="btn-brutalist btn-secondary btn-sm" id="btn-add-custom-field">
+                + Add Custom Question
+              </button>
+            </div>
+
+            <div id="custom-fields-builder-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <!-- Dynamic custom field rows -->
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer-bar">
+        <button type="button" class="btn-brutalist btn-secondary" id="event-crud-modal-cancel">
+          Cancel
+        </button>
+        <button type="submit" form="event-crud-form" class="btn-brutalist btn-primary" id="btn-save-crud-event">
+          💾 Save &amp; Publish Event
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       NEW: ADMIN EVENT PASS VIEWER MODAL
+       ========================================================================= -->
+  <div class="admin-modal-backdrop" id="admin-pass-modal" aria-hidden="true" role="dialog" aria-labelledby="admin-pass-modal-title">
+    <div class="admin-modal-box" style="max-width: 600px;">
+      <div class="modal-header-bar">
+        <div>
+          <h2 class="modal-title" id="admin-pass-modal-title">DIGITAL EVENT PASS</h2>
+          <span class="modal-subtitle">VERIFIED TICKET &amp; QR DOSSIER</span>
+        </div>
+        <button class="modal-close-btn" id="admin-pass-modal-close" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body-scroll" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+        <div id="admin-modal-pass-card" style="width: 100%; max-width: 440px; background: #0E0E12; border: 2px solid var(--color-blue); padding: 1.5rem; border-radius: 4px; box-shadow: 0 0 30px rgba(59, 130, 246, 0.2); text-align: left;">
+          <!-- Dynamically populated pass layout -->
+        </div>
+      </div>
+
+      <div class="modal-footer-bar" style="justify-content: space-between;">
+        <button type="button" class="btn-brutalist btn-secondary btn-sm" id="btn-print-admin-pass">
+          ⎙ Print Pass
+        </button>
+        <div style="display: flex; gap: 0.5rem;" id="admin-pass-actions-slot">
+          <!-- Dynamic promote / cancel buttons -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification -->
   <div class="admin-toast" id="admin-toast" role="status" aria-live="polite"></div>
+
+  <!-- External Library Dependencies: QR Code generation, Camera QR scanner, and Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../supabase-client.js"></script>
 
   <!-- Vanilla JavaScript Admin Engine with Multi-Path Fallback -->
   <script src="admin.js" onerror="if(!window.__adminLoaded){var s=document.createElement('script');s.src='/admin/admin.js';document.body.appendChild(s);}"></script>

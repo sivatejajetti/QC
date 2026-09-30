@@ -27,25 +27,32 @@ document.addEventListener('DOMContentLoaded', () => {
   const cursorDot = document.getElementById('cursor-dot');
   const cursorRing = document.getElementById('cursor-ring');
   const cursorText = document.getElementById('cursor-text');
-  const hasTouch = window.matchMedia('(hover: none) or (max-width: 992px)').matches;
 
-  if (!hasTouch && cursorDot && cursorRing) {
+  if (cursorDot && cursorRing) {
     let mouseX = window.innerWidth / 2;
     let mouseY = window.innerHeight / 2;
     let ringX = mouseX;
     let ringY = mouseY;
+    let isCursorActive = false;
 
     window.addEventListener('mousemove', (e) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
+
+      if (!isCursorActive) {
+        cursorDot.style.opacity = '1';
+        cursorRing.style.opacity = '1';
+        isCursorActive = true;
+      }
+
       cursorDot.style.left = `${mouseX}px`;
       cursorDot.style.top = `${mouseY}px`;
     });
 
     // Smooth spring trailing for ring
     const renderCursor = () => {
-      ringX += (mouseX - ringX) * 0.18;
-      ringY += (mouseY - ringY) * 0.18;
+      ringX += (mouseX - ringX) * 0.2;
+      ringY += (mouseY - ringY) * 0.2;
       cursorRing.style.left = `${ringX}px`;
       cursorRing.style.top = `${ringY}px`;
       requestAnimationFrame(renderCursor);
@@ -54,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Interactive Hover Triggers
     const hoverTargets = document.querySelectorAll(
-      'a, button, [data-cursor], .team-id-card, .gallery-item, .mission-card, .editorial-input, .editorial-select, .editorial-textarea'
+      'a, button, [data-cursor], .team-id-card, .gallery-item, .mission-card, .editorial-input, .editorial-select, .editorial-textarea, .cal-day-cell, .cal-event-chip'
     );
 
     hoverTargets.forEach((el) => {
@@ -69,6 +76,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cursorText) cursorText.textContent = 'EXPLORE';
       });
     });
+
+    // On touchstart, hide custom cursor to prevent lingering on mobile tap
+    window.addEventListener('touchstart', () => {
+      cursorDot.style.opacity = '0';
+      cursorRing.style.opacity = '0';
+      isCursorActive = false;
+    }, { passive: true });
   }
 
   // ----------------------------------------------------------------------------
@@ -79,6 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const mobileLinks = document.querySelectorAll('[data-nav-close]');
 
   const toggleMobileMenu = (open) => {
+    if (!mobileOverlay || !menuTrigger) return;
     const shouldOpen = open !== undefined ? open : !mobileOverlay.classList.contains('active');
     if (shouldOpen) {
       menuTrigger.classList.add('active');
@@ -96,16 +111,48 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   if (menuTrigger && mobileOverlay) {
-    menuTrigger.addEventListener('click', () => toggleMobileMenu());
+    menuTrigger.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleMobileMenu();
+    });
 
     const mobileCloseBtn = document.getElementById('mobile-nav-close');
     if (mobileCloseBtn) {
-      mobileCloseBtn.addEventListener('click', () => toggleMobileMenu(false));
+      mobileCloseBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleMobileMenu(false);
+      });
     }
 
     mobileLinks.forEach((link) => {
-      link.addEventListener('click', () => toggleMobileMenu(false));
+      link.addEventListener('click', () => {
+        toggleMobileMenu(false);
+      });
     });
+
+    // Close when tapping on overlay backdrop itself (outside links/content)
+    mobileOverlay.addEventListener('click', (e) => {
+      if (e.target === mobileOverlay) {
+        toggleMobileMenu(false);
+      }
+    });
+
+    // Mobile Find Pass Quick Action
+    const mobileFindPassBtn = document.getElementById('mobile-btn-find-pass');
+    if (mobileFindPassBtn) {
+      mobileFindPassBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleMobileMenu(false);
+        const findPassModal = document.getElementById('find-pass-modal');
+        if (findPassModal) {
+          findPassModal.classList.add('active');
+          findPassModal.setAttribute('aria-hidden', 'false');
+          document.body.style.overflow = 'hidden';
+        }
+      });
+    }
 
     // Close on Escape key
     window.addEventListener('keydown', (e) => {
@@ -164,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const heroCardInner = document.getElementById('hero-card-inner');
   const heroShapes = document.querySelectorAll('.hero-abstract-shape');
 
-  if (heroSection && !hasTouch) {
+  if (heroSection) {
     heroSection.addEventListener('mousemove', (e) => {
       const rect = heroSection.getBoundingClientRect();
       const x = e.clientX - rect.left - rect.width / 2;
@@ -851,7 +898,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   if (regForm) {
-    regForm.addEventListener('submit', (e) => {
+    regForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       let isValid = true;
@@ -918,7 +965,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // ----------------------------------------------------------------------
-      // Registration Submission with Admin Approval Pipeline
+      // Registration Submission with Online Supabase Pipeline
       // ----------------------------------------------------------------------
       const REG_STORAGE_KEY = 'qc_student_registrations';
       const REG_CHANNEL_NAME = 'qc_registration_channel';
@@ -943,21 +990,39 @@ document.addEventListener('DOMContentLoaded', () => {
         reviewedAt: null
       };
 
-      // Save to localStorage registrations array
+      // 1. Submit online to Supabase via serverless API
+      try {
+        const res = await fetch('/api/students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newRegistration)
+        });
+        if (res.ok) {
+          const serverRec = await res.json();
+          if (serverRec) {
+            Object.assign(newRegistration, serverRec);
+          }
+        }
+      } catch (netErr) {
+        console.warn('API /api/students network notice, proceeding:', netErr);
+      }
+
+      // 2. Cache in session/localStorage so the student's browser immediately tracks this ID
       try {
         let existingList = [];
         const stored = localStorage.getItem(REG_STORAGE_KEY);
         if (stored) {
           existingList = JSON.parse(stored);
         }
-        existingList.unshift(newRegistration);
-        localStorage.setItem(REG_STORAGE_KEY, JSON.stringify(existingList));
-        localStorage.setItem('qc_current_user_app_id', generatedAppId);
+        const filtered = existingList.filter(r => r.id !== newRegistration.id);
+        filtered.unshift(newRegistration);
+        localStorage.setItem(REG_STORAGE_KEY, JSON.stringify(filtered));
+        localStorage.setItem('qc_current_user_app_id', newRegistration.id);
       } catch (err) {
-        console.error('Failed to save registration:', err);
+        console.error('Local cache error:', err);
       }
 
-      // Broadcast to Admin Panel via BroadcastChannel
+      // 3. Broadcast to Admin Panel via BroadcastChannel
       try {
         if (typeof BroadcastChannel !== 'undefined') {
           const channel = new BroadcastChannel(REG_CHANNEL_NAME);
@@ -968,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', () => {
           });
         }
       } catch (err) {
-        console.warn('BroadcastChannel error:', err);
+        console.warn('BroadcastChannel notice:', err);
       }
 
       // Render the Pending Card State
@@ -980,7 +1045,7 @@ document.addEventListener('DOMContentLoaded', () => {
       membershipResult.classList.add('active');
       membershipResult.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-      showToast(`Application submitted! Awaiting Admin Approval in Admin Panel.`);
+      showToast(`Application submitted online! Awaiting Admin Approval.`);
     });
   }
 
@@ -1094,49 +1159,79 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Check Approval Status manually
-  const checkCurrentApprovalStatus = (showFeedback = true) => {
-    if (!currentActiveRegistration) {
-      const savedAppId = localStorage.getItem('qc_current_user_app_id');
-      if (savedAppId) {
-        try {
-          const list = JSON.parse(localStorage.getItem('qc_student_registrations') || '[]');
-          const found = list.find(r => r.id === savedAppId);
-          if (found) currentActiveRegistration = found;
-        } catch (e) {}
-      }
-    }
-
-    if (!currentActiveRegistration) {
+  // Check Approval Status manually from Cloud Supabase
+  const checkCurrentApprovalStatus = async (showFeedback = true) => {
+    let appId = currentActiveRegistration ? currentActiveRegistration.id : localStorage.getItem('qc_current_user_app_id');
+    if (!appId) {
       if (showFeedback) showToast('No active application found. Please register first.');
       return;
     }
 
-    // Refresh from localStorage
-    try {
-      const list = JSON.parse(localStorage.getItem('qc_student_registrations') || '[]');
-      const updated = list.find(r => r.id === currentActiveRegistration.id);
-      if (updated) {
-        const wasPending = currentActiveRegistration.status === 'pending';
-        currentActiveRegistration = updated;
-        renderCardFromRecord(updated);
+    let updated = null;
 
-        if (updated.status === 'approved') {
-          if (wasPending || showFeedback) {
-            showToast(`🎉 APPROVED! Member ID: ${updated.memberId} is active!`, 'success');
-          }
-        } else if (updated.status === 'pending') {
-          if (showFeedback) {
-            showToast(`⏳ Status: Still awaiting admin approval in Admin Panel.`);
-          }
-        } else {
-          if (showFeedback) {
-            showToast(`✕ Status: Application marked for revision.`);
+    // 1. Query online API /api/students
+    try {
+      const res = await fetch(`/api/students?id=${encodeURIComponent(appId)}`);
+      if (res.ok) {
+        updated = await res.json();
+      }
+    } catch (e) {}
+
+    // 2. Direct Supabase Client fallback
+    if (!updated && window.QC_SUPABASE && window.QC_SUPABASE.isConfigured()) {
+      try {
+        const client = window.QC_SUPABASE.getClient();
+        if (client) {
+          const { data } = await client.from('club_members').select('*').or(`id.eq.${appId},member_id.eq.${appId}`).maybeSingle();
+          if (data) {
+            updated = {
+              id: data.id,
+              memberId: data.member_id,
+              fullName: data.full_name,
+              email: data.email,
+              phone: data.phone,
+              college: data.college,
+              year: data.year,
+              branch: data.branch,
+              interest: data.interest,
+              statement: data.statement,
+              status: data.status,
+              appliedAt: new Date(data.applied_at).getTime(),
+              reviewedAt: data.reviewed_at ? new Date(data.reviewed_at).getTime() : null
+            };
           }
         }
+      } catch (e) {}
+    }
+
+    // 3. Local fallback if offline
+    if (!updated) {
+      try {
+        const list = JSON.parse(localStorage.getItem('qc_student_registrations') || '[]');
+        updated = list.find(r => r.id === appId);
+      } catch (e) {}
+    }
+
+    if (updated) {
+      const wasPending = currentActiveRegistration && currentActiveRegistration.status === 'pending';
+      currentActiveRegistration = updated;
+      renderCardFromRecord(updated);
+
+      if (updated.status === 'approved') {
+        if (wasPending || showFeedback) {
+          showToast(`🎉 APPROVED! Member ID: ${updated.memberId} is active!`, 'success');
+        }
+      } else if (updated.status === 'pending') {
+        if (showFeedback) {
+          showToast(`⏳ Status: Still awaiting admin approval in Admin Panel.`);
+        }
+      } else {
+        if (showFeedback) {
+          showToast(`✕ Status: Application marked for revision.`);
+        }
       }
-    } catch (err) {
-      console.error(err);
+    } else if (showFeedback) {
+      showToast('Application not found. Please verify your reference ID.');
     }
   };
 
@@ -1222,34 +1317,82 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (statusLookupForm) {
-    statusLookupForm.addEventListener('submit', (e) => {
+    statusLookupForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const val = (lookupInput ? lookupInput.value : '').trim().toLowerCase();
       if (!val) return;
 
-      try {
-        const list = JSON.parse(localStorage.getItem('qc_student_registrations') || '[]');
-        const found = list.find(r =>
-          (r.id && r.id.toLowerCase() === val) ||
-          (r.email && r.email.toLowerCase() === val) ||
-          (r.memberId && r.memberId.toLowerCase() === val)
-        );
+      let found = null;
 
-        if (found) {
-          closeStatusLookupModal();
-          regFormBox.style.display = 'none';
-          membershipResult.classList.add('active');
-          renderCardFromRecord(found);
-          membershipResult.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          showToast(`Loaded application for ${found.fullName}!`);
-        } else {
-          if (lookupErrorMsg) {
-            lookupErrorMsg.textContent = 'No application found with this email or Application ID. Please verify or register anew.';
-            lookupErrorMsg.style.display = 'block';
+      // 1. Query online API /api/students
+      try {
+        const res = await fetch(`/api/students?query=${encodeURIComponent(val)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            found = data[0];
+          } else if (data && data.id) {
+            found = data;
           }
         }
-      } catch (err) {
-        console.error(err);
+      } catch (err) {}
+
+      // 2. Direct Supabase query
+      if (!found && window.QC_SUPABASE && window.QC_SUPABASE.isConfigured()) {
+        try {
+          const client = window.QC_SUPABASE.getClient();
+          if (client) {
+            const { data } = await client.from('club_members')
+              .select('*')
+              .or(`id.ilike.%${val}%,member_id.ilike.%${val}%,email.ilike.%${val}%,phone.ilike.%${val}%`)
+              .limit(1);
+            if (data && data.length > 0) {
+              const d = data[0];
+              found = {
+                id: d.id,
+                memberId: d.member_id,
+                fullName: d.full_name,
+                email: d.email,
+                phone: d.phone,
+                college: d.college,
+                year: d.year,
+                branch: d.branch,
+                interest: d.interest,
+                statement: d.statement,
+                status: d.status,
+                appliedAt: new Date(d.applied_at).getTime(),
+                reviewedAt: d.reviewed_at ? new Date(d.reviewed_at).getTime() : null
+              };
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 3. Local fallback
+      if (!found) {
+        try {
+          const list = JSON.parse(localStorage.getItem('qc_student_registrations') || '[]');
+          found = list.find(r =>
+            (r.id && r.id.toLowerCase() === val) ||
+            (r.email && r.email.toLowerCase() === val) ||
+            (r.memberId && r.memberId.toLowerCase() === val)
+          );
+        } catch (err) {}
+      }
+
+      if (found) {
+        localStorage.setItem('qc_current_user_app_id', found.id);
+        closeStatusLookupModal();
+        regFormBox.style.display = 'none';
+        membershipResult.classList.add('active');
+        renderCardFromRecord(found);
+        membershipResult.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        showToast(`Loaded application for ${found.fullName}!`);
+      } else {
+        if (lookupErrorMsg) {
+          lookupErrorMsg.textContent = 'No application found online with this email or Application ID. Please verify or register anew.';
+          lookupErrorMsg.style.display = 'block';
+        }
       }
     });
   }
@@ -1575,1026 +1718,729 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ----------------------------------------------------------------------------
-  // 12. Ceremonial Launch Mode Controller (Multi-Device Realtime Sync)
+  // 12. Global Website Section Toggles Controller
   // ----------------------------------------------------------------------------
-  const launchOverlay = document.getElementById('launch-mode-overlay');
-  const launchCoreBtn = document.getElementById('launch-core-button');
-  const launchExitBtn = document.getElementById('launch-exit-btn');
-  const launchResetBtn = document.getElementById('launch-reset-btn');
-  const footerLaunchBtn = document.getElementById('footer-launch-trigger');
-  const launchHud = document.getElementById('launch-hud-overlay');
-  const launchHudStatus = document.getElementById('launch-hud-status');
-  const launchHudCount = document.getElementById('launch-hud-countdown');
-  const launchHudBar = document.getElementById('launch-hud-bar');
-  const launchCelebrateCard = document.getElementById('launch-celebrate-card');
-  const launchCanvas = document.getElementById('launch-canvas');
-
-  const LAUNCH_SYNC_TOPIC = 'qc-pydah-launch-sriram-2026';
-  let isLaunching = false;
-  let animFrameId = null;
-  let confettiParticles = [];
-  let ambientParticles = [];
-  let warpStars = [];
-  let shockwaves = [];
-  let supernovaFlash = { active: false, radius: 0, maxRadius: 0, alpha: 0, spikeAngle: 0 };
-  let warpSpeed = 0;
-  let targetWarpSpeed = 0;
-  let lastRemoteTriggerTime = 0;
-
-  // Web Audio Synthesizer Engine (Self-contained, zero external audio assets)
-  let sharedAudioCtx = null;
-  const getAudioContext = () => {
+  const initSectionToggles = async () => {
     try {
-      if (!sharedAudioCtx) {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) sharedAudioCtx = new AudioCtx();
-      }
-      if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
-        sharedAudioCtx.resume();
-      }
-      return sharedAudioCtx;
-    } catch (e) {
-      return null;
-    }
-  };
+      const res = await fetch('/api/sections');
+      if (!res.ok) return;
+      const sectionsMap = await res.json();
 
-  // Pre-unlock audio on any user interaction (essential for laptop/projector audio)
-  const unlockAudioOnce = () => {
-    getAudioContext();
-  };
-  window.addEventListener('click', unlockAudioOnce, { once: true });
-  window.addEventListener('touchstart', unlockAudioOnce, { once: true });
-  window.addEventListener('keydown', unlockAudioOnce, { once: true });
+      Object.entries(sectionsMap).forEach(([secKey, isEnabled]) => {
+        // Find DOM section (e.g. #calendar, #gallery, #team, #register, #contact, #about, #home)
+        let targetSec = document.getElementById(secKey);
+        if (!targetSec && secKey === 'events') targetSec = document.getElementById('calendar');
 
-  // 1. High-Tech Countdown Laser Blip
-  const playCountdownBlip = (count) => {
-    const ctx = getAudioContext();
-    if (!ctx) return;
-    try {
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      const freqs = { 5: 587, 4: 659, 3: 784, 2: 988, 1: 1318 };
-      const baseFreq = freqs[count] || 880;
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(baseFreq, now);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, now + 0.12);
-
-      gain.gain.setValueAtTime(0.3, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(now);
-      osc.stop(now + 0.24);
-    } catch (err) {}
-  };
-
-  // 2. Escalating Reactor Core Hyperdrive Charge (Scaled for 5-Second Countdown)
-  const playReactorCharge = () => {
-    const ctx = getAudioContext();
-    if (!ctx) return;
-    try {
-      const now = ctx.currentTime;
-      const osc1 = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const filter = ctx.createBiquadFilter();
-
-      osc1.type = 'sawtooth';
-      osc1.frequency.setValueAtTime(80, now);
-      osc1.frequency.exponentialRampToValueAtTime(880, now + 5.2);
-
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(160, now);
-      osc2.frequency.exponentialRampToValueAtTime(1760, now + 5.2);
-
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(200, now);
-      filter.frequency.exponentialRampToValueAtTime(4500, now + 5.2);
-      filter.Q.setValueAtTime(5, now);
-
-      gain.gain.setValueAtTime(0.01, now);
-      gain.gain.linearRampToValueAtTime(0.32, now + 1.0);
-      gain.gain.linearRampToValueAtTime(0.55, now + 4.8);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 5.4);
-
-      osc1.connect(filter);
-      osc2.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc1.start(now);
-      osc2.start(now);
-      osc1.stop(now + 5.5);
-      osc2.stop(now + 5.5);
-    } catch (err) {
-      console.warn('Audio charge error:', err);
-    }
-  };
-
-  // 3. Supernova 808 Sub-Bass Impact Boom & White Noise Detonation
-  const playExplosionBoom = () => {
-    const ctx = getAudioContext();
-    if (!ctx) return;
-    try {
-      const now = ctx.currentTime;
-
-      // Heavy 808 Sub-bass drop
-      const subOsc = ctx.createOscillator();
-      const subGain = ctx.createGain();
-      subOsc.type = 'sine';
-      subOsc.frequency.setValueAtTime(180, now);
-      subOsc.frequency.exponentialRampToValueAtTime(32, now + 1.4);
-
-      subGain.gain.setValueAtTime(0.85, now);
-      subGain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
-      subOsc.connect(subGain);
-      subGain.connect(ctx.destination);
-      subOsc.start(now);
-      subOsc.stop(now + 1.5);
-
-      // Noise crackle burst (rocket launch ignition roar)
-      const bufferSize = ctx.sampleRate * 0.8;
-      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const output = noiseBuffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        output[i] = Math.random() * 2 - 1;
-      }
-      const whiteNoise = ctx.createBufferSource();
-      whiteNoise.buffer = noiseBuffer;
-
-      const noiseFilter = ctx.createBiquadFilter();
-      noiseFilter.type = 'bandpass';
-      noiseFilter.frequency.setValueAtTime(1200, now);
-      noiseFilter.frequency.exponentialRampToValueAtTime(180, now + 0.8);
-      noiseFilter.Q.setValueAtTime(2.5, now);
-
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.4, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-
-      whiteNoise.connect(noiseFilter);
-      noiseFilter.connect(noiseGain);
-      noiseGain.connect(ctx.destination);
-      whiteNoise.start(now);
-      whiteNoise.stop(now + 0.85);
-    } catch (err) {}
-  };
-
-  // 4. Celebratory Triumphant Polyphonic Fanfare Chord Progression
-  const playLaunchFanfare = () => {
-    const ctx = getAudioContext();
-    if (!ctx) return;
-    try {
-      const now = ctx.currentTime;
-
-      // C-Major 9th celebratory fanfare arpeggio
-      const notes = [
-        { freq: 523.25, time: 0.00, gain: 0.28 }, // C5
-        { freq: 659.25, time: 0.07, gain: 0.28 }, // E5
-        { freq: 783.99, time: 0.14, gain: 0.30 }, // G5
-        { freq: 987.77, time: 0.21, gain: 0.30 }, // B5
-        { freq: 1046.5, time: 0.28, gain: 0.35 }, // C6
-        { freq: 1318.5, time: 0.35, gain: 0.32 }, // E6
-        { freq: 1567.9, time: 0.42, gain: 0.28 }  // G6
-      ];
-
-      notes.forEach((item) => {
-        const osc = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(item.freq, now + item.time);
-
-        osc2.type = 'sawtooth';
-        osc2.frequency.setValueAtTime(item.freq * 1.004, now + item.time); // rich chorus detune
-
-        gain.gain.setValueAtTime(0.001, now + item.time);
-        gain.gain.linearRampToValueAtTime(item.gain, now + item.time + 0.06);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + item.time + 2.5);
-
-        osc.connect(gain);
-        osc2.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(now + item.time);
-        osc2.start(now + item.time);
-        osc.stop(now + item.time + 2.6);
-        osc2.stop(now + item.time + 2.6);
-      });
-    } catch (err) {
-      console.warn('Fanfare audio error:', err);
-    }
-  };
-
-  // ============================================================================
-  // CINEMATIC CANVAS VFX SYSTEM (WARP SPEED, SHOCKWAVES, 3D RIBBONS)
-  // ============================================================================
-  const initCanvas = () => {
-    if (!launchCanvas) return;
-    launchCanvas.width = window.innerWidth;
-    launchCanvas.height = window.innerHeight;
-  };
-
-  const initWarpStars = () => {
-    warpStars = [];
-    const count = 220;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    for (let i = 0; i < count; i++) {
-      warpStars.push({
-        x: (Math.random() - 0.5) * w * 2,
-        y: (Math.random() - 0.5) * h * 2,
-        z: Math.random() * 1000 + 1,
-        pz: 1000,
-        color: Math.random() > 0.3 ? '#60a5fa' : (Math.random() > 0.5 ? '#a855f7' : '#ffffff')
-      });
-    }
-  };
-
-  const initAmbientDust = () => {
-    ambientParticles = [];
-    const count = window.innerWidth <= 768 ? 25 : 55;
-    for (let i = 0; i < count; i++) {
-      ambientParticles.push({
-        x: Math.random() * window.innerWidth,
-        y: Math.random() * window.innerHeight,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: (Math.random() - 0.5) * 0.5,
-        radius: Math.random() * 2.2 + 1,
-        color: Math.random() > 0.5 ? 'rgba(96, 165, 250, 0.55)' : 'rgba(168, 85, 247, 0.55)'
-      });
-    }
-  };
-
-  // Add a sonic shockwave ring expanding from center
-  const emitShockwave = (color = '#3b82f6', maxR = null, lineWidth = 4) => {
-    const cx = window.innerWidth / 2;
-    const cy = window.innerHeight / 2;
-    shockwaves.push({
-      x: cx,
-      y: cy,
-      radius: 10,
-      maxRadius: maxR || Math.max(window.innerWidth, window.innerHeight) * 0.85,
-      speed: (maxR ? 16 : 24),
-      lineWidth: lineWidth,
-      color: color,
-      alpha: 1
-    });
-  };
-
-  // Trigger Blinding Supernova Whiteout Flare
-  const triggerSupernovaFlash = () => {
-    supernovaFlash.active = true;
-    supernovaFlash.radius = 10;
-    supernovaFlash.maxRadius = Math.max(window.innerWidth, window.innerHeight) * 1.35;
-    supernovaFlash.alpha = 1;
-    supernovaFlash.spikeAngle = 0;
-  };
-
-  // 3D Metallic Ribbon & Quantum Crystal Confetti System (450+ particles)
-  const createConfettiExplosion = (centerX, centerY) => {
-    const cx = centerX || window.innerWidth / 2;
-    const cy = centerY || window.innerHeight / 2;
-
-    const colors = [
-      '#3b82f6', '#60a5fa', '#93c5fd', // Electric Blue
-      '#fbbf24', '#f59e0b', '#fef08a', // Metallic Gold
-      '#a855f7', '#c084fc', '#e879f9', // Neon Violet
-      '#34d399', '#10b981',             // Emerald Cyber
-      '#f43f5e', '#ffffff'              // Ruby & Diamond
-    ];
-
-    const count = window.innerWidth <= 480 ? 240 : 450;
-    confettiParticles = [];
-
-    for (let i = 0; i < count; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 24 + 6;
-      const type = Math.random() > 0.5 ? 'ribbon' : (Math.random() > 0.4 ? 'metallic-rect' : 'diamond');
-
-      confettiParticles.push({
-        x: cx,
-        y: cy,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 8,
-        width: Math.random() * 10 + 6,
-        length: Math.random() * 20 + 10,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        angle: Math.random() * Math.PI * 2,
-        angleSpeed: (Math.random() - 0.5) * 0.25,
-        wobble: Math.random() * Math.PI * 2,
-        wobbleSpeed: Math.random() * 0.12 + 0.05,
-        drag: 0.945,
-        gravity: 0.28,
-        opacity: 1,
-        decay: Math.random() * 0.0035 + 0.002,
-        type: type
-      });
-    }
-  };
-
-  // Secondary firework burst (pops celebratory embers in top corners)
-  const triggerSecondaryBurst = (x, y, color = '#fbbf24') => {
-    const burstCount = 45;
-    for (let i = 0; i < burstCount; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 10 + 3;
-      confettiParticles.push({
-        x: x,
-        y: y,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 3,
-        width: Math.random() * 6 + 4,
-        length: Math.random() * 8 + 4,
-        color: color,
-        angle: Math.random() * Math.PI * 2,
-        angleSpeed: (Math.random() - 0.5) * 0.3,
-        wobble: Math.random() * Math.PI,
-        wobbleSpeed: 0.1,
-        drag: 0.93,
-        gravity: 0.25,
-        opacity: 1,
-        decay: Math.random() * 0.007 + 0.004,
-        type: 'diamond'
-      });
-    }
-  };
-
-  // Main 60fps Canvas Render Loop
-  const renderParticles = () => {
-    if (!launchCanvas) return;
-    const ctx = launchCanvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, launchCanvas.width, launchCanvas.height);
-    const w = launchCanvas.width;
-    const h = launchCanvas.height;
-    const cx = w / 2;
-    const cy = h / 2;
-
-    // 1. Render Speed-of-Light Hyperdrive Warp Stars
-    if (warpStars.length > 0 && warpSpeed > 0.05) {
-      ctx.save();
-      for (let i = 0; i < warpStars.length; i++) {
-        const star = warpStars[i];
-        star.pz = star.z;
-        star.z -= warpSpeed;
-
-        if (star.z <= 0) {
-          star.z = 1000;
-          star.pz = 1000;
-          star.x = (Math.random() - 0.5) * w * 2;
-          star.y = (Math.random() - 0.5) * h * 2;
-        }
-
-        const sx = (star.x / star.z) * (w / 2) + cx;
-        const sy = (star.y / star.z) * (h / 2) + cy;
-        const px = (star.x / star.pz) * (w / 2) + cx;
-        const py = (star.y / star.pz) * (h / 2) + cy;
-
-        const starAlpha = Math.min(1, (1000 - star.z) / 400);
-
-        if (sx >= 0 && sx <= w && sy >= 0 && sy <= h) {
-          ctx.beginPath();
-          ctx.moveTo(px, py);
-          ctx.lineTo(sx, sy);
-          ctx.strokeStyle = star.color;
-          ctx.globalAlpha = starAlpha;
-          ctx.lineWidth = Math.min(3.5, (1000 - star.z) / 250);
-          ctx.stroke();
-        }
-      }
-      ctx.restore();
-    }
-
-    // 2. Render Ambient Dust with Constellation Threads
-    if (ambientParticles.length > 0 && warpSpeed < 5) {
-      ctx.save();
-      for (let i = 0; i < ambientParticles.length; i++) {
-        const p = ambientParticles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0) p.x = w;
-        if (p.x > w) p.x = 0;
-        if (p.y < 0) p.y = h;
-        if (p.y > h) p.y = 0;
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.fill();
-
-        // Connect nearby dust with delicate cyan filaments
-        for (let j = i + 1; j < ambientParticles.length; j++) {
-          const p2 = ambientParticles[j];
-          const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
-          if (dist < 85) {
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `rgba(96, 165, 250, ${(1 - dist / 85) * 0.18})`;
-            ctx.lineWidth = 0.8;
-            ctx.stroke();
+        if (targetSec) {
+          if (!isEnabled) {
+            targetSec.style.display = 'none';
+          } else {
+            targetSec.style.display = '';
           }
         }
-      }
-      ctx.restore();
-    }
 
-    // 3. Render Expanding Sonic Shockwave Rings
-    if (shockwaves.length > 0) {
-      ctx.save();
-      for (let i = shockwaves.length - 1; i >= 0; i--) {
-        const sw = shockwaves[i];
-        sw.radius += sw.speed;
-        sw.alpha = Math.max(0, 1 - sw.radius / sw.maxRadius);
-
-        if (sw.radius >= sw.maxRadius || sw.alpha <= 0) {
-          shockwaves.splice(i, 1);
-          continue;
-        }
-
-        ctx.beginPath();
-        ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
-        ctx.strokeStyle = sw.color;
-        ctx.globalAlpha = sw.alpha;
-        ctx.lineWidth = sw.lineWidth * sw.alpha;
-        ctx.shadowColor = sw.color;
-        ctx.shadowBlur = 18;
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    // 4. Render Supernova Whiteout Flare & Diffraction Starburst
-    if (supernovaFlash.active) {
-      ctx.save();
-      supernovaFlash.radius += 45;
-      supernovaFlash.alpha = Math.max(0, 1 - supernovaFlash.radius / supernovaFlash.maxRadius);
-      supernovaFlash.spikeAngle += 0.04;
-
-      if (supernovaFlash.alpha <= 0) {
-        supernovaFlash.active = false;
-      } else {
-        // Radial Plasma Flare
-        const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, supernovaFlash.radius);
-        gradient.addColorStop(0, `rgba(255, 255, 255, ${supernovaFlash.alpha})`);
-        gradient.addColorStop(0.3, `rgba(147, 197, 253, ${supernovaFlash.alpha * 0.8})`);
-        gradient.addColorStop(0.7, `rgba(168, 85, 247, ${supernovaFlash.alpha * 0.4})`);
-        gradient.addColorStop(1, 'transparent');
-
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, w, h);
-
-        // 8-Point Diffraction Spikes
-        ctx.translate(cx, cy);
-        ctx.rotate(supernovaFlash.spikeAngle);
-        ctx.strokeStyle = `rgba(255, 255, 255, ${supernovaFlash.alpha * 0.9})`;
-        ctx.lineWidth = 3;
-        ctx.shadowColor = '#60a5fa';
-        ctx.shadowBlur = 25;
-
-        for (let s = 0; s < 8; s++) {
-          const spikeLen = supernovaFlash.radius * (s % 2 === 0 ? 0.9 : 0.5);
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.lineTo(spikeLen, 0);
-          ctx.stroke();
-          ctx.rotate(Math.PI / 4);
-        }
-      }
-      ctx.restore();
-    }
-
-    // 5. Render 3D Ribbon & Metallic Confetti System
-    if (confettiParticles.length > 0) {
-      for (let i = confettiParticles.length - 1; i >= 0; i--) {
-        const p = confettiParticles[i];
-        p.vx *= p.drag;
-        p.vy *= p.drag;
-        p.vy += p.gravity;
-        p.x += p.vx;
-        p.y += p.vy;
-        p.angle += p.angleSpeed;
-        p.wobble += p.wobbleSpeed;
-        p.opacity -= p.decay;
-
-        if (p.opacity <= 0 || p.y > h + 70) {
-          confettiParticles.splice(i, 1);
-          continue;
-        }
-
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.angle);
-        ctx.globalAlpha = Math.max(0, p.opacity);
-
-        const cosWobble = Math.cos(p.wobble);
-
-        if (p.type === 'ribbon') {
-          // 3D Fluttering Ribbon Quad
-          ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.moveTo(-p.width / 2 * cosWobble, -p.length / 2);
-          ctx.lineTo(p.width / 2 * cosWobble, -p.length / 2 + 4);
-          ctx.lineTo(p.width / 2 * cosWobble, p.length / 2);
-          ctx.lineTo(-p.width / 2 * cosWobble, p.length / 2 - 4);
-          ctx.closePath();
-          ctx.fill();
-
-          // Shiny specular highlight stripe
-          if (cosWobble > 0.4) {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-            ctx.fillRect(-p.width / 4 * cosWobble, -p.length / 2, (p.width / 2) * cosWobble, p.length);
+        // Hide navigation links (both desktop and mobile)
+        const navLinks = document.querySelectorAll(`[data-section="${secKey}"]`);
+        navLinks.forEach((link) => {
+          if (!isEnabled) {
+            link.style.display = 'none';
+          } else {
+            link.style.display = '';
           }
-        } else if (p.type === 'diamond') {
-          // Quantum Crystal Diamond
-          ctx.fillStyle = p.color;
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 10;
-          ctx.beginPath();
-          ctx.moveTo(0, -p.width);
-          ctx.lineTo(p.width * cosWobble, 0);
-          ctx.lineTo(0, p.width);
-          ctx.lineTo(-p.width * cosWobble, 0);
-          ctx.closePath();
-          ctx.fill();
-        } else {
-          // Metallic Foil Square
-          ctx.fillStyle = p.color;
-          ctx.fillRect(-p.width / 2 * cosWobble, -p.length / 4, p.width * cosWobble, p.length / 2);
-        }
-
-        ctx.restore();
-      }
-    }
-
-    // Smoothly interpolate warp speed toward target
-    warpSpeed += (targetWarpSpeed - warpSpeed) * 0.08;
-
-    animFrameId = requestAnimationFrame(renderParticles);
-  };
-
-  // Open Launch Mode UI
-  const openLaunchMode = () => {
-    if (!launchOverlay) return;
-    initCanvas();
-    initAmbientDust();
-    initWarpStars();
-    isLaunching = false;
-    warpSpeed = 0;
-    targetWarpSpeed = 0;
-    shockwaves = [];
-    supernovaFlash.active = false;
-
-    // Reset overlay elements
-    launchOverlay.classList.remove('launching-exit', 'shaking');
-    if (launchHud) launchHud.classList.remove('active');
-    if (launchCelebrateCard) launchCelebrateCard.classList.remove('active');
-    if (launchHudBar) launchHudBar.style.width = '0%';
-    if (launchCoreBtn) {
-      launchCoreBtn.disabled = false;
-      launchCoreBtn.style.pointerEvents = 'auto';
-    }
-
-    // Check URL parameters for explicit mode overrides or auto-detect by screen width
-    const currentParams = new URLSearchParams(window.location.search);
-    launchOverlay.classList.remove('mode-screen', 'mode-controller');
-    if (currentParams.get('mode') === 'screen' || currentParams.has('screen') || currentParams.get('launch') === 'screen') {
-      launchOverlay.classList.add('mode-screen');
-    } else if (currentParams.get('mode') === 'controller' || currentParams.has('mobile') || currentParams.get('launch') === 'mobile') {
-      launchOverlay.classList.add('mode-controller');
-    } else {
-      // Automatic detection: desktop / laptop screen -> clean info panel; mobile device -> launch controller
-      if (window.innerWidth >= 993) {
-        launchOverlay.classList.add('mode-screen');
-      } else {
-        launchOverlay.classList.add('mode-controller');
-      }
-    }
-
-    launchOverlay.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-
-    void launchOverlay.offsetWidth;
-    launchOverlay.classList.add('active');
-    launchOverlay.setAttribute('aria-hidden', 'false');
-
-    if (!animFrameId) {
-      animFrameId = requestAnimationFrame(renderParticles);
-    }
-  };
-
-  // Close / Exit Launch Mode UI
-  const exitLaunchMode = () => {
-    if (!launchOverlay) return;
-    launchOverlay.classList.remove('active');
-    launchOverlay.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
-
-    setTimeout(() => {
-      launchOverlay.style.display = 'none';
-      if (animFrameId) {
-        cancelAnimationFrame(animFrameId);
-        animFrameId = null;
-      }
-      confettiParticles = [];
-      ambientParticles = [];
-    }, 400);
-
-    if (window.location.search.includes('launch') || window.location.hash.includes('launch')) {
-      const cleanUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, cleanUrl);
-    }
-  };
-
-  // Reset launch state across all connected devices
-  const resetLaunchState = (broadcast = true) => {
-    isLaunching = false;
-    sessionStorage.removeItem('qc_launched_by_sriram');
-    openLaunchMode();
-
-    if (broadcast) {
-      broadcastLaunchSignal('reset');
-    }
-  };
-
-  // ----------------------------------------------------------------------------
-  // Realtime Cross-Device Synchronization Engine
-  // ----------------------------------------------------------------------------
-  const broadcastLaunchSignal = (action = 'launch') => {
-    const payload = JSON.stringify({
-      action: action,
-      by: 'Sriram Sir',
-      timestamp: Date.now()
-    });
-
-    // 1. Cloud PubSub Push via ntfy.sh (synchronizes mobile <-> laptop / Vercel in real-time)
-    fetch(`https://ntfy.sh/${LAUNCH_SYNC_TOPIC}`, {
-      method: 'POST',
-      body: payload,
-      headers: {
-        'Title': 'Quantum Coders Launch Event',
-        'Priority': 'urgent',
-        'Tags': 'rocket,tada'
-      }
-    }).catch((err) => console.warn('Sync broadcast notice:', err));
-
-    // 2. BroadcastChannel for instant local cross-tab testing
-    try {
-      if (typeof BroadcastChannel !== 'undefined') {
-        const bc = new BroadcastChannel('qc_launch_channel');
-        bc.postMessage({ action: action, by: 'Sriram Sir', timestamp: Date.now() });
-        bc.close();
-      }
-    } catch (e) {}
-
-    // 3. LocalStorage event as browser fallback
-    try {
-      localStorage.setItem('qc_launch_event_sync', JSON.stringify({ action: action, by: 'Sriram Sir', timestamp: Date.now() }));
-    } catch (e) {}
-  };
-
-  const handleIncomingSignal = (data) => {
-    if (!data || !data.action) return;
-
-    if (data.action === 'launch') {
-      const now = Date.now();
-      if (now - lastRemoteTriggerTime < 8000) return; // Prevent duplicate multi-triggers
-      lastRemoteTriggerTime = now;
-
-      console.log('⚡ [SYNC] REMOTE LAUNCH SIGNAL RECEIVED FROM SRIRAM SIR!');
-
-      // If this screen is not already launching, initiate the sequence!
-      if (!isLaunching) {
-        if (!launchOverlay.classList.contains('active')) {
-          openLaunchMode();
-        }
-        initiateLaunchSequence(true); // true = remote trigger
-      }
-    } else if (data.action === 'reset') {
-      console.log('🔄 [SYNC] REMOTE RESET SIGNAL RECEIVED!');
-      resetLaunchState(false);
-    }
-  };
-
-  const startRealtimeSyncListeners = () => {
-    // A. Server-Sent Events (SSE) via ntfy.sh
-    try {
-      if (typeof EventSource !== 'undefined') {
-        const sse = new EventSource(`https://ntfy.sh/${LAUNCH_SYNC_TOPIC}/sse`);
-        sse.onmessage = (e) => {
-          try {
-            const raw = JSON.parse(e.data);
-            if (raw && raw.message) {
-              try {
-                const inner = JSON.parse(raw.message);
-                handleIncomingSignal(inner);
-              } catch (_) {
-                if (raw.message.includes('launch')) handleIncomingSignal({ action: 'launch' });
-              }
-            } else if (raw && raw.action) {
-              handleIncomingSignal(raw);
-            }
-          } catch (_) {
-            if (e.data && e.data.includes('launch')) handleIncomingSignal({ action: 'launch' });
-          }
-        };
-        sse.onerror = () => {
-          // EventSource auto-reconnects natively
-        };
-      }
-    } catch (err) {
-      console.warn('SSE sync listener warning:', err);
-    }
-
-    // B. BroadcastChannel for local cross-tab testing
-    try {
-      if (typeof BroadcastChannel !== 'undefined') {
-        const bc = new BroadcastChannel('qc_launch_channel');
-        bc.onmessage = (e) => {
-          if (e.data) handleIncomingSignal(e.data);
-        };
-      }
-    } catch (e) {}
-
-    // C. LocalStorage sync fallback
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'qc_launch_event_sync' && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          handleIncomingSignal(parsed);
-        } catch (err) {}
-      }
-    });
-  };
-
-  // Initiate Launch Sequence (Works on both Phone and Laptop simultaneously)
-  const initiateLaunchSequence = (isRemote = false) => {
-    if (isLaunching) return;
-    isLaunching = true;
-
-    // If triggered locally by pressing the button, broadcast signal to laptop/projector!
-    if (!isRemote) {
-      broadcastLaunchSignal('launch');
-    }
-
-    // 1. Audio and Haptics: Begin Reactor Ramp & Warp Speed
-    playReactorCharge();
-    targetWarpSpeed = 8;
-    if (navigator.vibrate) {
-      navigator.vibrate([100, 50, 150]);
-    }
-
-    // 2. Lock Button & Trigger Screen Shake
-    if (launchCoreBtn) {
-      launchCoreBtn.disabled = true;
-      launchCoreBtn.style.pointerEvents = 'none';
-    }
-    launchOverlay.classList.add('shaking');
-
-    // 3. Show Countdown HUD
-    if (launchHud) launchHud.classList.add('active');
-
-    const launchHudGhost = document.getElementById('launch-hud-count-ghost');
-
-    // Progress Bar Animation (0% to 100% over 5.4s)
-    let progress = 0;
-    const progressInterval = setInterval(() => {
-      progress += 1.0;
-      if (launchHudBar) launchHudBar.style.width = `${Math.min(100, progress)}%`;
-      if (progress >= 100) clearInterval(progressInterval);
-    }, 54);
-
-    // Initial Authenticating Status
-    if (launchHudStatus) launchHudStatus.textContent = 'AUTHENTICATING: SRIRAM SIR...';
-    if (launchHudCount) launchHudCount.textContent = '5';
-    if (launchHudGhost) launchHudGhost.textContent = '5';
-
-    // Countdown Step 5: T = 0.5s
-    setTimeout(() => {
-      if (launchHudStatus) launchHudStatus.textContent = 'QUANTUM CORE ENGAGED...';
-      if (launchHudCount) launchHudCount.textContent = '5';
-      if (launchHudGhost) launchHudGhost.textContent = '5';
-      playCountdownBlip(5);
-      emitShockwave('#3b82f6', 200, 3);
-      targetWarpSpeed = 10;
-      if (navigator.vibrate) navigator.vibrate(40);
-    }, 500);
-
-    // Countdown Step 4: T = 1.5s
-    setTimeout(() => {
-      if (launchHudStatus) launchHudStatus.textContent = 'CALIBRATING HYPERDRIVE FLUX...';
-      if (launchHudCount) launchHudCount.textContent = '4';
-      if (launchHudGhost) launchHudGhost.textContent = '4';
-      playCountdownBlip(4);
-      emitShockwave('#60a5fa', 280, 3);
-      targetWarpSpeed = 16;
-      if (navigator.vibrate) navigator.vibrate(50);
-    }, 1500);
-
-    // Countdown Step 3: T = 2.5s
-    setTimeout(() => {
-      if (launchHudStatus) launchHudStatus.textContent = 'STABILIZING POWER GRIDS...';
-      if (launchHudCount) launchHudCount.textContent = '3';
-      if (launchHudGhost) launchHudGhost.textContent = '3';
-      playCountdownBlip(3);
-      emitShockwave('#a855f7', 360, 4);
-      targetWarpSpeed = 22;
-      if (navigator.vibrate) navigator.vibrate(60);
-    }, 2500);
-
-    // Countdown Step 2: T = 3.5s
-    setTimeout(() => {
-      if (launchHudStatus) launchHudStatus.textContent = 'WARPING SPACE-TIME: 80%...';
-      if (launchHudCount) launchHudCount.textContent = '2';
-      if (launchHudGhost) launchHudGhost.textContent = '2';
-      playCountdownBlip(2);
-      emitShockwave('#c084fc', 440, 4);
-      targetWarpSpeed = 30;
-      if (navigator.vibrate) navigator.vibrate(75);
-    }, 3500);
-
-    // Countdown Step 1: T = 4.5s
-    setTimeout(() => {
-      if (launchHudStatus) launchHudStatus.textContent = 'FINAL OVERDRIVE IGNITION...';
-      if (launchHudCount) launchHudCount.textContent = '1';
-      if (launchHudGhost) launchHudGhost.textContent = '1';
-      playCountdownBlip(1);
-      emitShockwave('#fbbf24', 520, 5);
-      targetWarpSpeed = 40;
-      if (navigator.vibrate) navigator.vibrate(100);
-    }, 4500);
-
-    // T = 5.4s: 🚀 BLAST OFF! (SUPERNOVA DETONATION & TRIUMPHANT FANFARE)
-    setTimeout(() => {
-      targetWarpSpeed = 0;
-      launchOverlay.classList.remove('shaking');
-      if (launchHudCount) launchHudCount.textContent = '🚀';
-      if (launchHudGhost) launchHudGhost.textContent = '🚀';
-      if (launchHudStatus) launchHudStatus.textContent = 'STATUS: 100% ONLINE!';
-
-      // 1. Supernova Detonation Sound & Fanfare
-      playExplosionBoom();
-      playLaunchFanfare();
-      if (navigator.vibrate) {
-        navigator.vibrate([200, 80, 200, 80, 500]);
-      }
-
-      // 2. Blinding Supernova Whiteout Flare
-      triggerSupernovaFlash();
-
-      // 3. Chromatic Shockwave Blast (Triple Concentric Rings)
-      emitShockwave('#3b82f6', null, 8);
-      setTimeout(() => emitShockwave('#fbbf24', null, 6), 80);
-      setTimeout(() => emitShockwave('#a855f7', null, 5), 160);
-
-      // 4. 450+ 3D Metallic Ribbon & Crystal Confetti Explosion
-      const rect = launchCoreBtn ? launchCoreBtn.getBoundingClientRect() : null;
-      const blastX = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
-      const blastY = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
-      createConfettiExplosion(blastX, blastY);
-
-      // 5. Hide HUD & Display Grand Celebration Proclamation Card
-      setTimeout(() => {
-        if (launchHud) launchHud.classList.remove('active');
-        if (launchCelebrateCard) launchCelebrateCard.classList.add('active');
-      }, 350);
-
-      // 6. Secondary Celebration Firework Bursts during proclamation
-      setTimeout(() => {
-        triggerSecondaryBurst(window.innerWidth * 0.22, window.innerHeight * 0.32, '#fbbf24');
-      }, 1000);
-
-      setTimeout(() => {
-        triggerSecondaryBurst(window.innerWidth * 0.78, window.innerHeight * 0.32, '#60a5fa');
-      }, 2000);
-
-      setTimeout(() => {
-        triggerSecondaryBurst(window.innerWidth * 0.50, window.innerHeight * 0.24, '#a855f7');
-      }, 3000);
-
-      setTimeout(() => {
-        triggerSecondaryBurst(window.innerWidth * 0.30, window.innerHeight * 0.40, '#fbbf24');
-      }, 4200);
-    }, 5400);
-
-    // T = 11.2s: Cinematic Hyperspace Warp Wipe into the Live Website
-    setTimeout(() => {
-      launchOverlay.classList.add('launching-exit');
-
-      // T = 12.3s: Final cleanup, show toast & commemorative banner
-      setTimeout(() => {
-        launchOverlay.style.display = 'none';
-        launchOverlay.classList.remove('active', 'launching-exit');
-        launchOverlay.setAttribute('aria-hidden', 'true');
-        document.body.style.overflow = '';
-        isLaunching = false;
-
-        // Commemorate in Hero ESTD Badge
-        const heroBadge = document.querySelector('.hero-badge');
-        if (heroBadge) {
-          heroBadge.innerHTML = '<span class="accent-dot"></span><span>ESTD. 2026 // INAUGURATED BY Dr M VeeraBhadra Rao Sir, Dr Surya Prakash Sir, Dr Ravi Kumar Sir </span>';
-          heroBadge.style.boxShadow = '0 0 25px rgba(251, 191, 36, 0.7)';
-        }
-
-        // Display Celebratory Toast Banner
-        let toastEl = document.getElementById('launch-celebratory-toast');
-        if (!toastEl) {
-          toastEl = document.createElement('div');
-          toastEl.id = 'launch-celebratory-toast';
-          toastEl.className = 'launch-celebratory-toast';
-          toastEl.innerHTML = `
-            <span class="launch-toast-badge">OFFICIAL LAUNCH</span>
-            <span>INAUGURATED BY Dr M VeeraBhadra Rao Sir, Dr P Surya Prakash Sir & Mr K Ravi Kumar Sir • QUANTUM CODERS IS LIVE!</span>
-          `;
-          document.body.appendChild(toastEl);
-        }
-
-        requestAnimationFrame(() => {
-          toastEl.classList.add('active');
-          setTimeout(() => {
-            toastEl.classList.remove('active');
-          }, 8000);
         });
+      });
+    } catch (err) {
+      console.info('[Quantum Coders] Using default section visibility layout.');
+    }
+  };
+  initSectionToggles();
 
-        // Store launch acknowledgment
-        try {
-          sessionStorage.setItem('qc_launched_by_sriram', 'true');
-        } catch (e) {}
-      }, 1100);
-    }, 11200);
+  // ----------------------------------------------------------------------------
+  // 13. Interactive Monthly Event Calendar & Sprints Engine
+  // ----------------------------------------------------------------------------
+  let calendarEvents = [];
+  let currentCalDate = new Date(); // Current viewing month
+
+  const calMonthYearTitle = document.getElementById('cal-month-year-title');
+  const calDaysGrid = document.getElementById('calendar-days-grid');
+  const calPrevBtn = document.getElementById('cal-prev-month');
+  const calNextBtn = document.getElementById('cal-next-month');
+  const calTodayBtn = document.getElementById('cal-today-btn');
+  const upcomingCardsGrid = document.getElementById('upcoming-events-cards');
+
+  // Modal elements
+  const calModal = document.getElementById('calendar-event-modal');
+  const calModalClose = document.getElementById('cal-modal-close');
+  const calModalCancel = document.getElementById('cal-modal-cancel');
+  const calModalBadge = document.getElementById('cal-modal-badge');
+  const calModalTitle = document.getElementById('cal-modal-title');
+  const calModalDateTime = document.getElementById('cal-modal-datetime');
+  const calModalVenue = document.getElementById('cal-modal-venue');
+  const calModalSlots = document.getElementById('cal-modal-slots');
+  const calModalDeadline = document.getElementById('cal-modal-deadline');
+  const calModalDesc = document.getElementById('cal-modal-desc');
+  const calModalActionBtn = document.getElementById('cal-modal-action-btn');
+
+  const closeCalModal = () => {
+    if (calModal) calModal.classList.remove('active');
   };
 
-  // Event Listeners for Launch Mode
-  if (launchCoreBtn) {
-    launchCoreBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      initiateLaunchSequence(false); // local click
+  if (calModalClose) calModalClose.addEventListener('click', closeCalModal);
+  if (calModalCancel) calModalCancel.addEventListener('click', closeCalModal);
+  if (calModal) {
+    calModal.addEventListener('click', (e) => {
+      if (e.target === calModal) closeCalModal();
     });
   }
 
-  if (launchExitBtn) {
-    launchExitBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      exitLaunchMode();
-    });
-  }
+  const escapeHtml = (str) => {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
 
-  if (launchResetBtn) {
-    launchResetBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      resetLaunchState(true);
-    });
-  }
+  const normalizeEvent = (e) => {
+    if (!e) return null;
+    const name = e.name || e.title || 'Untitled Event';
+    const date = e.date || e.event_date || new Date().toISOString().split('T')[0];
+    const maximum_slots = parseInt(e.maximum_slots ?? e.max_capacity ?? 100, 10);
+    const event_type = e.event_type || e.category || 'WORKSHOP';
+    const banner_url = e.banner_url || e.cover_image || 'images/event%20images/Pydah%20hackathon.png';
+    const is_published = e.status ? (e.status !== 'DRAFT') : (e.is_published !== false);
+    const is_calendar_visible = e.is_calendar_visible !== false;
+    const is_registration_open = e.status ? (e.status === 'PUBLISHED' || e.status === 'REGISTRATION OPEN') : (e.is_registration_open !== false);
 
-  if (footerLaunchBtn) {
-    footerLaunchBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      openLaunchMode();
-    });
-  }
+    return {
+      ...e,
+      id: e.id || `evt-${Date.now()}`,
+      name,
+      title: name,
+      date,
+      event_date: date,
+      maximum_slots,
+      max_capacity: maximum_slots,
+      event_type,
+      category: event_type,
+      banner_url,
+      cover_image: banner_url,
+      status: is_published ? (e.status || 'PUBLISHED') : 'DRAFT',
+      is_published,
+      is_calendar_visible,
+      is_registration_open,
+      venue: e.venue || 'Auditorium',
+      start_time: e.start_time || '10:00:00',
+      end_time: e.end_time || '18:00:00',
+      description: e.description || '',
+      confirmed_count: parseInt(e.confirmed_count || 0, 10),
+      remaining_slots: e.remaining_slots !== undefined ? e.remaining_slots : Math.max(0, maximum_slots - (e.confirmed_count || 0))
+    };
+  };
 
-  // Keyboard Shortcuts for Presentation & Rehearsal
-  window.addEventListener('keydown', (e) => {
-    if (launchOverlay && launchOverlay.classList.contains('active')) {
-      if (e.key === 'Escape') {
-        exitLaunchMode();
-      } else if (e.shiftKey && (e.key === 'R' || e.key === 'r')) {
-        resetLaunchState(true);
+  const openCalendarEventModal = (ev) => {
+    if (!calModal || !ev) return;
+    const norm = normalizeEvent(ev);
+    if (calModalBadge) {
+      calModalBadge.textContent = (norm.event_type || 'WORKSHOP').toUpperCase();
+    }
+    if (calModalTitle) calModalTitle.textContent = norm.name;
+    if (calModalDateTime) calModalDateTime.textContent = `${norm.date} • ${norm.start_time || ''}`;
+    if (calModalVenue) calModalVenue.textContent = (norm.venue || 'Auditorium').toUpperCase();
+    if (calModalSlots) {
+      const remaining = norm.remaining_slots !== undefined ? norm.remaining_slots : Math.max(0, norm.maximum_slots - (norm.confirmed_count || 0));
+      calModalSlots.textContent = norm.is_full ? 'WAITLIST AVAILABLE' : `${remaining} SLOTS LEFT`;
+      calModalSlots.style.color = norm.is_full ? '#fbbf24' : 'var(--color-blue)';
+    }
+    if (calModalDeadline) {
+      calModalDeadline.textContent = norm.registration_deadline ? new Date(norm.registration_deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'OPEN';
+    }
+    if (calModalDesc) calModalDesc.textContent = norm.description || 'Join this Quantum Coders operational session.';
+    if (calModalActionBtn) {
+      calModalActionBtn.href = `event.html?id=${encodeURIComponent(norm.id)}`;
+      calModalActionBtn.textContent = norm.is_full ? 'Join Waitlist →' : 'View Details & Register →';
+    }
+
+    calModal.classList.add('active');
+  };
+
+  const renderCalendar = () => {
+    if (!calDaysGrid || !calMonthYearTitle) return;
+
+    const year = currentCalDate.getFullYear();
+    const month = currentCalDate.getMonth(); // 0-indexed
+
+    const monthNames = [
+      'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+      'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
+    ];
+    calMonthYearTitle.textContent = `${monthNames[month]} ${year}`;
+
+    // Render Quick Month Navigation Pills for any months with events
+    let quickPillsWrap = document.getElementById('cal-months-quick-pills');
+    if (!quickPillsWrap && calTodayBtn && calTodayBtn.parentElement) {
+      quickPillsWrap = document.createElement('div');
+      quickPillsWrap.id = 'cal-months-quick-pills';
+      quickPillsWrap.style.cssText = 'display: inline-flex; gap: 0.35rem; flex-wrap: wrap; margin-left: 0.6rem; align-items: center;';
+      calTodayBtn.parentElement.appendChild(quickPillsWrap);
+    }
+
+    if (quickPillsWrap) {
+      quickPillsWrap.innerHTML = '';
+      const monthsMap = new Map();
+      calendarEvents.forEach((ev) => {
+        if (!ev || ev.deleted_at || ev.is_calendar_visible === false) return;
+        const d = ev.date || ev.event_date;
+        if (!d) return;
+        const [y, m] = d.split('-').map(Number);
+        if (!y || !m) return;
+        const key = `${y}-${m}`;
+        monthsMap.set(key, (monthsMap.get(key) || 0) + 1);
+      });
+
+      monthsMap.forEach((count, key) => {
+        const [y, m] = key.split('-').map(Number);
+        const isCurrentView = y === year && (m - 1) === month;
+        const pill = document.createElement('button');
+        pill.type = 'button';
+        pill.className = `btn-brutalist btn-sm ${isCurrentView ? 'btn-primary' : 'btn-secondary'}`;
+        pill.style.cssText = 'padding: 0.25rem 0.55rem; font-size: 0.68rem; border-radius: 3px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem;';
+        pill.innerHTML = `📅 ${monthNames[m - 1].slice(0, 3)} '${String(y).slice(-2)} <span style="opacity: 0.85; font-weight: 700;">(${count})</span>`;
+        pill.title = `View events in ${monthNames[m - 1]} ${y}`;
+        pill.addEventListener('click', () => {
+          currentCalDate = new Date(y, m - 1, 1);
+          renderCalendar();
+        });
+        quickPillsWrap.appendChild(pill);
+      });
+    }
+
+    // First day of month (0 = Sun, 1 = Mon, ...)
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    // Total days in current month
+    const totalDays = new Date(year, month + 1, 0).getDate();
+
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+    const todayDate = today.getDate();
+
+    calDaysGrid.innerHTML = '';
+
+    // Empty cells before first day
+    for (let i = 0; i < firstDayIndex; i++) {
+      const emptyCell = document.createElement('div');
+      emptyCell.className = 'cal-day-cell cal-day-empty';
+      calDaysGrid.appendChild(emptyCell);
+    }
+
+    // Days of current month
+    for (let day = 1; day <= totalDays; day++) {
+      const cell = document.createElement('div');
+      cell.className = 'cal-day-cell';
+      if (isCurrentMonth && day === todayDate) {
+        cell.classList.add('cal-day-today');
+      }
+
+      // Date number
+      const numSpan = document.createElement('div');
+      numSpan.className = 'cal-day-num';
+      numSpan.textContent = day;
+      cell.appendChild(numSpan);
+
+      // Event container
+      const eventsWrap = document.createElement('div');
+      eventsWrap.className = 'cal-events-container';
+
+      // Find events matching this date (YYYY-MM-DD)
+      const dayFormatted = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dayEvents = calendarEvents.filter((e) => {
+        if (!e || e.deleted_at) return false;
+        if (e.is_calendar_visible === false) return false;
+        if (e.is_published === false && e.status === 'DRAFT') return false;
+        const evDate = (e.date || e.event_date || '').substring(0, 10);
+        return evDate === dayFormatted;
+      });
+
+      dayEvents.forEach((ev) => {
+        const chip = document.createElement('div');
+        const typeClass = (ev.event_type || 'workshop').toLowerCase().replace(/\s+/g, '-');
+        chip.className = `cal-event-chip cal-chip-${typeClass}`;
+        chip.textContent = `${ev.start_time ? ev.start_time.substring(0, 5) : ''} ${ev.name}`;
+        chip.title = `${ev.name} (${ev.venue})`;
+        chip.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openCalendarEventModal(ev);
+        });
+        eventsWrap.appendChild(chip);
+      });
+
+      cell.appendChild(eventsWrap);
+
+      // Clicking day cell with events opens first event
+      if (dayEvents.length > 0) {
+        cell.style.cursor = 'pointer';
+        cell.addEventListener('click', () => {
+          openCalendarEventModal(dayEvents[0]);
+        });
+      }
+
+      calDaysGrid.appendChild(cell);
+    }
+  };
+
+  const renderUpcomingEvents = (events) => {
+    if (!upcomingCardsGrid) return;
+    upcomingCardsGrid.innerHTML = '';
+
+    const published = (events || []).filter((e) => {
+      if (!e || e.deleted_at) return false;
+      if (e.is_published === false && e.status === 'DRAFT') return false;
+      return true;
+    });
+
+    if (published.length === 0) {
+      upcomingCardsGrid.innerHTML = '<p style="color: var(--color-gray); font-family: var(--font-mono); font-size: 0.85rem;">No upcoming public sprints currently scheduled.</p>';
+      return;
+    }
+
+    // Sort upcoming events: scheduled date ascending
+    published.sort((a, b) => {
+      const da = a.date || a.event_date || '';
+      const db = b.date || b.event_date || '';
+      return da.localeCompare(db);
+    });
+
+    published.forEach((ev) => {
+      const card = document.createElement('div');
+      card.className = 'upcoming-event-card';
+
+      const remaining = ev.remaining_slots !== undefined ? ev.remaining_slots : Math.max(0, (ev.maximum_slots || 100) - (ev.confirmed_count || 0));
+      const isFull = ev.is_full || remaining === 0;
+      const title = ev.title || ev.name || 'Quantum Coders Sprint';
+      const eventDate = ev.date || ev.event_date || 'TBA';
+      const cover = ev.banner_url || ev.cover_image || 'images/event%20images/Pydah%20hackathon.png';
+
+      card.innerHTML = `
+        <img src="${cover}" alt="${escapeHtml(title)}" class="ue-card-banner" onerror="this.src='images/event%20images/Pydah%20hackathon.png'">
+        <div class="ue-card-content">
+          <div class="ue-badges-row">
+            <span class="section-tag" style="background: var(--color-blue); color: #fff; margin: 0; font-size: 0.65rem;">
+              ${(ev.event_type || 'WORKSHOP').toUpperCase()}
+            </span>
+            <span class="section-tag" style="background: ${isFull ? 'rgba(251,191,36,0.15)' : 'rgba(16,185,129,0.15)'}; color: ${isFull ? '#fbbf24' : '#34d399'}; border-color: ${isFull ? '#fbbf24' : '#10b981'}; margin: 0; font-size: 0.65rem;">
+              ${isFull ? 'WAITLIST AVAILABLE' : 'REGISTRATION OPEN'}
+            </span>
+          </div>
+
+          <h4 class="ue-card-title">${escapeHtml(title)}</h4>
+          <p class="ue-card-desc">${escapeHtml(ev.description || 'Join this intensive Quantum Coders sprint session.')}</p>
+
+          <div class="ue-card-meta-list">
+            <div><span>📅</span> <strong>${eventDate}</strong> • ${ev.start_time ? ev.start_time.substring(0, 5) : '10:00 AM'}</div>
+            <div><span>📍</span> ${escapeHtml(ev.venue || 'Campus Auditorium')}</div>
+          </div>
+
+          <div class="ue-card-footer">
+            <span class="ue-slots-pill">
+              ${isFull ? 'WAITLIST' : `${remaining} SLOTS LEFT`}
+            </span>
+            <a href="event.html?id=${encodeURIComponent(ev.id)}" class="btn-brutalist btn-primary btn-sm" data-cursor="JOIN">
+              ${isFull ? 'Join Waitlist →' : 'Register Pass →'}
+            </a>
+          </div>
+        </div>
+      `;
+      upcomingCardsGrid.appendChild(card);
+    });
+  };
+
+  // Fetch Events from Supabase -> API -> LocalStorage -> Seeds
+  const loadEventsData = async (targetMonthDate = null) => {
+    let loaded = [];
+
+    // Tier 1: Supabase live client if configured
+    if (window.QC_SUPABASE && typeof window.QC_SUPABASE.getEvents === 'function' && window.QC_SUPABASE.isConfigured()) {
+      try {
+        const supaEvents = await window.QC_SUPABASE.getEvents();
+        if (Array.isArray(supaEvents) && supaEvents.length > 0) {
+          loaded = supaEvents;
+          console.log('[Quantum Coders] Loaded', loaded.length, 'events live from Supabase.');
+        }
+      } catch (err) {
+        console.warn('[Quantum Coders] Supabase direct event fetch failed:', err);
       }
     }
-  });
 
-  window.addEventListener('resize', () => {
-    if (launchCanvas && launchOverlay && launchOverlay.classList.contains('active')) {
-      launchCanvas.width = window.innerWidth;
-      launchCanvas.height = window.innerHeight;
+    // Tier 2: Vercel serverless /api/events endpoint
+    if (!loaded.length) {
+      try {
+        const res = await fetch('/api/events');
+        if (res.ok) {
+          const apiEvents = await res.json();
+          if (Array.isArray(apiEvents) && apiEvents.length > 0) {
+            loaded = apiEvents;
+          }
+        }
+      } catch (e) {
+        // Offline or static server
+      }
+    }
+
+    // Tier 3: Offline Local storage catalog fallback ONLY if remote fetch returned nothing
+    if (!loaded.length) {
+      try {
+        const stored = localStorage.getItem('qc_events_catalog');
+        if (stored) {
+          const parsedStored = JSON.parse(stored);
+          if (Array.isArray(parsedStored) && parsedStored.length > 0) {
+            loaded = parsedStored;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Tier 4: Fallback to seed events if catalog is completely empty
+    if (!loaded.length) {
+      loaded = [
+        {
+          id: 'evt-001',
+          name: 'Deep Dive into LLMs & Agentic Systems',
+          title: 'Deep Dive into LLMs & Agentic Systems',
+          event_type: 'Workshop',
+          banner_url: 'images/event%20images/Pydah%20hackathon.png',
+          date: '2026-04-10',
+          event_date: '2026-04-10',
+          start_time: '10:00:00',
+          end_time: '16:00:00',
+          venue: 'High-Compute AI Lab & Auditorium',
+          maximum_slots: 100,
+          confirmed_count: 73,
+          is_published: true,
+          is_calendar_visible: true,
+          is_registration_open: true,
+          description: 'Hands-on architectural seminar and coding sprint exploring autonomous agentic workflows and local open-source LLM inference.'
+        },
+        {
+          id: 'evt-002',
+          name: 'Quantum Hack 2026: 36h Sprint',
+          title: 'Quantum Hack 2026: 36h Sprint',
+          event_type: 'Hackathon',
+          banner_url: 'images/event%20images/Pydah%20hackathon%201.png',
+          date: '2026-04-24',
+          event_date: '2026-04-24',
+          start_time: '09:00:00',
+          end_time: '21:00:00',
+          venue: 'Pydah Main Auditorium & Computing Centre',
+          maximum_slots: 80,
+          confirmed_count: 52,
+          is_published: true,
+          is_calendar_visible: true,
+          is_registration_open: true,
+          description: 'The flagship annual 36-hour hackathon bringing together builders, systems engineers, and designers across Andhra Pradesh.'
+        }
+      ];
+    }
+
+    // Normalize all events
+    calendarEvents = loaded.map(normalizeEvent).filter(Boolean);
+
+    // Auto-focus calendar view:
+    if (targetMonthDate instanceof Date && !isNaN(targetMonthDate.getTime())) {
+      currentCalDate = new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth(), 1);
+    } else {
+      const curYear = currentCalDate.getFullYear();
+      const curMonth = currentCalDate.getMonth();
+      const hasEventsInCurMonth = calendarEvents.some((ev) => {
+        if (!ev.date) return false;
+        const [y, m] = ev.date.split('-').map(Number);
+        return y === curYear && m === (curMonth + 1);
+      });
+
+      if (!hasEventsInCurMonth && calendarEvents.length > 0) {
+        // Find nearest future event or first event
+        const todayStr = new Date().toISOString().split('T')[0];
+        const upcomingEvent = calendarEvents.find((ev) => (ev.date || ev.event_date || '') >= todayStr) || calendarEvents[0];
+        const targetDateStr = upcomingEvent ? (upcomingEvent.date || upcomingEvent.event_date) : null;
+        if (targetDateStr) {
+          const [y, m] = targetDateStr.split('-').map(Number);
+          if (y && m) {
+            currentCalDate = new Date(y, m - 1, 1);
+          }
+        }
+      }
+    }
+
+    renderCalendar();
+    renderUpcomingEvents(calendarEvents);
+  };
+
+  // Live Cross-Tab Synchronization
+  if (typeof BroadcastChannel !== 'undefined') {
+    try {
+      const qcEventsChannel = new BroadcastChannel('qc_events_channel');
+      qcEventsChannel.onmessage = (msg) => {
+        if (!msg || !msg.data) return;
+        const { action, type, event } = msg.data;
+        if (
+          action === 'EVENT_UPDATED' || type === 'QC_EVENT_UPDATE' ||
+          action === 'EVENT_DELETED' || type === 'QC_EVENT_DELETE'
+        ) {
+          console.log('[Quantum Coders] Live event update received from admin:', action || type);
+          let targetDate = null;
+          if (event && (event.date || event.event_date)) {
+            const evDate = event.date || event.event_date;
+            const [y, m] = evDate.split('-').map(Number);
+            if (y && m) {
+              targetDate = new Date(y, m - 1, 1);
+            }
+          }
+          loadEventsData(targetDate);
+        }
+      };
+    } catch (e) {}
+  }
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'qc_events_catalog' || e.key === 'qc_supabase_url') {
+      loadEventsData();
     }
   });
 
-  // Start real-time sync listeners immediately (listens for Sriram Sir's remote launch)
-  startRealtimeSyncListeners();
+  window.addEventListener('qc_supabase_connected', () => {
+    console.log('[Quantum Coders] Supabase connected online, reloading events.');
+    loadEventsData();
+  });
 
-  // Auto-launch via URL query parameter or hash: ?launch=true or #launch
-  const urlParams = new URLSearchParams(window.location.search);
-  const hasLaunchParam = urlParams.has('launch') || urlParams.get('mode') === 'launch' || window.location.hash.toLowerCase().includes('launch');
+  loadEventsData();
 
-  if (hasLaunchParam) {
-    setTimeout(() => {
-      openLaunchMode();
-    }, 200);
+  if (calPrevBtn) {
+    calPrevBtn.addEventListener('click', () => {
+      currentCalDate.setMonth(currentCalDate.getMonth() - 1);
+      renderCalendar();
+    });
   }
 
-  // Global helpers for easy console testing or external triggering
-  window.openLaunchMode = openLaunchMode;
-  window.triggerRemoteLaunch = () => broadcastLaunchSignal('launch');
-  window.resetRemoteLaunch = () => resetLaunchState(true);
+  if (calNextBtn) {
+    calNextBtn.addEventListener('click', () => {
+      currentCalDate.setMonth(currentCalDate.getMonth() + 1);
+      renderCalendar();
+    });
+  }
+
+  if (calTodayBtn) {
+    calTodayBtn.addEventListener('click', () => {
+      currentCalDate = new Date();
+      renderCalendar();
+    });
+  }
+
+  // ----------------------------------------------------------------------------
+  // 14. Find / Retrieve / Cancel Event Pass Engine (Phone + OTP)
+  // ----------------------------------------------------------------------------
+  const findPassModal = document.getElementById('find-pass-modal');
+  const navFindPassBtn = document.getElementById('nav-btn-find-pass');
+  const calFindPassBtn = document.getElementById('cal-open-find-pass-btn');
+  const closeFindModalBtn = document.getElementById('find-pass-modal-close');
+
+  const openFindPassModal = () => {
+    if (!findPassModal) return;
+    findPassModal.classList.add('active');
+    document.getElementById('otp-step-phone').style.display = 'block';
+    document.getElementById('otp-step-verify').style.display = 'none';
+    document.getElementById('otp-step-results').style.display = 'none';
+    const err1 = document.getElementById('find-phone-error');
+    if (err1) err1.style.display = 'none';
+    const err2 = document.getElementById('find-otp-error');
+    if (err2) err2.style.display = 'none';
+  };
+
+  if (navFindPassBtn) navFindPassBtn.addEventListener('click', openFindPassModal);
+  if (calFindPassBtn) calFindPassBtn.addEventListener('click', openFindPassModal);
+  if (closeFindModalBtn) {
+    closeFindModalBtn.addEventListener('click', () => {
+      findPassModal.classList.remove('active');
+    });
+  }
+  if (findPassModal) {
+    findPassModal.addEventListener('click', (e) => {
+      if (e.target === findPassModal) findPassModal.classList.remove('active');
+    });
+  }
+
+  let userSearchPhone = '';
+
+  const sendFindOtpBtn = document.getElementById('btn-send-find-otp');
+  if (sendFindOtpBtn) {
+    sendFindOtpBtn.addEventListener('click', async () => {
+      const phoneInput = document.getElementById('find-phone-input');
+      const err = document.getElementById('find-phone-error');
+      if (!phoneInput) return;
+      const phone = phoneInput.value.trim();
+
+      if (phone.length < 10) {
+        if (err) {
+          err.textContent = 'Please enter a valid 10-digit mobile number.';
+          err.style.display = 'block';
+        }
+        return;
+      }
+
+      userSearchPhone = phone;
+      sendFindOtpBtn.disabled = true;
+      sendFindOtpBtn.textContent = 'SENDING OTP...';
+
+      try {
+        const res = await fetch('/api/otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'send', phone, purpose: 'RETRIEVE_PASS' })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
+
+        document.getElementById('otp-step-phone').style.display = 'none';
+        document.getElementById('otp-step-verify').style.display = 'block';
+        const displayPhone = document.getElementById('otp-phone-display');
+        if (displayPhone) displayPhone.textContent = phone;
+
+        if (data.dev_preview_code) {
+          const devPill = document.getElementById('dev-otp-pill');
+          if (devPill) {
+            devPill.textContent = `Dev/Testing Verification Code: ${data.dev_preview_code}`;
+            devPill.style.display = 'block';
+          }
+        }
+        showToast('Verification code dispatched successfully!');
+      } catch (e) {
+        if (err) {
+          err.textContent = e.message;
+          err.style.display = 'block';
+        }
+      } finally {
+        sendFindOtpBtn.disabled = false;
+        sendFindOtpBtn.textContent = 'SEND 6-DIGIT VERIFICATION CODE →';
+      }
+    });
+  }
+
+  const verifyFindOtpBtn = document.getElementById('btn-verify-find-otp');
+  if (verifyFindOtpBtn) {
+    verifyFindOtpBtn.addEventListener('click', async () => {
+      const otpInput = document.getElementById('find-otp-input');
+      const err = document.getElementById('find-otp-error');
+      if (!otpInput) return;
+      const otp = otpInput.value.trim();
+
+      if (otp.length < 4) {
+        if (err) {
+          err.textContent = 'Please enter the verification code.';
+          err.style.display = 'block';
+        }
+        return;
+      }
+
+      verifyFindOtpBtn.disabled = true;
+      verifyFindOtpBtn.textContent = 'VERIFYING...';
+
+      try {
+        const res = await fetch('/api/otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'verify',
+            phone: userSearchPhone,
+            otp,
+            purpose: 'RETRIEVE_PASS'
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Verification failed');
+
+        document.getElementById('otp-step-verify').style.display = 'none';
+        document.getElementById('otp-step-results').style.display = 'block';
+
+        const list = document.getElementById('student-passes-list');
+        if (list) {
+          list.innerHTML = '';
+          const passes = data.passes || [];
+          if (passes.length === 0) {
+            list.innerHTML = '<p style="color: var(--color-gray); font-size: 0.88rem;">No active passes found for this number.</p>';
+          } else {
+            passes.forEach((p) => {
+              const item = document.createElement('div');
+              item.style.cssText = 'background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 1rem; text-align: left;';
+              item.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;">
+                  <strong style="color: #fff; font-size: 1rem;">${p.event ? p.event.name : 'Event'}</strong>
+                  <span style="font-family: var(--font-mono); font-size: 0.72rem; color: ${p.status === 'CONFIRMED' ? '#34d399' : '#fbbf24'}; font-weight: 700;">${p.status}</span>
+                </div>
+                <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-gray); margin-bottom: 0.75rem;">
+                  Pass ID: <span style="color: var(--color-blue); font-weight: 700;">${p.registration_id}</span> • ${p.name}
+                </div>
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                  <a href="event.html?id=${encodeURIComponent((p.event && p.event.id) || '')}" class="btn-brutalist btn-secondary btn-sm">
+                    View Event Details
+                  </a>
+                  <button type="button" class="btn-brutalist btn-outline btn-sm" style="color: #f87171; border-color: #ef4444;" onclick="cancelRegistrationFromHome('${p.registration_id}')">
+                    Cancel Pass
+                  </button>
+                </div>
+              `;
+              list.appendChild(item);
+            });
+          }
+        }
+      } catch (e) {
+        if (err) {
+          err.textContent = e.message;
+          err.style.display = 'block';
+        }
+      } finally {
+        verifyFindOtpBtn.disabled = false;
+        verifyFindOtpBtn.textContent = 'VERIFY & ACCESS PASSES →';
+      }
+    });
+  }
+
+  const otpBackBtn = document.getElementById('btn-otp-back');
+  if (otpBackBtn) {
+    otpBackBtn.addEventListener('click', () => {
+      document.getElementById('otp-step-verify').style.display = 'none';
+      document.getElementById('otp-step-phone').style.display = 'block';
+    });
+  }
+
+  window.cancelRegistrationFromHome = async (rid) => {
+    if (!confirm(`Are you sure you want to cancel pass ${rid}? This immediately invalidates your pass and transfers your slot to the next waitlisted student.`)) {
+      return;
+    }
+
+    const otp = prompt('Enter the 6-digit verification code to confirm cancellation:');
+    if (!otp) return;
+
+    try {
+      const res = await fetch('/api/otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'verify',
+          phone: userSearchPhone,
+          otp,
+          purpose: 'CANCEL_REGISTRATION',
+          registration_id: rid
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Cancellation failed');
+      showToast(`Pass ${rid} cancelled successfully.`, 'success');
+      findPassModal.classList.remove('active');
+      loadEventsData();
+    } catch (e) {
+      alert(`Cancellation error: ${e.message}`);
+    }
+  };
 });
+
 

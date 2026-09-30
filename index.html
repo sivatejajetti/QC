@@ -51,14 +51,17 @@
 
       <!-- Center/Right: Desktop Nav Links -->
       <nav class="desktop-nav" aria-label="Primary Navigation">
-        <a href="#home" class="nav-link active" data-cursor="GO">Home</a>
-        <a href="#about" class="nav-link" data-cursor="GO">About</a>
-        <a href="#team" class="nav-link" data-cursor="GO">Core Team</a>
-        <a href="#gallery" class="nav-link" data-cursor="GO">Gallery</a>
-        <a href="#register" class="nav-link" data-cursor="JOIN">Join</a>
-        <a href="#contact" class="nav-link" data-cursor="TALK">Contact</a>
-        <a href="#register" class="btn-brutalist nav-btn-join" data-cursor="JOIN">
-          Register <span class="btn-arrow">→</span>
+        <a href="#home" class="nav-link active" data-cursor="GO" data-section="home">Home</a>
+        <a href="#about" class="nav-link" data-cursor="GO" data-section="about">About</a>
+        <a href="#calendar" class="nav-link" data-cursor="EVENTS" data-section="calendar">Events</a>
+        <a href="#gallery" class="nav-link" data-cursor="GO" data-section="gallery">Gallery</a>
+        <a href="#team" class="nav-link" data-cursor="GO" data-section="team">Team</a>
+        <a href="#contact" class="nav-link" data-cursor="TALK" data-section="contact">Contact</a>
+        <button type="button" class="btn-brutalist btn-secondary btn-sm" id="nav-btn-find-pass" style="padding: 0.45rem 0.85rem; font-size: 0.72rem; white-space: nowrap;" title="Find or cancel an active event pass">
+          🔍 Find Pass
+        </button>
+        <a href="#register" class="btn-brutalist nav-btn-join" data-cursor="JOIN" style="white-space: nowrap;">
+          Join <span class="btn-arrow">→</span>
         </a>
       </nav>
 
@@ -86,36 +89,50 @@
     </div>
     <ul class="mobile-nav-list">
       <li>
-        <a href="#home" class="mobile-nav-link" data-nav-close>
+        <a href="#home" class="mobile-nav-link" data-nav-close data-section="home">
           <span class="nav-num">01</span> Home
         </a>
       </li>
       <li>
-        <a href="#about" class="mobile-nav-link" data-nav-close>
+        <a href="#about" class="mobile-nav-link" data-nav-close data-section="about">
           <span class="nav-num">02</span> About Us
         </a>
       </li>
       <li>
-        <a href="#team" class="mobile-nav-link" data-nav-close>
-          <span class="nav-num">03</span> Core Team
+        <a href="#calendar" class="mobile-nav-link" data-nav-close data-section="calendar">
+          <span class="nav-num">03</span> Event Calendar
         </a>
       </li>
       <li>
-        <a href="#gallery" class="mobile-nav-link" data-nav-close>
+        <a href="#gallery" class="mobile-nav-link" data-nav-close data-section="gallery">
           <span class="nav-num">04</span> Gallery
         </a>
       </li>
       <li>
-        <a href="#register" class="mobile-nav-link" data-nav-close>
-          <span class="nav-num">05</span> Join The Club
+        <a href="#team" class="mobile-nav-link" data-nav-close data-section="team">
+          <span class="nav-num">05</span> Core Team
         </a>
       </li>
       <li>
-        <a href="#contact" class="mobile-nav-link" data-nav-close>
-          <span class="nav-num">06</span> Contact
+        <a href="#register" class="mobile-nav-link" data-nav-close data-section="register">
+          <span class="nav-num">06</span> Join The Club
+        </a>
+      </li>
+      <li>
+        <a href="#contact" class="mobile-nav-link" data-nav-close data-section="contact">
+          <span class="nav-num">07</span> Contact
         </a>
       </li>
     </ul>
+
+    <div class="mobile-nav-quick-actions" style="margin-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+      <button type="button" class="btn-brutalist btn-secondary btn-sm" id="mobile-btn-find-pass" style="padding: 0.55rem 1rem; font-size: 0.78rem; white-space: nowrap;">
+        🔍 Find Pass
+      </button>
+      <a href="#register" class="btn-brutalist nav-btn-join" data-nav-close style="padding: 0.55rem 1.15rem; font-size: 0.78rem; white-space: nowrap;">
+        Join The Club →
+      </a>
+    </div>
 
     <div class="mobile-nav-footer">
       <span>QUANTUM CODERS // 2026</span>
@@ -633,6 +650,93 @@
           </div>
         </div>
       </div>
+    <!-- =======================================================================
+         03.5. EVENT CALENDAR & SPRINT SCHEDULE (MONTHLY VIEW & INTERACTIVE CARDS)
+         ======================================================================= -->
+    <section class="section calendar-section" id="calendar">
+      <div class="vertical-text" style="top: 20%; left: 1.5rem;">C A L E N D A R // 2 0 2 6</div>
+
+      <div class="container">
+        <div class="section-header">
+          <div class="section-tag">03.5 // Operational Cadre Schedule • Pydah College of Engineering</div>
+          <h2 class="section-title-huge">
+            EVENT <span class="outline-text">CALENDAR</span>
+          </h2>
+          <p class="section-subtitle">
+            Explore scheduled workshops, 36h hackathons, and AI guild technical sprints. Inspect upcoming sessions and reserve student entry passes.
+          </p>
+        </div>
+
+        <!-- Monthly Calendar Card -->
+        <div class="editorial-card calendar-card-box" style="margin-bottom: 3rem; background: #0A0A0E; border: 1.5px solid var(--border-medium); border-radius: 8px; padding: 2rem 1.5rem;">
+          <!-- Calendar Controls Bar -->
+          <div class="calendar-controls-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.75rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <button type="button" class="btn-brutalist btn-secondary btn-sm" id="cal-prev-month" aria-label="Previous month">
+                ← Prev
+              </button>
+              <h3 id="cal-month-year-title" style="font-family: var(--font-display); font-size: 1.6rem; margin: 0; color: #fff; min-width: 180px; text-align: center;">
+                APRIL 2026
+              </h3>
+              <button type="button" class="btn-brutalist btn-secondary btn-sm" id="cal-next-month" aria-label="Next month">
+                Next →
+              </button>
+              <button type="button" class="btn-brutalist btn-outline btn-sm" id="cal-today-btn" style="font-size: 0.72rem;">
+                Today
+              </button>
+            </div>
+
+            <!-- Event Type Legend / Filter -->
+            <div class="cal-legend-bar" style="display: flex; gap: 0.75rem; flex-wrap: wrap; font-family: var(--font-mono); font-size: 0.72rem;">
+              <span style="display: inline-flex; align-items: center; gap: 0.35rem; color: #60a5fa;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6;"></span> Workshop
+              </span>
+              <span style="display: inline-flex; align-items: center; gap: 0.35rem; color: #f472b6;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #ec4899;"></span> Hackathon
+              </span>
+              <span style="display: inline-flex; align-items: center; gap: 0.35rem; color: #34d399;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981;"></span> Competition
+              </span>
+              <span style="display: inline-flex; align-items: center; gap: 0.35rem; color: #fbbf24;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b;"></span> Seminar
+              </span>
+            </div>
+          </div>
+
+          <!-- Day of Week Header Grid -->
+          <div class="calendar-days-header-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; color: var(--color-gray); letter-spacing: 0.1em; padding-bottom: 0.75rem;">
+            <div>SUN</div>
+            <div>MON</div>
+            <div>TUE</div>
+            <div>WED</div>
+            <div>THU</div>
+            <div>FRI</div>
+            <div>SAT</div>
+          </div>
+
+          <!-- Calendar Days Grid (Populated dynamically) -->
+          <div class="calendar-days-grid" id="calendar-days-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;">
+            <!-- Injected via script.js -->
+          </div>
+        </div>
+
+        <!-- Featured Upcoming Event Cards Strip -->
+        <div style="margin-top: 2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div class="section-tag" style="margin-bottom: 0.4rem;">UPCOMING CADRE SPRINTS</div>
+              <h3 style="font-family: var(--font-display); font-size: 1.8rem; color: #fff; margin: 0;">FEATURED EVENTS</h3>
+            </div>
+            <button type="button" class="btn-brutalist btn-secondary btn-sm" id="cal-open-find-pass-btn">
+              🔍 Already Registered? Retrieve Pass
+            </button>
+          </div>
+
+          <div class="upcoming-events-grid" id="upcoming-events-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+            <!-- Injected via script.js -->
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- =======================================================================
@@ -1030,7 +1134,7 @@
             </div>
 
             <div class="contact-social-pills">
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="social-pill" data-cursor="SOCIAL">
+              <a href="https://instagram.com/quantum_coders_club" target="_blank" rel="noopener noreferrer" class="social-pill" data-cursor="SOCIAL">
                 Instagram ↗
               </a>
               <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" class="social-pill" data-cursor="SOCIAL">
@@ -1130,13 +1234,9 @@
         <div id="footer-secret-trigger" style="user-select: none; cursor: default;">
           © 2026 QUANTUM CODERS. ALL RIGHTS RESERVED.
         </div>
-        <div class="footer-launch-chip-wrap">
-          <button id="footer-launch-trigger" class="footer-launch-chip" type="button" title="Open Ceremonial Launch Mode for Dr m veeraBhadra Rao Sir, Dr Surya Prakash Sir & Mr Ravi Kumar Sir">
-            <span class="launch-chip-dot"></span> 🚀 LAUNCH MODE
-          </button>
-        </div>
+
         <div>
-          DESIGN LANGUAGE: CLUB ID CARD EDITORIAL BRUTALISM
+          DESIGN BY TEJA JETTI, Treasurer & Designer, Quantum Coders
         </div>
       </div>
     </div>
@@ -1145,226 +1245,7 @@
   <!-- Toast Notification Bar -->
   <div class="toast-notice" id="toast-notice" role="status" aria-live="polite"></div>
 
-  <!-- =========================================================================
-       CEREMONIAL LAUNCH MODE (OFFICIAL INAUGURATION BY Dr m veeraBhadra Rao Sir, Dr Surya Prakash Sir & Mr Ravi Kumar Sir SIR)
-       ========================================================================= -->
-  <div class="launch-mode-overlay" id="launch-mode-overlay" aria-hidden="true" style="display: none;">
-    <!-- Particle & Confetti Canvas -->
-    <canvas class="launch-canvas" id="launch-canvas"></canvas>
 
-    <!-- Ambient Cybernetic FX -->
-    <div class="launch-grid-bg" aria-hidden="true"></div>
-    <div class="launch-scanline" aria-hidden="true"></div>
-    <div class="launch-glow-radial launch-glow-blue" aria-hidden="true"></div>
-    <div class="launch-glow-radial launch-glow-purple" aria-hidden="true"></div>
-
-    <div class="launch-screen-container">
-      <!-- Top Status Header (Clean & Dignified) -->
-      <header class="launch-header">
-        <div class="launch-brand-pill" title="Pydah College of Engineering">
-          <img src="images/Pydah%20Logo.png" alt="Pydah College of Engineering" class="launch-pydah-logo">
-          <span class="launch-brand-divider" aria-hidden="true"></span>
-          <span class="launch-brand-text">PYDAH COLLEGE OF ENGINEERING</span>
-        </div>
-
-        <div class="launch-header-right">
-          <!-- Standby indicator for laptop presentation (Clean, no debug text) -->
-          <div class="launch-screen-live-pill" id="launch-screen-live-pill">
-            <span class="launch-status-dot"></span>
-            <span>CEREMONIAL STANDBY</span>
-          </div>
-          <!-- Controller-only tools (Hidden on laptop screen) -->
-          <div class="launch-controller-tools" id="launch-controller-tools">
-            <button class="launch-reset-btn" id="launch-reset-btn" type="button" title="Reset Launch State">🔄 Reset</button>
-          </div>
-          <button class="launch-exit-btn" id="launch-exit-btn" type="button" title="Exit Presentation (Esc)" aria-label="Exit Presentation">✕</button>
-        </div>
-      </header>
-
-      <!-- Center Stage: Clean Laptop Information Panel OR Mobile Controller Panel -->
-      <main class="launch-main-stage" id="launch-main-stage">
-
-        <!-- ===================================================================
-             1. LAPTOP / PROJECTOR PRESENTATION PANEL (NO BUTTON, ULTRA-CLEAN)
-             =================================================================== -->
-        <div class="launch-ceremony-card launch-screen-panel" id="launch-screen-panel">
-          <!-- Clean Protocol Tag -->
-          <div class="screen-panel-header">
-            <span class="screen-protocol-tag">✨ OFFICIAL INAUGURATION CEREMONY • 2026 ✨</span>
-          </div>
-
-          <!-- Dignitary Honoree Presentation -->
-          <div class="screen-guest-block">
-            <div class="screen-guest-label">HON'BLE INAUGURATING CHIEF GUEST</div>
-            <h1 class="screen-guest-name">Dr m veeraBhadra Rao Sir, Dr Surya Prakash Sir & Mr Ravi Kumar Sir SIR</h1>
-          </div>
-
-          <!-- Club Identity -->
-          <div class="screen-club-block">
-            <div class="screen-club-name">QUANTUM CODERS</div>
-            <div class="screen-club-tagline">
-              <span>CREATE</span>
-              <span class="launch-slash">•</span>
-              <span>CONNECT</span>
-              <span class="launch-slash">•</span>
-              <span>LEAD</span>
-            </div>
-            <div class="screen-college-sub">The Official Student Innovation &amp; Technology Guild • Pydah College of Engineering</div>
-          </div>
-
-          <!-- Clean Ceremonial Standby Indicator (NO BUTTON, NO UNWANTED JARGON) -->
-          <div class="screen-standby-zone">
-            <div class="screen-standby-radar">
-              <span class="standby-radar-ring ring-1"></span>
-              <span class="standby-radar-ring ring-2"></span>
-              <span class="standby-radar-core"></span>
-            </div>
-
-            <div class="screen-standby-meta">
-              <div class="standby-headline">
-                <span class="standby-status-dot"></span>
-                <span>AWAITING INAUGURATION BY Dr m veeraBhadra Rao Sir, Dr Surya Prakash Sir & Mr Ravi Kumar Sir SIR</span>
-              </div>
-              <p class="standby-subtitle">Standing by for ceremonial launch from mobile terminal</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- ===================================================================
-             2. MOBILE CONTROLLER PANEL (EXCLUSIVELY FOR Dr m veeraBhadra Rao Sir, Dr Surya Prakash Sir & Mr Ravi Kumar Sir SIR'S PHONE)
-             =================================================================== -->
-        <div class="launch-ceremony-card launch-controller-panel" id="launch-controller-panel">
-          <div class="launch-card-header">
-            <div class="launch-protocol-badge">
-              <span class="launch-badge-icon">⚡</span>
-              <span>OFFICIAL INAUGURATION PROTOCOL</span>
-            </div>
-            <div class="launch-sync-badge">
-              <span class="launch-sync-pulse"></span>
-              <span>PROJECTOR LINKED</span>
-            </div>
-          </div>
-
-          <!-- Dignitary Welcome Section -->
-          <div class="launch-guest-block">
-            <div class="launch-guest-eyebrow">Our Honored Dean</div>
-            <h1 class="launch-guest-name">Dr M VeeraBhadra Rao Sir, Dr P Surya Prakash Sir & Mr K Ravi Kumar Sir</h1>
-            <p class="launch-guest-greeting">
-              Press the reactor core below to officially inaugurate the website and reveal it on the main screen.
-            </p>
-          </div>
-
-          <!-- Club Title Lockup -->
-          <div class="launch-club-lockup">
-            <div class="launch-club-title">QUANTUM CODERS</div>
-            <div class="launch-club-tagline">
-              <span>CREATE</span>
-              <span class="launch-slash">/</span>
-              <span>CONNECT</span>
-              <span class="launch-slash">/</span>
-              <span>LEAD</span>
-            </div>
-          </div>
-
-          <!-- THE REACTOR CORE LAUNCH BUTTON (Mobile only) -->
-          <div class="launch-reactor-area">
-            <div class="launch-reactor-rings" aria-hidden="true">
-              <span class="ring-pulse ring-1"></span>
-              <span class="ring-pulse ring-2"></span>
-              <span class="ring-pulse ring-3"></span>
-            </div>
-
-            <button class="launch-core-button" id="launch-core-button" type="button" aria-label="Launch Quantum Coders">
-              <span class="launch-btn-halo" aria-hidden="true"></span>
-              <span class="launch-btn-content">
-                <span class="launch-btn-icon">🚀</span>
-                <span class="launch-btn-title">LAUNCH WEBSITE</span>
-                <span class="launch-btn-subtitle">PRESS TO INITIATE CHAPTER 01</span>
-              </span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Overdrive / Countdown HUD Overlay (Hyperdrive Reticle & Glitch Countdown) -->
-        <div class="launch-hud-overlay" id="launch-hud-overlay" aria-hidden="true">
-          <div class="launch-hud-box">
-            <!-- Multi-ring sci-fi targeting reticle -->
-            <div class="launch-hud-targeting">
-              <span class="hud-ring-outer"></span>
-              <span class="hud-ring-mid"></span>
-              <span class="hud-ring-inner"></span>
-              <span class="hud-crosshair-h"></span>
-              <span class="hud-crosshair-v"></span>
-              <span class="hud-core-pulse"></span>
-            </div>
-
-            <div class="launch-hud-status" id="launch-hud-status">AUTHENTICATING: Dr m veeraBhadra Rao Sir, Dr Surya Prakash Sir & Mr Ravi Kumar Sir SIR...</div>
-
-            <!-- Dynamic Countdown Display with Chromatic Aberration -->
-            <div class="launch-hud-countdown-stage">
-              <div class="launch-hud-countdown" id="launch-hud-countdown">5</div>
-              <div class="launch-hud-count-ghost" id="launch-hud-count-ghost" aria-hidden="true">5</div>
-              <div class="hud-energy-blast" id="hud-energy-blast" aria-hidden="true"></div>
-            </div>
-
-            <!-- Glowing Cyber Progress Meter -->
-            <div class="launch-hud-progress-wrap">
-              <div class="launch-hud-progress-bar" id="launch-hud-bar"></div>
-            </div>
-
-            <div class="launch-hud-telemetry">
-              <span class="tele-badge">REACTOR: OVERDRIVE</span>
-              <span class="tele-dot">•</span>
-              <span class="tele-badge">TELEMETRY: NOMINAL</span>
-              <span class="tele-dot">•</span>
-              <span class="tele-badge">PORTAL: READY</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Grand Celebration Proclamation Card (Supernova Ignition & Golden Aurora) -->
-        <div class="launch-celebrate-card" id="launch-celebrate-card" aria-hidden="true">
-          <!-- Animated Dynamic Aurora Rays -->
-          <div class="celebrate-aurora-glow" aria-hidden="true"></div>
-          <div class="celebrate-shimmer-border" aria-hidden="true"></div>
-
-          <!-- Trophy / Rocket Crest -->
-          <div class="celebrate-crest-block">
-            <span class="crest-sparkle spark-left">✦</span>
-            <div class="crest-rocket-emblem">🚀</div>
-            <span class="crest-sparkle spark-right">✦</span>
-          </div>
-
-          <div class="celebrate-badge-tag">✨ CHAPTER 01 OFFICIALLY INAUGURATED ✨</div>
-
-          <h2 class="celebrate-heading">
-            <span class="celebrate-text-gradient">QUANTUM CODERS IS LIVE!</span>
-          </h2>
-
-          <div class="celebrate-honoree-badge">
-            <span class="honoree-star">★</span>
-            <span class="honoree-name">INAUGURATED BY Dr m veeraBhadra Rao Sir, Dr Surya Prakash Sir & Mr Ravi Kumar Sir SIR</span>
-            <span class="honoree-star">★</span>
-          </div>
-
-          <p class="celebrate-tagline">
-            Welcome to the era of student builders, hackers, and creators.<br>
-            <strong>Pydah College of Engineering • 2026</strong>
-          </p>
-
-          <div class="celebrate-portal-status">
-            <div class="portal-status-bar">
-              <div class="portal-status-fill"></div>
-            </div>
-            <div class="portal-status-label">
-              <span class="celebrate-loading-dot"></span>
-              <span>UNVEILING LIVE DIGITAL PORTAL...</span>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  </div>
 
   <!-- =========================================================================
        APPLICATION / MEMBERSHIP STATUS LOOKUP MODAL
@@ -1405,7 +1286,61 @@
     </div>
   </div>
 
-  <!-- Vanilla JavaScript -->
+  <!-- =========================================================================
+       CALENDAR EVENT DETAILS QUICK MODAL
+       ========================================================================= -->
+  <div class="admin-modal-backdrop" id="calendar-event-modal" aria-hidden="true" role="dialog">
+    <div class="admin-modal-box" style="max-width: 540px; background: #0c0c10; border: 1.5px solid var(--border-medium); padding: 2.2rem; box-shadow: 0 25px 60px rgba(0,0,0,0.9);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
+        <div>
+          <span class="section-tag" id="cal-modal-badge" style="background: var(--color-blue); color: #fff; margin-bottom: 0.5rem;">WORKSHOP</span>
+          <h2 style="font-family: var(--font-display); font-size: 1.8rem; margin: 0; color: #fff; line-height: 1.15;" id="cal-modal-title">EVENT NAME</h2>
+        </div>
+        <button type="button" class="modal-close-btn" id="cal-modal-close" style="background: none; border: none; color: #fff; font-size: 1.7rem; cursor: pointer;">&times;</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.25rem; font-family: var(--font-mono); font-size: 0.78rem;">
+        <div style="background: rgba(255,255,255,0.03); padding: 0.6rem 0.85rem; border: 1px solid var(--border-subtle); border-radius: 4px;">
+          <div style="color: var(--color-gray); font-size: 0.68rem;">DATE &amp; TIME</div>
+          <div style="color: #fff; font-weight: 700; margin-top: 0.2rem;" id="cal-modal-datetime">APRIL 10, 2026</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.03); padding: 0.6rem 0.85rem; border: 1px solid var(--border-subtle); border-radius: 4px;">
+          <div style="color: var(--color-gray); font-size: 0.68rem;">VENUE</div>
+          <div style="color: #fff; font-weight: 700; margin-top: 0.2rem;" id="cal-modal-venue">AUDITORIUM</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.03); padding: 0.6rem 0.85rem; border: 1px solid var(--border-subtle); border-radius: 4px;">
+          <div style="color: var(--color-gray); font-size: 0.68rem;">REMAINING CAPACITY</div>
+          <div style="color: var(--color-blue); font-weight: 700; margin-top: 0.2rem;" id="cal-modal-slots">27 SLOTS LEFT</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.03); padding: 0.6rem 0.85rem; border: 1px solid var(--border-subtle); border-radius: 4px;">
+          <div style="color: var(--color-gray); font-size: 0.68rem;">DEADLINE</div>
+          <div style="color: #fbbf24; font-weight: 700; margin-top: 0.2rem;" id="cal-modal-deadline">09 APR 2026</div>
+        </div>
+      </div>
+
+      <p style="font-size: 0.88rem; line-height: 1.6; color: var(--color-gray); margin-bottom: 1.5rem;" id="cal-modal-desc">
+        Short description of event highlights...
+      </p>
+
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <button type="button" class="btn-brutalist btn-secondary btn-sm" id="cal-modal-cancel">
+          Close
+        </button>
+        <a href="event.html" class="btn-brutalist btn-primary btn-sm" id="cal-modal-action-btn">
+          View Details &amp; Register →
+        </a>
+      </div>
+    </div>
+  </div>
+
+  
+
+  <!-- QR Code Engine & Supabase SDKs -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+
+  <!-- Vanilla JavaScript Interaction Engine -->
   <script src="script.js"></script>
 </body>
 </html>
