@@ -2076,6 +2076,14 @@ const initAdmin = () => {
     } catch (e) {}
   };
 
+  const getDeletedEventIds = () => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('qc_deleted_event_ids') || '[]'));
+    } catch (e) {
+      return new Set();
+    }
+  };
+
   const fetchEventsData = async () => {
     let eventsList = [];
 
@@ -2121,9 +2129,13 @@ const initAdmin = () => {
       });
     }
 
-    // 4. Default Seed Catalog if completely empty
+    // 4. Filter out any events registered in deleted ID set
+    const deletedSet = getDeletedEventIds();
+    eventsList = eventsList.filter(e => e && !e.deleted_at && !deletedSet.has(String(e.id)) && !deletedSet.has(String(e.event_code)));
+
+    // 5. Default Seed Catalog if completely empty
     if (eventsList.length === 0) {
-      eventsList = DEFAULT_EVENTS_CATALOG.map(normalizeEvent);
+      eventsList = DEFAULT_EVENTS_CATALOG.map(normalizeEvent).filter(e => !deletedSet.has(String(e.id)) && !deletedSet.has(String(e.event_code)));
     }
 
     saveEventsToStorage(eventsList);
@@ -2815,18 +2827,30 @@ const initAdmin = () => {
     });
   }
 
-  // Soft Delete Event
+  // Permanently Delete Event
   const deleteEventRecord = async (eventId) => {
     if (!confirm('Are you sure you want to delete this event? This will archive it and remove it from the public calendar.')) return;
 
-    // 1. Try Supabase deletion
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(eventId);
+    const nowIso = new Date().toISOString();
+
+    // 1. Try Supabase deletion by UUID or event_code
     if (window.QC_SUPABASE && window.QC_SUPABASE.isConfigured()) {
       try {
         const client = window.QC_SUPABASE.getClient();
         if (client) {
-          await client.from('events').update({ deleted_at: new Date().toISOString() }).eq('id', eventId);
+          if (isUuid) {
+            await client.from('events').update({ deleted_at: nowIso, status: 'CANCELLED' }).eq('id', eventId);
+            await client.from('events').delete().eq('id', eventId);
+          } else {
+            const code = String(eventId).toUpperCase();
+            await client.from('events').update({ deleted_at: nowIso, status: 'CANCELLED' }).eq('event_code', code);
+            await client.from('events').delete().eq('event_code', code);
+          }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Supabase event delete warning:', e);
+      }
     }
 
     // 2. Try Serverless API
@@ -2834,12 +2858,23 @@ const initAdmin = () => {
       await fetch(`/api/events?id=${encodeURIComponent(eventId)}`, { method: 'DELETE' });
     } catch (err) {}
 
-    // 3. Update localStorage
-    const allEvents = (getEventsFromStorage() || adminEventsCache || []).filter(e => String(e.id) !== String(eventId));
+    // 3. Save to persistent deleted list in localStorage
+    try {
+      const deletedList = Array.from(getDeletedEventIds());
+      if (!deletedList.includes(String(eventId))) deletedList.push(String(eventId));
+      const targetEv = (adminEventsCache || []).find(e => String(e.id) === String(eventId));
+      if (targetEv && targetEv.event_code && !deletedList.includes(String(targetEv.event_code))) {
+        deletedList.push(String(targetEv.event_code));
+      }
+      localStorage.setItem('qc_deleted_event_ids', JSON.stringify(deletedList));
+    } catch (e) {}
+
+    // 4. Update localStorage and in-memory cache
+    const allEvents = (getEventsFromStorage() || adminEventsCache || []).filter(e => String(e.id) !== String(eventId) && String(e.event_code) !== String(eventId));
     saveEventsToStorage(allEvents);
     adminEventsCache = allEvents;
 
-    // 4. Broadcast removal
+    // 5. Broadcast removal
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         const bc = new BroadcastChannel('qc_events_channel');
@@ -2852,7 +2887,7 @@ const initAdmin = () => {
       }
     } catch (e) {}
 
-    showToast('Event removed.', 'error');
+    showToast('Event permanently deleted.', 'error');
     renderAdminEventsGrid(adminEventsCache);
     loadDashboardStats();
   };

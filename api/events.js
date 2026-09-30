@@ -438,7 +438,7 @@ module.exports = async function handler(req, res) {
     }
 
     // -------------------------------------------------------------------------
-    // DELETE: Soft Delete Event (Admin)
+    // DELETE: Delete Event (Admin)
     // -------------------------------------------------------------------------
     if (req.method === 'DELETE') {
       const { id } = req.query;
@@ -449,18 +449,27 @@ module.exports = async function handler(req, res) {
       const deleted_at = new Date().toISOString();
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
 
-      if (supabase && isUuid) {
-        const { error } = await supabase.from('events').update({ deleted_at, status: 'CANCELLED' }).eq('id', id);
-        if (error) throw error;
-        return res.status(200).json({ success: true, message: 'Event soft deleted.' });
-      } else {
-        const ev = FALLBACK_STORE.events.find((e) => e.id === id || e.event_code === id);
-        if (ev) {
-          ev.deleted_at = deleted_at;
-          ev.status = 'CANCELLED';
+      if (supabase) {
+        try {
+          if (isUuid) {
+            await supabase.from('events').update({ deleted_at, status: 'CANCELLED' }).eq('id', id);
+            await supabase.from('events').delete().eq('id', id);
+          } else {
+            const code = String(id).toUpperCase();
+            await supabase.from('events').update({ deleted_at, status: 'CANCELLED' }).eq('event_code', code);
+            await supabase.from('events').delete().eq('event_code', code);
+          }
+        } catch (dbErr) {
+          console.warn('[Events API] Supabase delete warning:', dbErr.message);
         }
-        return res.status(200).json({ success: true, message: 'Event soft deleted.' });
       }
+
+      const ev = FALLBACK_STORE.events.find((e) => e.id === id || e.event_code === id);
+      if (ev) {
+        ev.deleted_at = deleted_at;
+        ev.status = 'CANCELLED';
+      }
+      return res.status(200).json({ success: true, message: 'Event deleted successfully.' });
     }
 
     return res.status(405).json({ error: 'Method Not Allowed' });

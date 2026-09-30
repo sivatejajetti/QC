@@ -2196,6 +2196,14 @@ document.addEventListener('DOMContentLoaded', () => {
       ];
     }
 
+    // Filter out deleted events from persistent deletion registry
+    let deletedSet = new Set();
+    try {
+      deletedSet = new Set(JSON.parse(localStorage.getItem('qc_deleted_event_ids') || '[]'));
+    } catch (e) {}
+
+    loaded = loaded.filter(e => e && !e.deleted_at && !deletedSet.has(String(e.id)) && !deletedSet.has(String(e.event_code)));
+
     // Normalize all events
     calendarEvents = loaded.map(normalizeEvent).filter(Boolean);
 
