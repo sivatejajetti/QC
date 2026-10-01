@@ -22,7 +22,8 @@ module.exports = async function handler(req, res) {
   }
 
   const supabase = getSupabaseAdmin();
-  const { type, event_id } = req.query; // 'registrations', 'waitlist', 'attendance', 'full'
+  const type = req.query.type;
+  const event_id = req.query.event_id || req.query.eventId; // 'registrations', 'waitlist', 'attendance', 'full'
 
   try {
     let filename = `quantum-coders-${type || 'export'}-${Date.now()}.csv`;

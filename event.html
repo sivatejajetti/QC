@@ -1098,31 +1098,78 @@
         const list = document.getElementById('student-passes-list');
         list.innerHTML = '';
         if (passes.length === 0) {
-          list.innerHTML = '<p style="color: var(--color-gray); font-size: 0.88rem; padding: 1rem; text-align: center;">No active passes found for this phone number.</p>';
+          list.innerHTML = '<p style="color: var(--color-gray); font-size: 0.88rem; padding: 1.5rem; text-align: center;">No active passes found for this phone number.</p>';
           return;
         }
 
+        // Group passes by Event so they show for each event separately
+        const groups = {};
         passes.forEach((p) => {
-          const item = document.createElement('div');
-          item.style.cssText = 'background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 1rem; text-align: left;';
-          item.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;">
-              <strong style="color: #fff; font-size: 1rem;">${p.event ? (p.event.name || p.event.title) : 'Quantum Coders Event'}</strong>
-              <span style="font-family: var(--font-mono); font-size: 0.72rem; color: ${p.status === 'CONFIRMED' ? '#34d399' : '#fbbf24'}; font-weight: 700;">${p.status}</span>
+          const evTitle = (p.event && (p.event.name || p.event.title)) || p.event_title || 'Quantum Coders Event';
+          const evId = (p.event && p.event.id) || p.event_id || evTitle;
+          if (!groups[evId]) {
+            groups[evId] = {
+              eventId: evId,
+              title: evTitle,
+              date: (p.event && (p.event.date || p.event.event_date)) || '',
+              venue: (p.event && p.event.venue) || '',
+              isCurrent: currentEvent && (String(currentEvent.id) === String(evId)),
+              passes: []
+            };
+          }
+          groups[evId].passes.push(p);
+        });
+
+        // Sort so current event's passes are at the top if on an event page
+        const sortedGroups = Object.values(groups).sort((a, b) => (b.isCurrent ? 1 : 0) - (a.isCurrent ? 1 : 0));
+
+        sortedGroups.forEach((grp) => {
+          const grpBox = document.createElement('div');
+          grpBox.style.cssText = `background: rgba(255,255,255,0.03); border: 1.5px solid ${grp.isCurrent ? 'var(--color-blue)' : 'var(--border-medium)'}; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; text-align: left;`;
+          
+          const passesHtml = grp.passes.map((p) => {
+            const passJson = JSON.stringify(p).replace(/'/g, '&#39;');
+            return `
+              <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.85rem; margin-top: 0.6rem;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;">
+                  <span style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--color-blue); font-weight: 700;">PASS ID: ${escapeHtml(p.registration_id)}</span>
+                  <span style="font-family: var(--font-mono); font-size: 0.72rem; color: ${p.status === 'CONFIRMED' ? '#34d399' : '#fbbf24'}; font-weight: 700;">${p.status}</span>
+                </div>
+                <div style="font-size: 0.95rem; color: #FFFFFF; font-weight: 600; margin-bottom: 0.2rem;">
+                  ${escapeHtml(p.name)}
+                </div>
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-gray); margin-bottom: 0.75rem;">
+                  ${p.section ? `Section: ${escapeHtml(p.section)} • ` : ''}Slot #${p.slot_number || 1}
+                </div>
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                  <button type="button" class="btn-brutalist btn-secondary btn-sm" onclick='viewSinglePass(${passJson})'>
+                    🎟️ View Pass &amp; QR
+                  </button>
+                  <button type="button" class="btn-brutalist btn-outline btn-sm" style="color: #f87171; border-color: #ef4444;" onclick="cancelRegistrationPrompt('${p.registration_id}')">
+                    Cancel Pass
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          grpBox.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.5rem;">
+              <div>
+                <div style="display: flex; gap: 0.4rem; align-items: center; margin-bottom: 0.2rem;">
+                  <span style="font-family: var(--font-mono); font-size: 0.65rem; color: #60A5FA; background: rgba(59, 130, 246, 0.2); padding: 2px 6px; border-radius: 3px; font-weight: 700;">EVENT</span>
+                  ${grp.isCurrent ? '<span style="font-family: var(--font-mono); font-size: 0.62rem; color: #34D399; background: rgba(52, 211, 153, 0.2); padding: 2px 6px; border-radius: 3px; font-weight: 700;">THIS EVENT</span>' : ''}
+                </div>
+                <h4 style="font-family: var(--font-heading); font-size: 1.05rem; color: #FFFFFF; margin: 0;">${escapeHtml(grp.title)}</h4>
+                ${grp.date ? `<div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray); margin-top: 0.2rem;">📅 ${grp.date} ${grp.venue ? `• 📍 ${escapeHtml(grp.venue)}` : ''}</div>` : ''}
+              </div>
+              <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray); background: rgba(255,255,255,0.06); padding: 2px 7px; border-radius: 4px; white-space: nowrap;">
+                ${grp.passes.length} Pass${grp.passes.length > 1 ? 'es' : ''}
+              </span>
             </div>
-            <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-gray); margin-bottom: 0.75rem;">
-              Pass ID: <span style="color: var(--color-blue); font-weight: 700;">${p.registration_id}</span> • ${p.name}
-            </div>
-            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-              <button type="button" class="btn-brutalist btn-secondary btn-sm" onclick='viewSinglePass(${JSON.stringify(p)})'>
-                View Pass
-              </button>
-              <button type="button" class="btn-brutalist btn-outline btn-sm" style="color: #f87171; border-color: #ef4444;" onclick="cancelRegistrationPrompt('${p.registration_id}')">
-                Cancel Registration
-              </button>
-            </div>
+            <div>${passesHtml}</div>
           `;
-          list.appendChild(item);
+          list.appendChild(grpBox);
         });
       }
 

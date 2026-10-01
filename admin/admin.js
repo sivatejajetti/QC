@@ -2642,6 +2642,96 @@ const initAdmin = () => {
 
   const DEFAULT_EVENT_PASSES_SEED = [];
 
+  const renderEventPassesTabs = (events) => {
+    const tabsBar = document.getElementById('event-passes-tabs-bar');
+    if (!tabsBar) return;
+
+    const list = adminRegistrationsCache || [];
+    const totalAll = list.length;
+
+    let html = `
+      <button type="button" class="btn-filter-pill ${activePassEventId === 'all' ? 'active' : ''}" data-ev-pill="all" style="${activePassEventId === 'all' ? 'background: #3B82F6; color: #FFFFFF; border-color: #3B82F6; font-weight: 700;' : ''}">
+        🌐 All Events (${totalAll})
+      </button>
+    `;
+
+    (events || []).forEach(ev => {
+      const evPassCount = list.filter(p => String(p.event_id) === String(ev.id) || String(p.eventId) === String(ev.id)).length;
+      const isActive = String(activePassEventId) === String(ev.id);
+      html += `
+        <button type="button" class="btn-filter-pill ${isActive ? 'active' : ''}" data-ev-pill="${ev.id}" style="${isActive ? 'background: #3B82F6; color: #FFFFFF; border-color: #3B82F6; font-weight: 700;' : ''}">
+          🎟️ ${escapeHtml(ev.title || ev.name)} (${evPassCount})
+        </button>
+      `;
+    });
+
+    tabsBar.innerHTML = html;
+
+    tabsBar.querySelectorAll('[data-ev-pill]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activePassEventId = btn.dataset.evPill;
+        if (eventRegFilterSelect) eventRegFilterSelect.value = activePassEventId;
+        renderEventPassesTabs(events);
+        renderActiveEventDossier(events);
+        renderEventPassesTable();
+      });
+    });
+  };
+
+  const renderActiveEventDossier = (events) => {
+    const dossier = document.getElementById('active-event-dossier');
+    if (!dossier) return;
+
+    if (activePassEventId === 'all') {
+      dossier.style.display = 'none';
+      return;
+    }
+
+    const currentEv = (events || []).find(e => String(e.id) === String(activePassEventId) || String(e.event_code) === String(activePassEventId));
+    if (!currentEv) {
+      dossier.style.display = 'none';
+      return;
+    }
+
+    const list = (adminRegistrationsCache || []).filter(p => String(p.event_id) === String(currentEv.id) || String(p.eventId) === String(currentEv.id));
+    const confirmed = list.filter(p => p.status === 'CONFIRMED').length;
+    const waitlist = list.filter(p => p.status === 'WAITLIST').length;
+    const maxCapacity = currentEv.max_capacity || currentEv.maximum_slots || 100;
+    const fillPercent = Math.min(100, Math.round((confirmed / maxCapacity) * 100));
+
+    dossier.style.display = 'flex';
+    dossier.innerHTML = `
+      <div style="flex: 1; min-width: 280px;">
+        <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem;">
+          <span class="activity-badge" style="background: rgba(59, 130, 246, 0.2); color: #60A5FA;">EVENT PASS ROSTER</span>
+          <span class="status-badge badge-confirmed">${currentEv.status || 'PUBLISHED'}</span>
+          <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray); margin-left: auto;">
+            CODE: <span style="color: #FFFFFF;">${escapeHtml(currentEv.event_code || currentEv.id)}</span>
+          </span>
+        </div>
+        <h2 style="font-family: var(--font-heading); font-size: 1.35rem; color: #FFFFFF; margin: 0 0 0.5rem 0;">
+          ${escapeHtml(currentEv.title || currentEv.name)}
+        </h2>
+        <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-gray); display: flex; gap: 1.25rem; flex-wrap: wrap;">
+          <span>📅 ${formatEventDate(currentEv.date || currentEv.event_date)}</span>
+          <span>⏰ ${formatEventTime(currentEv.start_time)}</span>
+          <span>📍 ${escapeHtml(currentEv.venue || 'Campus Auditorium')}</span>
+          <span style="color: #34D399; font-weight: 700;">✓ ${confirmed} Confirmed</span>
+          <span style="color: #FBBF24;">⏳ ${waitlist} Waitlist</span>
+          <span style="color: #60A5FA;">⚡ Capacity: ${fillPercent}% (${confirmed}/${maxCapacity})</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+        <button type="button" class="btn-brutalist btn-secondary btn-sm" onclick="filterAttendanceByEvent('${currentEv.id}')">
+          📋 Event Attendance →
+        </button>
+        <button type="button" class="btn-brutalist btn-outline btn-sm" onclick="filterPassesByEvent('all')" style="font-size: 0.72rem;">
+          ✕ Show All Events
+        </button>
+      </div>
+    `;
+  };
+
   const loadEventPasses = async () => {
     const events = await fetchEventsData();
 
@@ -2659,16 +2749,16 @@ const initAdmin = () => {
 
     let passes = [];
 
-    // 1. Direct Supabase query if configured
+    // 1. Direct Supabase query (fetch all registrations to calculate per-event counts)
     if (window.QC_SUPABASE && window.QC_SUPABASE.isConfigured()) {
       try {
         const client = window.QC_SUPABASE.getClient();
         if (client) {
-          let q = client.from('registrations').select('*').order('registered_at', { ascending: false });
-          if (activePassEventId && activePassEventId !== 'all') {
-            q = q.eq('event_id', activePassEventId);
-          }
-          const { data, error } = await q;
+          const { data, error } = await client
+            .from('registrations')
+            .select('*')
+            .order('registered_at', { ascending: false });
+
           if (!error && Array.isArray(data)) {
             passes = data.map(reg => {
               const matchedEv = events.find(ev => String(ev.id) === String(reg.event_id) || String(ev.event_code) === String(reg.event_id));
@@ -2690,8 +2780,7 @@ const initAdmin = () => {
     // 2. Try Serverless /api/register endpoint if Supabase direct returned empty
     if (passes.length === 0) {
       try {
-        const regUrl = activePassEventId === 'all' ? '/api/register' : `/api/register?event_id=${encodeURIComponent(activePassEventId)}`;
-        const res = await fetch(regUrl);
+        const res = await fetch('/api/register');
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
@@ -2711,19 +2800,34 @@ const initAdmin = () => {
     }
 
     adminRegistrationsCache = passes;
+
+    // Render Event Pill Tabs
+    renderEventPassesTabs(events);
+
+    // Render Active Event Dossier Banner
+    renderActiveEventDossier(events);
+
+    // Render Passes Table
     renderEventPassesTable();
   };
 
-  window.filterPassesByEvent = (eventId) => {
+  window.filterPassesByEvent = async (eventId) => {
     activePassEventId = eventId;
     if (eventRegFilterSelect) eventRegFilterSelect.value = eventId;
-    loadEventPasses();
+    switchConsoleTab('event-reg');
+    const events = await fetchEventsData();
+    renderEventPassesTabs(events);
+    renderActiveEventDossier(events);
+    renderEventPassesTable();
   };
 
   if (eventRegFilterSelect) {
-    eventRegFilterSelect.addEventListener('change', (e) => {
+    eventRegFilterSelect.addEventListener('change', async (e) => {
       activePassEventId = e.target.value;
-      loadEventPasses();
+      const events = await fetchEventsData();
+      renderEventPassesTabs(events);
+      renderActiveEventDossier(events);
+      renderEventPassesTable();
     });
   }
 
@@ -2750,7 +2854,7 @@ const initAdmin = () => {
     const query = activePassSearch.toLowerCase().trim();
     const list = adminRegistrationsCache || [];
 
-    // Filter by activePassEventId first
+    // Filter by activePassEventId
     const eventScopedList = list.filter(reg => {
       if (activePassEventId === 'all') return true;
       return String(reg.event_id) === String(activePassEventId) || 
@@ -2781,6 +2885,7 @@ const initAdmin = () => {
       const matchFilter = activePassFilter === 'all' || reg.status === activePassFilter;
       const matchSearch = !query ||
         (reg.full_name && reg.full_name.toLowerCase().includes(query)) ||
+        (reg.name && reg.name.toLowerCase().includes(query)) ||
         (reg.phone && reg.phone.includes(query)) ||
         (reg.email && reg.email.toLowerCase().includes(query)) ||
         (reg.registration_id && reg.registration_id.toLowerCase().includes(query)) ||
@@ -2799,7 +2904,8 @@ const initAdmin = () => {
       return;
     }
 
-    eventPassesTbody.innerHTML = filtered.map(item => {
+    // Helper to generate a row for a registration item
+    const generateRowHtml = (item) => {
       let badgeClass = 'badge-confirmed';
       if (item.status === 'WAITLIST') badgeClass = 'badge-waitlist';
       if (item.status === 'CANCELLED') badgeClass = 'badge-cancelled';
@@ -2814,11 +2920,11 @@ const initAdmin = () => {
             <span class="reg-id-pill">${escapeHtml(item.registration_id)}</span>
           </td>
           <td>
-            <strong style="color: #FFFFFF;">${escapeHtml(item.full_name)}</strong>
+            <strong style="color: #FFFFFF;">${escapeHtml(item.full_name || item.name || '')}</strong>
           </td>
           <td>
-            <div style="font-family: var(--font-mono); font-size: 0.78rem;">${escapeHtml(item.phone)}</div>
-            <div style="font-size: 0.72rem; color: var(--color-gray);">${escapeHtml(item.email || '')}</div>
+            <div style="font-family: var(--font-mono); font-size: 0.78rem;">${escapeHtml(item.phone || '—')}</div>
+            <div style="font-size: 0.72rem; color: #60A5FA;">${escapeHtml(item.email || '')}</div>
           </td>
           <td>
             <span style="font-size: 0.8rem; color: #D1D5DB;">${escapeHtml(item.event_title || 'Sprint')}</span>
@@ -2847,7 +2953,53 @@ const initAdmin = () => {
           </td>
         </tr>
       `;
-    }).join('');
+    };
+
+    // If 'all' is selected and there are multiple events, group them by event with headers
+    if (activePassEventId === 'all') {
+      const groups = {};
+      filtered.forEach(item => {
+        const eId = String(item.event_id || (item.events && item.events.id) || 'other');
+        if (!groups[eId]) {
+          groups[eId] = {
+            eventId: eId,
+            eventTitle: item.event_title || (item.events && (item.events.name || item.events.title)) || 'Event',
+            items: []
+          };
+        }
+        groups[eId].items.push(item);
+      });
+
+      const groupKeys = Object.keys(groups);
+      if (groupKeys.length > 1) {
+        let finalHtml = '';
+        groupKeys.forEach(k => {
+          const grp = groups[k];
+          finalHtml += `
+            <tr style="background: rgba(59, 130, 246, 0.12); border-top: 2px solid var(--color-blue); border-bottom: 1.5px solid var(--border-medium);">
+              <td colspan="8" style="padding: 0.65rem 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-family: var(--font-mono); font-size: 0.68rem; background: rgba(59, 130, 246, 0.3); color: #93C5FD; padding: 2px 6px; border-radius: 3px; font-weight: 700; letter-spacing: 0.08em;">EVENT</span>
+                    <strong style="color: #FFFFFF; font-size: 1.05rem;">${escapeHtml(grp.eventTitle)}</strong>
+                    <span style="font-family: var(--font-mono); font-size: 0.75rem; color: #9CA3AF;">(${grp.items.length} Passes)</span>
+                  </div>
+                  <button type="button" class="btn-brutalist btn-secondary btn-sm" onclick="filterPassesByEvent('${grp.eventId}')" style="padding: 2px 8px; font-size: 0.72rem; border-color: var(--color-blue); color: #60A5FA;">
+                    Focus This Event Only →
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+          finalHtml += grp.items.map(generateRowHtml).join('');
+        });
+        eventPassesTbody.innerHTML = finalHtml;
+      } else {
+        eventPassesTbody.innerHTML = filtered.map(generateRowHtml).join('');
+      }
+    } else {
+      eventPassesTbody.innerHTML = filtered.map(generateRowHtml).join('');
+    }
 
     // Attach listeners
     eventPassesTbody.querySelectorAll('.btn-promote-pass').forEach(btn => {
@@ -2954,14 +3106,14 @@ const initAdmin = () => {
   // CSV Exporters
   if (btnExportPassesCsv) {
     btnExportPassesCsv.addEventListener('click', () => {
-      const eventParam = activePassEventId !== 'all' ? `&eventId=${activePassEventId}` : '';
+      const eventParam = activePassEventId !== 'all' ? `&event_id=${encodeURIComponent(activePassEventId)}&eventId=${encodeURIComponent(activePassEventId)}` : '';
       window.open(`/api/admin-export?type=registrations${eventParam}`, '_blank');
     });
   }
 
   if (btnExportWaitlistCsv) {
     btnExportWaitlistCsv.addEventListener('click', () => {
-      const eventParam = activePassEventId !== 'all' ? `&eventId=${activePassEventId}` : '';
+      const eventParam = activePassEventId !== 'all' ? `&event_id=${encodeURIComponent(activePassEventId)}&eventId=${encodeURIComponent(activePassEventId)}` : '';
       window.open(`/api/admin-export?type=waitlist${eventParam}`, '_blank');
     });
   }
@@ -3568,6 +3720,50 @@ const initAdmin = () => {
   let activeAttSearch = '';
   let activeAttEventId = 'all';
 
+  const renderAttendanceTabs = (events) => {
+    const tabsBar = document.getElementById('attendance-events-tabs-bar');
+    if (!tabsBar) return;
+
+    const confirmedRegs = (adminRegistrationsCache || []).filter(r => r.status === 'CONFIRMED');
+    const totalAll = confirmedRegs.length;
+
+    let html = `
+      <button type="button" class="btn-filter-pill ${activeAttEventId === 'all' ? 'active' : ''}" data-att-pill="all" style="${activeAttEventId === 'all' ? 'background: #3B82F6; color: #FFFFFF; border-color: #3B82F6; font-weight: 700;' : ''}">
+        🌐 All Events (${totalAll})
+      </button>
+    `;
+
+    (events || []).forEach(ev => {
+      const count = confirmedRegs.filter(r => String(r.event_id) === String(ev.id) || String(r.eventId) === String(ev.id)).length;
+      const isActive = String(activeAttEventId) === String(ev.id);
+      html += `
+        <button type="button" class="btn-filter-pill ${isActive ? 'active' : ''}" data-att-pill="${ev.id}" style="${isActive ? 'background: #3B82F6; color: #FFFFFF; border-color: #3B82F6; font-weight: 700;' : ''}">
+          📋 ${escapeHtml(ev.title || ev.name)} (${count})
+        </button>
+      `;
+    });
+
+    tabsBar.innerHTML = html;
+
+    tabsBar.querySelectorAll('[data-att-pill]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeAttEventId = btn.dataset.attPill;
+        if (attendanceEventSelect) attendanceEventSelect.value = activeAttEventId;
+        renderAttendanceTabs(events);
+        renderAttendanceTable();
+      });
+    });
+  };
+
+  window.filterAttendanceByEvent = async (eventId) => {
+    activeAttEventId = eventId;
+    if (attendanceEventSelect) attendanceEventSelect.value = eventId;
+    switchConsoleTab('attendance');
+    const events = await fetchEventsData();
+    renderAttendanceTabs(events);
+    renderAttendanceTable();
+  };
+
   const loadAttendanceRegister = async () => {
     const events = await fetchEventsData();
     if (attendanceEventSelect) {
@@ -3610,12 +3806,15 @@ const initAdmin = () => {
       console.warn('Attendance sync notice:', e);
     }
 
+    renderAttendanceTabs(events);
     renderAttendanceTable();
   };
 
   if (attendanceEventSelect) {
-    attendanceEventSelect.addEventListener('change', (e) => {
+    attendanceEventSelect.addEventListener('change', async (e) => {
       activeAttEventId = e.target.value;
+      const events = await fetchEventsData();
+      renderAttendanceTabs(events);
       renderAttendanceTable();
     });
   }
@@ -3688,7 +3887,7 @@ const initAdmin = () => {
       return;
     }
 
-    attendanceTbody.innerHTML = filtered.map(item => {
+    const generateAttRowHtml = (item) => {
       const isPresent = item.is_present || checkedInNames.has(item.full_name);
       const statusBadge = isPresent
         ? `<span class="status-badge badge-present">✓ PRESENT</span>`
@@ -3719,7 +3918,53 @@ const initAdmin = () => {
           </td>
         </tr>
       `;
-    }).join('');
+    };
+
+    // If 'all' is selected and multiple events exist, render with event separation headers
+    if (activeAttEventId === 'all') {
+      const groups = {};
+      filtered.forEach(item => {
+        const eId = String(item.event_id || (item.events && item.events.id) || 'other');
+        if (!groups[eId]) {
+          groups[eId] = {
+            eventId: eId,
+            eventTitle: item.event_title || (item.events && (item.events.name || item.events.title)) || 'Event',
+            items: []
+          };
+        }
+        groups[eId].items.push(item);
+      });
+
+      const groupKeys = Object.keys(groups);
+      if (groupKeys.length > 1) {
+        let finalHtml = '';
+        groupKeys.forEach(k => {
+          const grp = groups[k];
+          finalHtml += `
+            <tr style="background: rgba(59, 130, 246, 0.12); border-top: 2px solid var(--color-blue); border-bottom: 1.5px solid var(--border-medium);">
+              <td colspan="9" style="padding: 0.65rem 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-family: var(--font-mono); font-size: 0.68rem; background: rgba(59, 130, 246, 0.3); color: #93C5FD; padding: 2px 6px; border-radius: 3px; font-weight: 700; letter-spacing: 0.08em;">AUDIT EVENT</span>
+                    <strong style="color: #FFFFFF; font-size: 1.05rem;">${escapeHtml(grp.eventTitle)}</strong>
+                    <span style="font-family: var(--font-mono); font-size: 0.75rem; color: #9CA3AF;">(${grp.items.length} Attendees)</span>
+                  </div>
+                  <button type="button" class="btn-brutalist btn-secondary btn-sm" onclick="filterAttendanceByEvent('${grp.eventId}')" style="padding: 2px 8px; font-size: 0.72rem; border-color: var(--color-blue); color: #60A5FA;">
+                    Audit This Event Only →
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+          finalHtml += grp.items.map(generateAttRowHtml).join('');
+        });
+        attendanceTbody.innerHTML = finalHtml;
+      } else {
+        attendanceTbody.innerHTML = filtered.map(generateAttRowHtml).join('');
+      }
+    } else {
+      attendanceTbody.innerHTML = filtered.map(generateAttRowHtml).join('');
+    }
 
     attendanceTbody.querySelectorAll('.btn-toggle-presence').forEach(btn => {
       btn.addEventListener('click', async () => {

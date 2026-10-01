@@ -674,6 +674,24 @@
       </section>
 
       <section class="container" style="margin-top: 1.5rem; margin-bottom: 4rem;">
+        <!-- Dedicated Event Tabs Switcher Bar: View passes for each event separately -->
+        <div style="margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray); letter-spacing: 0.12em; text-transform: uppercase;">
+              <span>EVENT FILTER:</span>
+              <span style="color: var(--color-blue); font-weight: 700; margin-left: 0.35rem;">VIEW PASSES BY INDIVIDUAL EVENT</span>
+            </div>
+          </div>
+          <div class="event-tabs-bar" id="event-passes-tabs-bar" style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.4rem; scrollbar-width: thin;">
+            <!-- Dynamically populated event tabs -->
+          </div>
+        </div>
+
+        <!-- Active Event Info Dossier Banner -->
+        <div id="active-event-dossier" style="display: none; background: #0E0E12; border: 1.5px solid var(--color-blue); border-radius: 6px; padding: 1.25rem; margin-bottom: 1.5rem; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+          <!-- Dynamically populated event header details -->
+        </div>
+
         <div class="toolbar-section">
           <div class="search-filter-wrap">
             <div style="min-width: 240px;">
@@ -864,6 +882,17 @@
       </section>
 
       <section class="container" style="margin-top: 1.5rem; margin-bottom: 4rem;">
+        <!-- Dedicated Event Tabs Bar for Attendance -->
+        <div style="margin-bottom: 1.25rem;">
+          <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.5rem;">
+            <span>EVENT AUDIT VIEW:</span>
+            <span style="color: var(--color-blue); font-weight: 700; margin-left: 0.35rem;">SELECT EVENT TO AUDIT SEPARATELY</span>
+          </div>
+          <div class="event-tabs-bar" id="attendance-events-tabs-bar" style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.4rem; scrollbar-width: thin;">
+            <!-- Dynamically populated attendance event tabs -->
+          </div>
+        </div>
+
         <div class="toolbar-section">
           <div class="search-filter-wrap">
             <div style="min-width: 240px;">

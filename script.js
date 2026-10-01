@@ -2432,27 +2432,64 @@ document.addEventListener('DOMContentLoaded', () => {
           if (passes.length === 0) {
             list.innerHTML = '<p style="color: var(--color-gray); font-size: 0.88rem; padding: 1.5rem; text-align: center;">No active passes found for this phone number.</p>';
           } else {
+            // Group passes by Event so they show for each event separately
+            const groups = {};
             passes.forEach((p) => {
-              const item = document.createElement('div');
-              item.style.cssText = 'background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 1rem; text-align: left; margin-bottom: 0.5rem;';
-              item.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;">
-                  <strong style="color: #fff; font-size: 1rem;">${p.event ? (p.event.name || p.event.title) : 'Quantum Coders Event'}</strong>
-                  <span style="font-family: var(--font-mono); font-size: 0.72rem; color: ${p.status === 'CONFIRMED' ? '#34d399' : '#fbbf24'}; font-weight: 700;">${p.status}</span>
+              const evTitle = (p.event && (p.event.name || p.event.title)) || p.event_title || 'Quantum Coders Event';
+              const evId = (p.event && p.event.id) || p.event_id || evTitle;
+              if (!groups[evId]) {
+                groups[evId] = {
+                  eventId: evId,
+                  title: evTitle,
+                  date: (p.event && (p.event.date || p.event.event_date)) || '',
+                  venue: (p.event && p.event.venue) || '',
+                  passes: []
+                };
+              }
+              groups[evId].passes.push(p);
+            });
+
+            Object.values(groups).forEach((grp) => {
+              const grpBox = document.createElement('div');
+              grpBox.style.cssText = 'background: rgba(255,255,255,0.03); border: 1.5px solid var(--border-medium); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; text-align: left;';
+
+              const passesHtml = grp.passes.map((p) => `
+                <div style="background: rgba(0,0,0,0.35); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.85rem; margin-top: 0.6rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;">
+                    <span style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--color-blue); font-weight: 700;">PASS ID: ${escapeHtml(p.registration_id)}</span>
+                    <span style="font-family: var(--font-mono); font-size: 0.72rem; color: ${p.status === 'CONFIRMED' ? '#34d399' : '#fbbf24'}; font-weight: 700;">${p.status}</span>
+                  </div>
+                  <div style="font-size: 0.95rem; color: #FFFFFF; font-weight: 600; margin-bottom: 0.2rem;">
+                    ${escapeHtml(p.name)}
+                  </div>
+                  <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-gray); margin-bottom: 0.75rem;">
+                    ${p.section ? `Section: ${escapeHtml(p.section)} • ` : ''}Slot #${p.slot_number || 1}
+                  </div>
+                  <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                    <a href="event.html?id=${encodeURIComponent((p.event && p.event.id) || p.event_id || '')}" class="btn-brutalist btn-secondary btn-sm">
+                      View Event &amp; Pass
+                    </a>
+                    <button type="button" class="btn-brutalist btn-outline btn-sm" style="color: #f87171; border-color: #ef4444;" onclick="cancelRegistrationFromHome('${p.registration_id}')">
+                      Cancel Pass
+                    </button>
+                  </div>
                 </div>
-                <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-gray); margin-bottom: 0.75rem;">
-                  Pass ID: <span style="color: var(--color-blue); font-weight: 700;">${p.registration_id}</span> • ${p.name}
+              `).join('');
+
+              grpBox.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.5rem;">
+                  <div>
+                    <span style="font-family: var(--font-mono); font-size: 0.65rem; color: #60A5FA; background: rgba(59, 130, 246, 0.2); padding: 2px 6px; border-radius: 3px; font-weight: 700;">EVENT</span>
+                    <h4 style="font-family: var(--font-heading); font-size: 1.05rem; color: #FFFFFF; margin: 0.2rem 0 0 0;">${escapeHtml(grp.title)}</h4>
+                    ${grp.date ? `<div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray); margin-top: 0.2rem;">📅 ${grp.date} ${grp.venue ? `• 📍 ${escapeHtml(grp.venue)}` : ''}</div>` : ''}
+                  </div>
+                  <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray); background: rgba(255,255,255,0.06); padding: 2px 7px; border-radius: 4px; white-space: nowrap;">
+                    ${grp.passes.length} Pass${grp.passes.length > 1 ? 'es' : ''}
+                  </span>
                 </div>
-                <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-                  <a href="event.html?id=${encodeURIComponent((p.event && p.event.id) || '')}" class="btn-brutalist btn-secondary btn-sm">
-                    View Event Details
-                  </a>
-                  <button type="button" class="btn-brutalist btn-outline btn-sm" style="color: #f87171; border-color: #ef4444;" onclick="cancelRegistrationFromHome('${p.registration_id}')">
-                    Cancel Pass
-                  </button>
-                </div>
+                <div>${passesHtml}</div>
               `;
-              list.appendChild(item);
+              list.appendChild(grpBox);
             });
           }
         }
