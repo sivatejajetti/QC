@@ -3448,15 +3448,26 @@ const initAdmin = () => {
               event_id: reg.event_id,
               registration_id: reg.registration_id,
               student_name: reg.name,
+              email: reg.email || '',
               check_in_time: new Date().toISOString(),
               status: 'PRESENT',
               checked_in_by: adminConfirmed ? 'Admin Scanner (Direct Re-Admit)' : 'Admin QR Scanner (Direct)'
             };
 
             if (att) {
-              await client.from('attendance').update({ check_in_time: checkInRecord.check_in_time, checked_in_by: checkInRecord.checked_in_by }).eq('id', att.id);
+              const updData = { check_in_time: checkInRecord.check_in_time, checked_in_by: checkInRecord.checked_in_by, email: checkInRecord.email };
+              let { error: uErr } = await client.from('attendance').update(updData).eq('id', att.id);
+              if (uErr && uErr.message && uErr.message.includes('email')) {
+                delete updData.email;
+                await client.from('attendance').update(updData).eq('id', att.id);
+              }
             } else {
-              await client.from('attendance').insert([checkInRecord]);
+              const insData = { ...checkInRecord };
+              let { error: iErr } = await client.from('attendance').insert([insData]);
+              if (iErr && iErr.message && iErr.message.includes('email')) {
+                delete insData.email;
+                await client.from('attendance').insert([insData]);
+              }
             }
 
             displayScanVerificationResult({
@@ -3585,10 +3596,13 @@ const initAdmin = () => {
       }
 
       if (attRecords.length > 0 && Array.isArray(adminRegistrationsCache)) {
-        const attSet = new Set(attRecords.map(a => a.registration_id));
+        const attMap = new Map(attRecords.map(a => [a.registration_id, a]));
         adminRegistrationsCache.forEach(r => {
-          if (attSet.has(r.registration_id)) {
+          if (attMap.has(r.registration_id)) {
+            const att = attMap.get(r.registration_id);
             r.is_present = true;
+            r.check_in_time = att.check_in_time || att.created_at;
+            if (att.email && !r.email) r.email = att.email;
           }
         });
       }
@@ -3654,9 +3668,11 @@ const initAdmin = () => {
         (activeAttFilter === 'ABSENT' && !isPresent);
 
       const matchSearch = !query ||
-        item.full_name.toLowerCase().includes(query) ||
-        item.phone.includes(query) ||
-        item.registration_id.toLowerCase().includes(query);
+        (item.full_name && item.full_name.toLowerCase().includes(query)) ||
+        (item.name && item.name.toLowerCase().includes(query)) ||
+        (item.email && item.email.toLowerCase().includes(query)) ||
+        (item.phone && item.phone.includes(query)) ||
+        (item.registration_id && item.registration_id.toLowerCase().includes(query));
 
       return matchFilter && matchSearch;
     });
@@ -3664,7 +3680,7 @@ const initAdmin = () => {
     if (filtered.length === 0) {
       attendanceTbody.innerHTML = `
         <tr>
-          <td colspan="8" style="text-align: center; padding: 2.5rem; color: var(--color-gray); font-family: var(--font-mono);">
+          <td colspan="9" style="text-align: center; padding: 2.5rem; color: var(--color-gray); font-family: var(--font-mono);">
             No attendance records match filter.
           </td>
         </tr>
@@ -3678,21 +3694,26 @@ const initAdmin = () => {
         ? `<span class="status-badge badge-present">✓ PRESENT</span>`
         : `<span class="status-badge badge-absent">ABSENT</span>`;
 
+      const checkInDisplay = isPresent
+        ? (item.check_in_time ? new Date(item.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Verified Today')
+        : '—';
+
       return `
         <tr>
           <td><span class="reg-id-pill">${escapeHtml(item.registration_id)}</span></td>
-          <td><strong style="color: #FFFFFF;">${escapeHtml(item.full_name)}</strong></td>
-          <td style="font-family: var(--font-mono); font-size: 0.75rem;">${escapeHtml(item.phone)}</td>
+          <td><strong style="color: #FFFFFF;">${escapeHtml(item.full_name || item.name || '')}</strong></td>
+          <td><span style="font-family: var(--font-mono); font-size: 0.75rem; color: #60A5FA;">${escapeHtml(item.email || '—')}</span></td>
+          <td style="font-family: var(--font-mono); font-size: 0.75rem;">${escapeHtml(item.phone || '—')}</td>
           <td style="font-size: 0.78rem; color: #D1D5DB;">${escapeHtml(item.event_title || 'Sprint')}</td>
           <td>${statusBadge}</td>
           <td style="font-family: var(--font-mono); font-size: 0.75rem; color: #9CA3AF;">
-            ${isPresent ? 'Verified Today' : '—'}
+            ${checkInDisplay}
           </td>
           <td style="font-family: var(--font-mono); font-size: 0.72rem; color: #9CA3AF;">
             ${isPresent ? 'QR_SCANNER' : '—'}
           </td>
           <td style="text-align: right;">
-            <button type="button" class="btn-brutalist btn-secondary btn-sm btn-toggle-presence" data-name="${escapeHtml(item.full_name)}" data-rid="${escapeHtml(item.registration_id)}" style="padding: 0.35rem 0.65rem; font-size: 0.72rem;">
+            <button type="button" class="btn-brutalist btn-secondary btn-sm btn-toggle-presence" data-name="${escapeHtml(item.full_name || item.name)}" data-rid="${escapeHtml(item.registration_id)}" style="padding: 0.35rem 0.65rem; font-size: 0.72rem;">
               ${isPresent ? 'Mark Absent' : '✓ Mark Present'}
             </button>
           </td>
@@ -3724,19 +3745,29 @@ const initAdmin = () => {
             time: new Date().toLocaleTimeString(),
             isDuplicate: false
           });
-          if (regItem) regItem.is_present = true;
+          if (regItem) {
+            regItem.is_present = true;
+            regItem.check_in_time = new Date().toISOString();
+          }
           // Insert into Supabase attendance
           if (window.QC_SUPABASE && window.QC_SUPABASE.isConfigured() && regItem) {
             try {
               const client = window.QC_SUPABASE.getClient();
               if (client) {
-                await client.from('attendance').insert([{
+                const insPayload = {
                   event_id: regItem.event_id,
                   registration_id: regItem.registration_id,
                   student_name: regItem.name || regItem.full_name,
+                  email: regItem.email || '',
+                  check_in_time: new Date().toISOString(),
                   status: 'PRESENT',
                   checked_in_by: 'Admin Attendance Register (Manual)'
-                }]);
+                };
+                let { error: mErr } = await client.from('attendance').insert([insPayload]);
+                if (mErr && mErr.message && mErr.message.includes('email')) {
+                  delete insPayload.email;
+                  await client.from('attendance').insert([insPayload]);
+                }
               }
             } catch (e) {}
           }
@@ -3778,7 +3809,7 @@ const initAdmin = () => {
         return;
       }
 
-      const headers = ['Registration ID', 'Attendee Name', 'Phone', 'Email', 'Event', 'Attendance Status', 'Verified Method', 'Check-In Timestamp'];
+      const headers = ['Registration ID', 'Attendee Name', 'Email', 'Phone', 'Event', 'Attendance Status', 'Verified Method', 'Check-In Timestamp'];
       const rows = list.map(r => {
         const isPresent = r.is_present || checkedInNames.has(r.full_name) || checkedInNames.has(r.name);
         const timeStr = isPresent
@@ -3788,8 +3819,8 @@ const initAdmin = () => {
         return [
           `"${r.registration_id || ''}"`,
           `"${(r.full_name || r.name || '').replace(/"/g, '""')}"`,
-          `"${r.phone || ''}"`,
           `"${r.email || ''}"`,
+          `"${r.phone || ''}"`,
           `"${(r.event_title || '').replace(/"/g, '""')}"`,
           `"${isPresent ? 'PRESENT' : 'ABSENT'}"`,
           `"${isPresent ? 'QR_SCANNER' : 'NONE'}"`,

@@ -102,6 +102,8 @@ CREATE TABLE IF NOT EXISTS public.attendance (
     event_id UUID NOT NULL REFERENCES public.events(id) ON DELETE CASCADE,
     registration_id TEXT NOT NULL REFERENCES public.registrations(registration_id) ON DELETE CASCADE,
     student_name TEXT NOT NULL,
+    email TEXT,
+    phone TEXT,
     check_in_time TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
     status TEXT NOT NULL DEFAULT 'PRESENT' CHECK (status IN ('PRESENT')),
     checked_in_by TEXT NOT NULL DEFAULT 'Admin Scanner',

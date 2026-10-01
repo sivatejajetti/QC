@@ -366,6 +366,7 @@ module.exports = async function handler(req, res) {
       event_id: event.id,
       registration_id: registration.registration_id,
       student_name: registration.name,
+      email: registration.email || '',
       check_in_time: new Date().toISOString(),
       status: 'PRESENT',
       checked_in_by: req.body?.checked_in_by || (isOverride ? 'Admin QR Scanner (Re-Admit)' : 'Admin QR Scanner'),
@@ -375,22 +376,40 @@ module.exports = async function handler(req, res) {
     if (supabase) {
       if (existingAttendance) {
         // Update existing record for override
-        await supabase
+        const updatePayload = {
+          check_in_time: checkInRecord.check_in_time,
+          checked_in_by: checkInRecord.checked_in_by,
+          email: checkInRecord.email
+        };
+        const { error: updErr } = await supabase
           .from('attendance')
-          .update({
-            check_in_time: checkInRecord.check_in_time,
-            checked_in_by: checkInRecord.checked_in_by
-          })
+          .update(updatePayload)
           .eq('id', existingAttendance.id);
+
+        if (updErr && updErr.message && updErr.message.includes('email')) {
+          delete updatePayload.email;
+          await supabase.from('attendance').update(updatePayload).eq('id', existingAttendance.id);
+        }
       } else {
         // Insert new attendance record
+        const insertPayload = { ...checkInRecord };
         const { error: insErr } = await supabase
           .from('attendance')
-          .insert([checkInRecord]);
+          .insert([insertPayload]);
 
-        if (insErr && insErr.code !== '23505') {
-          console.error('Supabase Attendance Insert Error:', insErr);
-          throw insErr;
+        if (insErr) {
+          if (insErr.message && insErr.message.includes('email')) {
+            // column email does not exist yet -> retry without email so scanner never breaks
+            delete insertPayload.email;
+            const { error: retryErr } = await supabase.from('attendance').insert([insertPayload]);
+            if (retryErr && retryErr.code !== '23505') {
+              console.error('Supabase Attendance Insert Retry Error:', retryErr);
+              throw retryErr;
+            }
+          } else if (insErr.code !== '23505') {
+            console.error('Supabase Attendance Insert Error:', insErr);
+            throw insErr;
+          }
         }
       }
     } else {

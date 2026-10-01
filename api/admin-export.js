@@ -147,26 +147,39 @@ module.exports = async function handler(req, res) {
       if (supabase) {
         let query = supabase
           .from('attendance')
-          .select('*, events (name, date, venue)')
+          .select('*, events (name, date, venue), registrations (email, phone)')
           .order('check_in_time', { ascending: true });
 
         if (event_id) query = query.eq('event_id', event_id);
 
         const { data, error } = await query;
-        if (error) throw error;
-        attList = data || [];
+        if (error) {
+          // If relationship is not set in postgrest cache, fall back to simple select
+          let fallbackQ = supabase
+            .from('attendance')
+            .select('*, events (name, date, venue)')
+            .order('check_in_time', { ascending: true });
+          if (event_id) fallbackQ = fallbackQ.eq('event_id', event_id);
+          const { data: fbData } = await fallbackQ;
+          attList = fbData || [];
+        } else {
+          attList = data || [];
+        }
       } else {
         attList = FALLBACK_STORE.attendance
           .filter((a) => !event_id || a.event_id === event_id)
           .map((a) => {
             const ev = FALLBACK_STORE.events.find((e) => e.id === a.event_id) || {};
-            return { ...a, events: ev };
+            const reg = (FALLBACK_STORE.registrations || []).find((r) => r.registration_id === a.registration_id) || {};
+            return { ...a, events: ev, registrations: reg };
           });
       }
 
       headers = [
         'Registration ID',
         'Student Name',
+        'Email',
+        'Phone',
         'Check-In Time',
         'Status',
         'Checked In By',
@@ -178,6 +191,8 @@ module.exports = async function handler(req, res) {
       rows = attList.map((a) => [
         a.registration_id,
         a.student_name,
+        a.email || (a.registrations && a.registrations.email) || '',
+        a.phone || (a.registrations && a.registrations.phone) || '',
         a.check_in_time,
         a.status,
         a.checked_in_by,
