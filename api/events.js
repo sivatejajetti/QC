@@ -414,6 +414,7 @@ module.exports = async function handler(req, res) {
       if (updates.status !== undefined) dbUpdates.status = updates.status;
       if (updates.is_published !== undefined) dbUpdates.is_published = Boolean(updates.is_published);
       if (updates.is_registration_open !== undefined) dbUpdates.is_registration_open = Boolean(updates.is_registration_open);
+      if (updates.is_attendance_closed !== undefined) dbUpdates.is_attendance_closed = Boolean(updates.is_attendance_closed);
       if (updates.is_calendar_visible !== undefined) dbUpdates.is_calendar_visible = Boolean(updates.is_calendar_visible);
       if (updates.is_pass_enabled !== undefined) dbUpdates.is_pass_enabled = Boolean(updates.is_pass_enabled);
       if (updates.is_gallery_enabled !== undefined) dbUpdates.is_gallery_enabled = Boolean(updates.is_gallery_enabled);
@@ -421,9 +422,17 @@ module.exports = async function handler(req, res) {
 
       if (supabase && existingEvent && existingEvent.id) {
         try {
-          const { data, error } = await supabase.from('events').update(dbUpdates).eq('id', existingEvent.id).select().single();
+          let { data, error } = await supabase.from('events').update(dbUpdates).eq('id', existingEvent.id).select().single();
+          if (error && error.message && error.message.includes('is_attendance_closed')) {
+            // In case column is not yet migrated in Supabase
+            const fallbackUpdates = { ...dbUpdates };
+            delete fallbackUpdates.is_attendance_closed;
+            const retry = await supabase.from('events').update(fallbackUpdates).eq('id', existingEvent.id).select().single();
+            data = retry.data;
+            error = retry.error;
+          }
           if (!error && data) {
-            const norm = normalizeEventResponse(data);
+            const norm = normalizeEventResponse({ ...data, is_attendance_closed: dbUpdates.is_attendance_closed });
             const fbIdx = FALLBACK_STORE.events.findIndex(e => e.id === existingEvent.id || e.event_code === existingEvent.event_code);
             if (fbIdx !== -1) FALLBACK_STORE.events[fbIdx] = norm;
             return res.status(200).json(norm);
@@ -512,6 +521,7 @@ function normalizeEventResponse(ev) {
     status: ev.status || (ev.is_published ? 'PUBLISHED' : 'DRAFT'),
     is_published: ev.is_published !== false,
     is_registration_open: ev.is_registration_open !== false,
+    is_attendance_closed: Boolean(ev.is_attendance_closed),
     is_calendar_visible: ev.is_calendar_visible !== false,
     is_pass_enabled: ev.is_pass_enabled !== false,
     is_gallery_enabled: ev.is_gallery_enabled !== false,

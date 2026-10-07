@@ -504,6 +504,34 @@
               <button class="btn-brutalist btn-secondary" id="dash-btn-export-all">
                 📥 System CSV Report
               </button>
+              <button class="btn-brutalist btn-secondary" id="dash-btn-refresh-telemetry" title="Force refresh live dashboard statistics">
+                🔄 Refresh Live
+              </button>
+            </div>
+          </div>
+
+          <!-- EVENT LIFECYCLE & NEXT SPRINT READINESS BANNER -->
+          <div id="dash-event-lifecycle-banner" style="margin-top: 1.5rem; background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(16, 185, 129, 0.08)); border: 1.5px solid var(--border-medium); border-left: 4px solid var(--color-blue); border-radius: 4px; padding: 1.25rem 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                <span id="dash-lifecycle-icon" style="font-size: 2rem; line-height: 1;">⚡</span>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    <span id="dash-lifecycle-tag" class="admin-badge-tag" style="background: rgba(59, 130, 246, 0.25); color: #93C5FD; border-color: #3B82F6;">ACTIVE SPRINT MONITORED</span>
+                    <span id="dash-lifecycle-title" style="font-family: var(--font-heading); font-size: 1.15rem; color: #FFFFFF; font-weight: 700;">AI Agents &amp; Autonomous Coding Sprint</span>
+                    <span id="dash-lifecycle-status" class="status-badge badge-present" style="font-size: 0.7rem;">LIVE</span>
+                  </div>
+                  <div id="dash-lifecycle-desc" style="font-family: var(--font-mono); font-size: 0.78rem; color: #D1D5DB; margin-top: 0.35rem;">
+                    Event concluded / underway. System telemetry is actively refreshing. Ready for next event.
+                  </div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                <span id="dash-auto-refresh-ticker" style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray);">⏱️ Auto-refresh in 60s</span>
+                <button type="button" class="btn-brutalist btn-secondary btn-sm" id="dash-btn-prime-next" style="border-color: #10B981; color: #34D399;">
+                  🎯 Next Event Ready →
+                </button>
+              </div>
             </div>
           </div>
 
@@ -748,9 +776,12 @@
                 High-speed camera check-in scanner. Detects forged passes, flags duplicate check-ins with timestamps, and records live attendance.
               </p>
             </div>
-            <div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
               <button class="btn-brutalist btn-primary" id="btn-toggle-scanner">
                 📷 Start Camera Scanner
+              </button>
+              <button class="btn-brutalist btn-secondary" id="scanner-btn-toggle-gate" style="border-color: #F59E0B; color: #FBBF24;" title="Toggle attendance closed/open for current event">
+                🔒 Gate: Open
               </button>
             </div>
           </div>
@@ -758,6 +789,22 @@
       </section>
 
       <section class="container" style="margin-top: 1.5rem; margin-bottom: 4rem;">
+        <!-- Scanner Gate Warning Banner (Shown if attendance is closed) -->
+        <div id="scanner-gate-alert-banner" style="display: none; margin-bottom: 1.25rem; background: rgba(239, 68, 68, 0.15); border: 2px solid #EF4444; border-radius: 4px; padding: 1rem 1.25rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span style="font-size: 1.6rem;">🔒</span>
+              <div>
+                <strong style="color: #EF4444; font-size: 0.95rem; display: block; font-family: var(--font-heading);">ATTENDANCE CLOSED FOR THIS EVENT</strong>
+                <span id="scanner-gate-alert-text" style="color: #FCA5A5; font-family: var(--font-mono); font-size: 0.76rem;">Automatic pass check-in is stopped. Any newly scanned passes will be rejected unless authorized by admin override.</span>
+              </div>
+            </div>
+            <button type="button" class="btn-brutalist btn-secondary btn-sm" id="scanner-btn-reopen-gate" style="border-color: #10B981; color: #34D399; font-size: 0.75rem;">
+              🔓 Re-Open Gate Now
+            </button>
+          </div>
+        </div>
+
         <div class="scanner-layout-grid">
           <!-- Left: Camera Viewfinder -->
           <div class="scanner-camera-column">
@@ -852,9 +899,18 @@
                 Review checked-in participants, verify gate timestamps, manually mark presence, and download audit sheets.
               </p>
             </div>
-            <div>
-              <button class="btn-brutalist btn-secondary btn-sm" id="btn-export-attendance-csv">
-                📥 Export Attendance CSV
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+              <button class="btn-brutalist btn-secondary btn-sm" id="btn-export-attendance-csv" title="Export entire attendance log for this event">
+                📥 Export All CSV
+              </button>
+              <button class="btn-brutalist btn-secondary btn-sm" id="btn-export-present-csv" style="border-color: #10B981; color: #34D399; font-weight: 700;" title="Export only checked-in (present) participants for this event">
+                ✓ Export Present Sheet
+              </button>
+              <button class="btn-brutalist btn-secondary btn-sm" id="btn-export-absent-csv" style="border-color: #EF4444; color: #F87171; font-weight: 700;" title="Export only absent / non-attendees for this event">
+                ✗ Export Absent Sheet
+              </button>
+              <button class="btn-brutalist btn-secondary btn-sm" id="btn-toggle-attendance-gate" style="border-color: #F59E0B; color: #FBBF24; font-weight: 700;" title="Toggle attendance gate open/close to stop or allow check-ins">
+                🔒 Close Attendance
               </button>
             </div>
           </div>
@@ -891,6 +947,19 @@
           <div class="event-tabs-bar" id="attendance-events-tabs-bar" style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.4rem; scrollbar-width: thin;">
             <!-- Dynamically populated attendance event tabs -->
           </div>
+        </div>
+
+        <!-- Attendance Gate Indicator Bar -->
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-gray); letter-spacing: 0.08em;">GATE STATUS:</span>
+            <span id="att-gate-status-pill" style="font-family: var(--font-mono); font-size: 0.72rem; padding: 3px 10px; border-radius: 3px; font-weight: 700; background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid #10B981;">
+              🟢 GATE OPEN (CHECK-INS ACTIVE)
+            </span>
+          </div>
+          <span style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-gray);">
+            💡 Use "Close Attendance" when the event ends to stop late entries.
+          </span>
         </div>
 
         <div class="toolbar-section">

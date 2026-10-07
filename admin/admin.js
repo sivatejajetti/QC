@@ -799,8 +799,8 @@ const initAdmin = () => {
     { id: 'dashboard', btnId: 'tab-dashboard-btn', viewId: 'view-dashboard', onActivate: () => loadDashboardStats() },
     { id: 'events', btnId: 'tab-events-btn', viewId: 'view-events', onActivate: () => loadAdminEvents() },
     { id: 'event-reg', btnId: 'tab-event-reg-btn', viewId: 'view-event-registrations', onActivate: () => loadEventPasses() },
-    { id: 'scanner', btnId: 'tab-scanner-btn', viewId: 'view-scanner', onActivate: () => {} },
-    { id: 'attendance', btnId: 'tab-attendance-btn', viewId: 'view-attendance', onActivate: () => loadAttendanceRegister() },
+    { id: 'scanner', btnId: 'tab-scanner-btn', viewId: 'view-scanner', onActivate: () => { if (typeof updateGateUi === 'function') updateGateUi(); } },
+    { id: 'attendance', btnId: 'tab-attendance-btn', viewId: 'view-attendance', onActivate: () => { loadAttendanceRegister(); if (typeof updateGateUi === 'function') updateGateUi(); } },
     { id: 'gallery', btnId: 'tab-gallery-btn', viewId: 'view-gallery', onActivate: () => renderEvents() },
     { id: 'registrations', btnId: 'tab-registrations-btn', viewId: 'view-registrations', onActivate: () => fetchClubRegistrations() },
     { id: 'settings', btnId: 'tab-settings-btn', viewId: 'view-settings', onActivate: () => loadSectionToggles() }
@@ -829,6 +829,138 @@ const initAdmin = () => {
     }
   };
   window.switchConsoleTab = switchConsoleTab;
+
+  // ---------------------------------------------------------------------------
+  // ATTENDANCE GATE / CLOSE ATTENDANCE MANAGEMENT ENGINE
+  // ---------------------------------------------------------------------------
+  const getClosedAttendanceEvents = () => {
+    try {
+      const stored = localStorage.getItem('qc_closed_attendance_events');
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const isAttendanceClosed = (eventId) => {
+    if (!eventId || eventId === 'all') return false;
+    const closedMap = getClosedAttendanceEvents();
+    if (closedMap[String(eventId)] === true) return true;
+    const ev = (adminEventsCache || []).find(e => String(e.id) === String(eventId));
+    if (ev && (ev.is_attendance_closed || ev.status === 'COMPLETED')) return true;
+    return false;
+  };
+
+  const setAttendanceClosed = async (eventId, isClosed) => {
+    if (!eventId || eventId === 'all') return;
+    const closedMap = getClosedAttendanceEvents();
+    if (isClosed) {
+      closedMap[String(eventId)] = true;
+    } else {
+      delete closedMap[String(eventId)];
+    }
+    try {
+      localStorage.setItem('qc_closed_attendance_events', JSON.stringify(closedMap));
+    } catch (e) {}
+
+    // Update in-memory events cache
+    if (Array.isArray(adminEventsCache)) {
+      const ev = adminEventsCache.find(e => String(e.id) === String(eventId));
+      if (ev) ev.is_attendance_closed = isClosed;
+    }
+
+    // Direct Supabase update (catches gracefully if column is not yet migrated in Supabase)
+    if (window.QC_SUPABASE && window.QC_SUPABASE.isConfigured()) {
+      try {
+        const client = window.QC_SUPABASE.getClient();
+        if (client) {
+          const { error } = await client.from('events').update({ is_attendance_closed: isClosed }).eq('id', eventId);
+          if (error && error.message && error.message.includes('is_attendance_closed')) {
+            console.warn('Supabase is_attendance_closed column not yet added. Gate state stored locally.');
+          }
+        }
+      } catch (e) {
+        console.warn('Supabase gate update warning:', e);
+      }
+    }
+
+    // Update backend API endpoint
+    try {
+      await fetch('/api/events', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: eventId, is_attendance_closed: isClosed })
+      });
+    } catch (e) {}
+
+    updateGateUi();
+  };
+
+  const updateGateUi = () => {
+    const targetEventId = (typeof activeAttEventId !== 'undefined' && activeAttEventId !== 'all') 
+      ? activeAttEventId 
+      : ((adminEventsCache && adminEventsCache[0]) ? adminEventsCache[0].id : null);
+    
+    const isClosed = targetEventId ? isAttendanceClosed(targetEventId) : false;
+
+    // 1. Attendance Register Gate Button
+    const btnToggleAttGate = document.getElementById('btn-toggle-attendance-gate');
+    if (btnToggleAttGate) {
+      if (isClosed) {
+        btnToggleAttGate.textContent = '🔓 Re-Open Attendance';
+        btnToggleAttGate.style.borderColor = '#10B981';
+        btnToggleAttGate.style.color = '#34D399';
+      } else {
+        btnToggleAttGate.textContent = '🔒 Close Attendance';
+        btnToggleAttGate.style.borderColor = '#F59E0B';
+        btnToggleAttGate.style.color = '#FBBF24';
+      }
+    }
+
+    // 2. Attendance Register Status Pill
+    const attGateStatusPill = document.getElementById('att-gate-status-pill');
+    if (attGateStatusPill) {
+      if (isClosed) {
+        attGateStatusPill.textContent = '🔒 GATE CLOSED (CHECK-INS BLOCKED)';
+        attGateStatusPill.style.background = 'rgba(239, 68, 68, 0.2)';
+        attGateStatusPill.style.color = '#EF4444';
+        attGateStatusPill.style.borderColor = '#EF4444';
+      } else {
+        attGateStatusPill.textContent = '🟢 GATE OPEN (CHECK-INS ACTIVE)';
+        attGateStatusPill.style.background = 'rgba(16, 185, 129, 0.15)';
+        attGateStatusPill.style.color = '#34D399';
+        attGateStatusPill.style.borderColor = '#10B981';
+      }
+    }
+
+    // 3. Scanner Gate Button
+    const scannerBtnToggleGate = document.getElementById('scanner-btn-toggle-gate');
+    if (scannerBtnToggleGate) {
+      if (isClosed) {
+        scannerBtnToggleGate.textContent = '🔒 Gate: Closed';
+        scannerBtnToggleGate.style.borderColor = '#EF4444';
+        scannerBtnToggleGate.style.color = '#EF4444';
+      } else {
+        scannerBtnToggleGate.textContent = '🟢 Gate: Open';
+        scannerBtnToggleGate.style.borderColor = '#10B981';
+        scannerBtnToggleGate.style.color = '#34D399';
+      }
+    }
+
+    // 4. Scanner Warning Banner
+    const scannerGateAlertBanner = document.getElementById('scanner-gate-alert-banner');
+    if (scannerGateAlertBanner) {
+      scannerGateAlertBanner.style.display = isClosed ? 'block' : 'none';
+      const alertText = document.getElementById('scanner-gate-alert-text');
+      if (alertText && targetEventId) {
+        const ev = (adminEventsCache || []).find(e => String(e.id) === String(targetEventId));
+        alertText.textContent = `Attendance for "${ev?.title || ev?.name || 'this event'}" is officially CLOSED. Scanned passes will be blocked.`;
+      }
+    }
+  };
+  window.updateGateUi = updateGateUi;
+  window.isAttendanceClosed = isAttendanceClosed;
+  window.setAttendanceClosed = setAttendanceClosed;
 
   TABS_CONFIG.forEach(tab => {
     const btn = document.getElementById(tab.btnId);
@@ -2034,12 +2166,103 @@ const initAdmin = () => {
         `).join('');
       }
     }
+
+    // Dynamic Event Lifecycle & Next Event Readiness Banner
+    const lifecycleBanner = document.getElementById('dash-event-lifecycle-banner');
+    if (lifecycleBanner) {
+      const events = await fetchEventsData();
+      const now = new Date();
+
+      const sortedEvents = [...events].sort((a, b) => {
+        const da = new Date(`${a.date || a.event_date || '2099-01-01'}T${a.start_time || '00:00:00'}`);
+        const db = new Date(`${b.date || b.event_date || '2099-01-01'}T${b.start_time || '00:00:00'}`);
+        return da - db;
+      });
+
+      const concluded = [];
+      const upcoming = [];
+
+      sortedEvents.forEach(ev => {
+        const endDt = new Date(`${ev.date || ev.event_date || '1970-01-01'}T${ev.end_time || '23:59:59'}`);
+        const isClosed = isAttendanceClosed(ev.id);
+        if (now > endDt || ev.status === 'COMPLETED' || isClosed) {
+          concluded.push(ev);
+        } else {
+          upcoming.push(ev);
+        }
+      });
+
+      const nextEvent = upcoming[0];
+      const recentEnded = concluded[concluded.length - 1];
+
+      const iconEl = document.getElementById('dash-lifecycle-icon');
+      const tagEl = document.getElementById('dash-lifecycle-tag');
+      const titleEl = document.getElementById('dash-lifecycle-title');
+      const statusEl = document.getElementById('dash-lifecycle-status');
+      const descEl = document.getElementById('dash-lifecycle-desc');
+      const primeBtn = document.getElementById('dash-btn-prime-next');
+
+      if (recentEnded && nextEvent) {
+        if (iconEl) iconEl.textContent = '🏁';
+        if (tagEl) tagEl.textContent = 'EVENT CONCLUDED // NEXT SPRINT READY';
+        if (titleEl) titleEl.textContent = `Next Up: ${nextEvent.title || nextEvent.name}`;
+        if (statusEl) {
+          statusEl.textContent = 'READY FOR NEXT EVENT';
+          statusEl.className = 'status-badge badge-present';
+        }
+        if (descEl) {
+          descEl.innerHTML = `Previous event "<strong>${escapeHtml(recentEnded.title || recentEnded.name)}</strong>" has concluded. Attendance gates closed. Dashboard refreshed &amp; telemetry primed for <strong>${escapeHtml(nextEvent.title || nextEvent.name)}</strong> on ${formatEventDate(nextEvent.date || nextEvent.event_date)} (${nextEvent.confirmed_count || 0} registered).`;
+        }
+        if (primeBtn) {
+          primeBtn.style.display = 'inline-block';
+          primeBtn.textContent = `🎯 Ready Gate for ${escapeHtml(nextEvent.title || nextEvent.name).slice(0, 18)}... →`;
+          primeBtn.onclick = () => {
+            filterAttendanceByEvent(nextEvent.id);
+          };
+        }
+      } else if (nextEvent) {
+        if (iconEl) iconEl.textContent = '⚡';
+        if (tagEl) tagEl.textContent = 'ACTIVE SPRINT PIPELINE';
+        if (titleEl) titleEl.textContent = `Monitored: ${nextEvent.title || nextEvent.name}`;
+        if (statusEl) {
+          statusEl.textContent = 'ACTIVE';
+          statusEl.className = 'status-badge badge-present';
+        }
+        if (descEl) {
+          descEl.innerHTML = `Event scheduled for <strong>${formatEventDate(nextEvent.date || nextEvent.event_date)}</strong> at <strong>${formatEventTime(nextEvent.start_time)}</strong>. Gate check-ins active (${nextEvent.confirmed_count || 0} confirmed passes).`;
+        }
+        if (primeBtn) {
+          primeBtn.style.display = 'inline-block';
+          primeBtn.textContent = `📋 Audit Event Attendance →`;
+          primeBtn.onclick = () => {
+            filterAttendanceByEvent(nextEvent.id);
+          };
+        }
+      } else if (recentEnded) {
+        if (iconEl) iconEl.textContent = '🏁';
+        if (tagEl) tagEl.textContent = 'ALL SCHEDULED EVENTS CONCLUDED';
+        if (titleEl) titleEl.textContent = `${recentEnded.title || recentEnded.name} Finalized`;
+        if (statusEl) {
+          statusEl.textContent = 'CONCLUDED';
+          statusEl.className = 'status-badge badge-absent';
+        }
+        if (descEl) {
+          descEl.textContent = `All scheduled sprints have concluded. Telemetry finalized. Click "+ Create Event" to schedule the next club sprint.`;
+        }
+        if (primeBtn) {
+          primeBtn.style.display = 'inline-block';
+          primeBtn.textContent = `+ Schedule New Event →`;
+          primeBtn.onclick = () => openCreateEventModal();
+        }
+      }
+    }
   };
 
   // Dashboard Action buttons
   const dashBtnCreateEvent = document.getElementById('dash-btn-create-event');
   const dashBtnOpenScanner = document.getElementById('dash-btn-open-scanner');
   const dashBtnExportAll = document.getElementById('dash-btn-export-all');
+  const dashBtnRefreshTelemetry = document.getElementById('dash-btn-refresh-telemetry');
 
   if (dashBtnCreateEvent) dashBtnCreateEvent.addEventListener('click', () => openCreateEventModal());
   if (dashBtnOpenScanner) dashBtnOpenScanner.addEventListener('click', () => {
@@ -2049,6 +2272,16 @@ const initAdmin = () => {
   if (dashBtnExportAll) dashBtnExportAll.addEventListener('click', () => {
     window.open('/api/admin-export?type=full_report', '_blank');
   });
+  if (dashBtnRefreshTelemetry) {
+    dashBtnRefreshTelemetry.addEventListener('click', async () => {
+      dashBtnRefreshTelemetry.disabled = true;
+      dashBtnRefreshTelemetry.textContent = '🔄 Refreshing...';
+      await loadDashboardStats();
+      dashBtnRefreshTelemetry.disabled = false;
+      dashBtnRefreshTelemetry.textContent = '🔄 Refresh Live';
+      showToast('✓ Operations dashboard and telemetry refreshed!', 'success');
+    });
+  }
 
   // ---------------------------------------------------------------------------
   // 10.3 Event Management CRUD Controller (view-events)
@@ -3298,6 +3531,38 @@ const initAdmin = () => {
     });
   }
 
+  // Scanner Gate Lock Controls
+  const scannerBtnToggleGate = document.getElementById('scanner-btn-toggle-gate');
+  const scannerBtnReopenGate = document.getElementById('scanner-btn-reopen-gate');
+
+  const handleScannerGateToggle = async () => {
+    let targetId = (typeof activeAttEventId !== 'undefined' && activeAttEventId !== 'all') 
+      ? activeAttEventId 
+      : ((adminEventsCache && adminEventsCache[0]) ? adminEventsCache[0].id : null);
+    
+    if (!targetId) {
+      showToast('No active event selected for gate toggle.', 'error');
+      return;
+    }
+
+    const currentlyClosed = isAttendanceClosed(targetId);
+    const ev = (adminEventsCache || []).find(e => String(e.id) === String(targetId));
+    const evName = ev ? (ev.title || ev.name) : 'Event';
+
+    if (!currentlyClosed) {
+      const ok = confirm(`CLOSE attendance gate for "${evName}"?\n\nThis will stop further check-ins and reject incoming attendee passes at the scanner.`);
+      if (!ok) return;
+      await setAttendanceClosed(targetId, true);
+      showToast(`🔒 Gate CLOSED for "${evName}". Check-ins are now blocked.`, 'warning');
+    } else {
+      await setAttendanceClosed(targetId, false);
+      showToast(`🟢 Gate RE-OPENED for "${evName}". Check-ins are active.`, 'success');
+    }
+  };
+
+  if (scannerBtnToggleGate) scannerBtnToggleGate.addEventListener('click', handleScannerGateToggle);
+  if (scannerBtnReopenGate) scannerBtnReopenGate.addEventListener('click', handleScannerGateToggle);
+
   // Verification Logic on Scan / Lookup
   const onQrCodeScanned = async (decodedText) => {
     // Briefly pause camera
@@ -3359,6 +3624,31 @@ const initAdmin = () => {
       }
     }
 
+    // Check if target registration belongs to an attendance-closed event
+    const cachedItem = (adminRegistrationsCache || []).find(r => 
+      (extractedRid && String(r.registration_id).toUpperCase() === extractedRid.trim().toUpperCase()) ||
+      (extractedPhone && r.phone && r.phone.includes(extractedPhone.replace(/\D/g, '').slice(-10)))
+    );
+    const targetEventId = cachedItem?.event_id || ((typeof activeAttEventId !== 'undefined' && activeAttEventId !== 'all') ? activeAttEventId : null);
+    const isClosedLocally = targetEventId ? isAttendanceClosed(targetEventId) : false;
+
+    if (isClosedLocally && !adminConfirmed) {
+      const ev = (adminEventsCache || []).find(e => String(e.id) === String(targetEventId));
+      displayScanVerificationResult({
+        success: false,
+        attendance_closed: true,
+        message: `ATTENDANCE CLOSED: Check-ins for "${ev?.title || ev?.name || 'this event'}" have been closed by admin.`,
+        registration: cachedItem ? {
+          full_name: cachedItem.full_name || cachedItem.name,
+          name: cachedItem.full_name || cachedItem.name,
+          registration_id: cachedItem.registration_id,
+          phone: cachedItem.phone
+        } : { full_name: 'Attendee', registration_id: extractedRid || 'PASS' },
+        event: { title: ev?.title || ev?.name || 'Event' }
+      }, queryPayload);
+      return;
+    }
+
     const payload = {
       qr_payload: rawQuery,
       query: rawQuery,
@@ -3366,7 +3656,8 @@ const initAdmin = () => {
       phone: extractedPhone ? extractedPhone.trim() : undefined,
       admin_confirmed: adminConfirmed,
       confirmed_by_admin: adminConfirmed,
-      override_duplicate: adminConfirmed
+      override_duplicate: adminConfirmed,
+      is_attendance_closed: isClosedLocally
     };
 
     try {
@@ -3495,6 +3786,48 @@ const initAdmin = () => {
       return;
     }
 
+    // ATTENDANCE CLOSED / GATE LOCKED
+    if (data.attendance_closed) {
+      if (scanStatusChip) {
+        scanStatusChip.textContent = 'GATE CLOSED';
+        scanStatusChip.style.color = '#EF4444';
+      }
+
+      scanResultBody.innerHTML = `
+        <div style="padding: 1.25rem; background: rgba(239, 68, 68, 0.15); border: 2px solid #EF4444; border-radius: 4px; text-align: center; margin-bottom: 1rem;">
+          <div style="font-size: 2.5rem; margin-bottom: 0.35rem;">🔒</div>
+          <div style="font-family: var(--font-heading); font-size: 1.25rem; color: #EF4444; margin-bottom: 0.35rem;">
+            ATTENDANCE CLOSED
+          </div>
+          <p style="font-family: var(--font-mono); font-size: 0.8rem; color: #FCA5A5; margin: 0;">
+            ${escapeHtml(data.message || 'Check-ins for this event have been officially closed by administrator.')}
+          </p>
+        </div>
+        <div style="padding: 1rem; background: #141419; border: 1px solid var(--border-medium); border-radius: 2px;">
+          <div style="font-family: var(--font-heading); font-size: 1.15rem; color: #FFFFFF;">${escapeHtml(studentName)}</div>
+          <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--color-gray); margin: 0.25rem 0;">
+            ${escapeHtml(regId)} • ${escapeHtml(phone)}
+          </div>
+          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: #9CA3AF;">
+            Event: ${escapeHtml(eventTitle)}
+          </div>
+        </div>
+      `;
+
+      if (scanResultFooter) {
+        scanResultFooter.style.display = 'flex';
+        scanResultFooter.innerHTML = `
+          <button type="button" class="btn-brutalist btn-primary" id="btn-force-closed-checkin" style="width: 100%; justify-content: center; background: #F59E0B; border-color: #D97706; color: #000000; font-weight: 700;">
+            🔓 Admin Override: Allow Late Entry Anyway
+          </button>
+        `;
+        document.getElementById('btn-force-closed-checkin').addEventListener('click', () => {
+          verifyAttendeePass(originalQuery, true);
+        });
+      }
+      return;
+    }
+
     // ERROR / WAITLIST / CANCELLED
     if (scanStatusChip) {
       scanStatusChip.textContent = 'CHECK-IN BLOCKED';
@@ -3578,6 +3911,18 @@ const initAdmin = () => {
               return;
             }
 
+            const isClosed = isAttendanceClosed(reg.event_id) || Boolean(reg.events?.is_attendance_closed || reg.events?.status === 'COMPLETED');
+            if (isClosed && !adminConfirmed) {
+              displayScanVerificationResult({
+                success: false,
+                attendance_closed: true,
+                message: `ATTENDANCE CLOSED: Check-ins for "${reg.events?.name || 'this event'}" have been closed by admin.`,
+                registration: { full_name: reg.name, name: reg.name, registration_id: reg.registration_id, phone: reg.phone },
+                event: { title: reg.events?.name || 'Event' }
+              }, query);
+              return;
+            }
+
             const { data: att } = await client.from('attendance').select('*').eq('registration_id', reg.registration_id).eq('event_id', reg.event_id).maybeSingle();
 
             if (att && !adminConfirmed) {
@@ -3650,6 +3995,18 @@ const initAdmin = () => {
 
     if (!reg) {
       displayScanVerificationResult({ success: false, message: 'Registration record not found in cadre registry.' }, query);
+      return;
+    }
+
+    const isMemClosed = isAttendanceClosed(reg.event_id) || Boolean(reg.events?.is_attendance_closed || reg.events?.status === 'COMPLETED');
+    if (isMemClosed && !adminConfirmed) {
+      displayScanVerificationResult({
+        success: false,
+        attendance_closed: true,
+        message: `ATTENDANCE CLOSED: Check-ins for "${reg.event_title || reg.events?.name || 'this event'}" have been closed by admin.`,
+        registration: { full_name: reg.full_name || reg.name, name: reg.full_name || reg.name, registration_id: reg.registration_id, phone: reg.phone },
+        event: { title: reg.event_title || reg.events?.name || 'Event' }
+      }, query);
       return;
     }
 

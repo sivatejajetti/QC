@@ -303,9 +303,7 @@ module.exports = async function handler(req, res) {
           name: event.name || event.title || 'Event'
         }
       });
-    }
-
-    // 3. Duplicate Check-in Inspection
+    // 2.5 Attendance Closed Inspection
     const isOverride = Boolean(
       req.body?.admin_confirmed ||
       req.body?.confirmed_by_admin ||
@@ -313,6 +311,32 @@ module.exports = async function handler(req, res) {
       req.query?.admin_confirmed
     );
 
+    const isAttendanceClosed = Boolean(
+      event.is_attendance_closed ||
+      event.status === 'COMPLETED' ||
+      req.body?.is_attendance_closed
+    );
+
+    if (isAttendanceClosed && !isOverride) {
+      return res.status(200).json({
+        success: false,
+        attendance_closed: true,
+        error: 'Attendance for this event has been CLOSED by admin.',
+        message: `ATTENDANCE CLOSED: Check-ins for "${event.name || event.title || 'this event'}" have been closed. No further check-ins permitted.`,
+        registration: {
+          full_name: registration.name,
+          name: registration.name,
+          registration_id: registration.registration_id,
+          phone: registration.phone
+        },
+        event: {
+          title: event.name || event.title || 'Event',
+          name: event.name || event.title || 'Event'
+        }
+      });
+    }
+
+    // 3. Duplicate Check-in Inspection
     let existingAttendance = null;
     if (supabase) {
       const { data: att } = await supabase
