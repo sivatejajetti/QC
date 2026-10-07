@@ -4397,42 +4397,120 @@ const initAdmin = () => {
     URL.revokeObjectURL(url);
   };
 
+  const exportAttendanceCsv = (filterStatus = 'ALL', specificEventId = null) => {
+    const targetEventId = specificEventId || activeAttEventId;
+    let list = (adminRegistrationsCache || []).filter(r => r.status === 'CONFIRMED');
+    if (targetEventId !== 'all') {
+      list = list.filter(r => String(r.event_id) === String(targetEventId) || String(r.eventId) === String(targetEventId));
+    }
+    const checkedInNames = new Set(sessionCheckins.map(s => s.name));
+
+    if (filterStatus === 'PRESENT') {
+      list = list.filter(r => r.is_present || checkedInNames.has(r.full_name) || checkedInNames.has(r.name));
+    } else if (filterStatus === 'ABSENT') {
+      list = list.filter(r => !r.is_present && !checkedInNames.has(r.full_name) && !checkedInNames.has(r.name));
+    }
+
+    if (list.length === 0) {
+      showToast(`No ${filterStatus.toLowerCase()} attendee records found for export.`, 'error');
+      return;
+    }
+
+    const headers = [
+      'Registration ID',
+      'Attendee Name',
+      'Email',
+      'Phone',
+      'Event',
+      'Attendance Status',
+      'Verified Method',
+      'Check-In Timestamp'
+    ];
+
+    const rows = list.map(r => {
+      const isPresent = r.is_present || checkedInNames.has(r.full_name) || checkedInNames.has(r.name);
+      const timeStr = isPresent
+        ? (r.check_in_time ? new Date(r.check_in_time).toLocaleString() : new Date().toLocaleString())
+        : '—';
+
+      return [
+        `"${r.registration_id || ''}"`,
+        `"${(r.full_name || r.name || '').replace(/"/g, '""')}"`,
+        `"${r.email || ''}"`,
+        `"${r.phone || ''}"`,
+        `"${(r.event_title || '').replace(/"/g, '""')}"`,
+        `"${isPresent ? 'PRESENT' : 'ABSENT'}"`,
+        `"${isPresent ? 'QR_SCANNER' : 'NONE'}"`,
+        `"${timeStr}"`
+      ];
+    });
+
+    const ev = (adminEventsCache || []).find(e => String(e.id) === String(targetEventId));
+    const eventNameSlug = ev ? (ev.title || ev.name).toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 30) : (targetEventId !== 'all' ? `event_${targetEventId}` : 'all_events');
+    const statusSlug = filterStatus.toLowerCase();
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `quantum_coders_${statusSlug}_sheet_${eventNameSlug}_${dateStr}.csv`;
+
+    downloadCsvData(filename, headers, rows);
+    showToast(`✓ Exported ${list.length} ${filterStatus.toLowerCase()} records (${ev?.title || 'Selected Event'}) to CSV!`, 'success');
+  };
+
+  window.exportEventAttendanceCsv = (eventId, status) => {
+    exportAttendanceCsv(status, eventId);
+  };
+
+  const btnExportPresentCsv = document.getElementById('btn-export-present-csv');
+  const btnExportAbsentCsv = document.getElementById('btn-export-absent-csv');
+  const btnToggleAttendanceGate = document.getElementById('btn-toggle-attendance-gate');
+
   if (btnExportAttendanceCsv) {
     btnExportAttendanceCsv.addEventListener('click', (e) => {
       e.preventDefault();
-      let list = (adminRegistrationsCache || []).filter(r => r.status === 'CONFIRMED');
-      if (activeAttEventId !== 'all') {
-        list = list.filter(r => r.event_id === activeAttEventId);
+      exportAttendanceCsv('ALL');
+    });
+  }
+
+  if (btnExportPresentCsv) {
+    btnExportPresentCsv.addEventListener('click', (e) => {
+      e.preventDefault();
+      exportAttendanceCsv('PRESENT');
+    });
+  }
+
+  if (btnExportAbsentCsv) {
+    btnExportAbsentCsv.addEventListener('click', (e) => {
+      e.preventDefault();
+      exportAttendanceCsv('ABSENT');
+    });
+  }
+
+  if (btnToggleAttendanceGate) {
+    btnToggleAttendanceGate.addEventListener('click', async () => {
+      let targetId = activeAttEventId;
+      if (targetId === 'all') {
+        const events = await fetchEventsData();
+        if (events && events.length > 0) {
+          targetId = events[0].id;
+        } else {
+          showToast('No active events found to close attendance.', 'error');
+          return;
+        }
       }
-      const checkedInNames = new Set(sessionCheckins.map(s => s.name));
+      const currentlyClosed = isAttendanceClosed(targetId);
+      const ev = (adminEventsCache || []).find(e => String(e.id) === String(targetId));
+      const evName = ev ? (ev.title || ev.name) : 'Event';
 
-      if (list.length === 0) {
-        showToast('No confirmed attendee records to export.', 'error');
-        return;
+      if (!currentlyClosed) {
+        const confirmClose = confirm(`Are you sure you want to CLOSE attendance for "${evName}"?\n\nThis will prevent any further QR scans or check-ins unless explicitly overridden by an administrator.`);
+        if (!confirmClose) return;
+        await setAttendanceClosed(targetId, true);
+        showToast(`🔒 Attendance for "${evName}" is now CLOSED. Check-ins blocked.`, 'warning');
+      } else {
+        await setAttendanceClosed(targetId, false);
+        showToast(`🟢 Attendance for "${evName}" is now RE-OPENED.`, 'success');
       }
-
-      const headers = ['Registration ID', 'Attendee Name', 'Email', 'Phone', 'Event', 'Attendance Status', 'Verified Method', 'Check-In Timestamp'];
-      const rows = list.map(r => {
-        const isPresent = r.is_present || checkedInNames.has(r.full_name) || checkedInNames.has(r.name);
-        const timeStr = isPresent
-          ? (r.check_in_time ? new Date(r.check_in_time).toLocaleString() : new Date().toLocaleString())
-          : '—';
-
-        return [
-          `"${r.registration_id || ''}"`,
-          `"${(r.full_name || r.name || '').replace(/"/g, '""')}"`,
-          `"${r.email || ''}"`,
-          `"${r.phone || ''}"`,
-          `"${(r.event_title || '').replace(/"/g, '""')}"`,
-          `"${isPresent ? 'PRESENT' : 'ABSENT'}"`,
-          `"${isPresent ? 'QR_SCANNER' : 'NONE'}"`,
-          `"${timeStr}"`
-        ];
-      });
-
-      const eventSuffix = activeAttEventId !== 'all' ? `_event_${activeAttEventId}` : '';
-      downloadCsvData(`quantum_coders_attendance${eventSuffix}_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
-      showToast(`✓ Exported attendance register (${list.length} records) to CSV/Excel!`, 'success');
+      renderAttendanceTabs(adminEventsCache || []);
+      renderAttendanceTable();
     });
   }
 
